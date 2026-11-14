@@ -298,20 +298,47 @@ Checked with ogdoad's Python bindings unless marked standard.
 
 ## 11. Engine
 
-- **Values:**
-  - Dyadics are stored as numerator / 2^k, which LuaJIT's doubles represent exactly up to 2^53.
-  - Surreal leaves have the form ω·k + x.
-  - Short games are kept in canonical form.
-- **Operations:**
-  - canonical form, comparison, sum and negation;
-  - stops, heat and cool;
-  - the confusion test against each rank;
-  - the simplest number between two values;
-  - nim arithmetic on F₁₆.
-- **Storage:** a card stores its value as a canonical string, so saves need nothing special.
-- **Hands:** each card's set of ranks feeds a matching. Values with no rank pair by equality.
-- **Faces:** procedural text on a blank front ("3½", "5*", "7±2", "ω"), with the exact {L|R} in the tooltip. This is
-  the riskiest piece, so prototype it first.
-- **Tests:** a script in `tools/` uses ogdoad to generate fixtures: random games with their canonical forms, stops,
-  confusion sets, heating and cooling. The Lua engine must agree with all of them. ogdoad is AGPL and stays a
-  development tool; nothing from it ships.
+Built and tested (`src/engine/`, `tests/`); nothing in the game uses it yet.
+
+- **Numbers** (`num.lua`) have the form k·ω + x, with k and x dyadic. Lua's doubles hold dyadics exactly up to 2^53,
+  and every operation checks that it stayed exact.
+  - Order is lexicographic.
+  - A number's sign expansion is k's signs, each repeated ω times, followed by x's signs (Gonshor). The simplest
+    number between two numbers is computed on these expansions, so {14|ω} = 15 and {ω/2|ω} = ω − 1 come out of the
+    same code as {3|4} = 3½.
+  - Canonical options come from the expansions too. ω's Left options (0, 1, 2, …) are an infinite family with no
+    best member.
+- **Games** (`game.lua`) are short games with number leaves, kept canonical and interned.
+  - **Number test:** a game equals a number exactly when some number fits between its options (the simplicity
+    theorem), and the fitting interval is read off the options' stops. This test runs before any other reduction,
+    so later comparisons never meet a form that secretly equals a number.
+  - **Reduction:** dominated options are removed and reversible options bypassed, including reversal through a
+    number's canonical options.
+  - **Operations:** comparison (by Number Translation against numbers), sum, negation, stops, thermographs
+    (temperature and mean), heating, cooling, birthday, and the loose "acts as rank r" test.
+  - **The one known gap:** an option that is a number with infinitely many options (ω, ω − 1, ω/2) is never
+    bypassed, so a game with one may not be fully reduced. Values and comparisons stay exact.
+- **Nim arithmetic** (`nim.lua`) covers F₁₆: nim-multiplication by Conway's Fermat 2-power rules, 15's cycle and
+  discrete logs, and mex.
+- **Hand scoring** (`play.lua`) plays a hand out as one sum: you move first, nobody moves in a number, and play ends
+  when every card is a number. It returns the total (the Left stop), the number each card ends on, and who moved
+  where. Equal moves go to the hotter card, then the leftmost.
+- **Numbers' temperature** is reported as −1, following ogdoad.
+- **Tests:** `tools/fixtures.py` writes `tests/fixtures/ogdoad.lua`, and `scripts/test` checks the engine against all
+  of it:
+  - 240 random games: canonical forms, stops, temperatures, means, birthdays, heating by 1, cooling by 1 and by ½,
+    and the ranks each one plays as;
+  - 240 sums and comparisons;
+  - 180 whole hands;
+  - the F₁₆ table;
+  - 200 finite simplest numbers;
+  - 200 orderings of transfinite numbers.
+
+  ogdoad has no simplest-number oracle for transfinite numbers, so `tests/known_test.lua` checks those itself: each
+  result lies between its bounds, and none of its prefixes does. ogdoad is AGPL and stays a development tool;
+  nothing from it ships.
+- **Still to build:**
+  - **Storage:** a card stores its value as its canonical string.
+  - **Hand evaluation:** each card's ranks feed a matching, and values with no rank pair by equality.
+  - **Card faces:** procedural text on a blank front ("3½", "5*", "7±2", "ω"), with the exact {L|R} in the
+    tooltip. This is the riskiest piece, so prototype it first.

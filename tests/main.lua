@@ -2,16 +2,16 @@
 -- (`love tests`), both from the repo root; scripts/test picks one.
 --
 -- Each file returns a function that takes `test(name, body)`; `body` gets `eq`.
--- No suites yet: the engine comes first (DESIGN.md, Engine).
 
-local files = {}
+local files = { "tests/known_test.lua", "tests/ogdoad_test.lua" }
 
-local passed, failed = 0, 0
+local passed, failed, checks = 0, 0, 0
 for _, file in ipairs(files) do
   local suite = dofile(file)
   suite(function(name, body)
     local problems = {}
     local function eq(got, want, label)
+      checks = checks + 1
       if got ~= want then
         problems[#problems + 1] = ("%s: got %s, want %s"):format(label or "value", tostring(got), tostring(want))
       end
@@ -29,6 +29,6 @@ for _, file in ipairs(files) do
   end)
 end
 
-print(("%d passed, %d failed"):format(passed, failed))
+print(("%d passed, %d failed (%d checks)"):format(passed, failed, checks))
 io.stdout:flush()
 os.exit(failed == 0 and 0 or 1)

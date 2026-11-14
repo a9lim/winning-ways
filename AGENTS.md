@@ -15,21 +15,32 @@ holds a plan and a test harness, and nothing else. `DESIGN.md` is the source of 
   standard.
 - **Credit sources in the README.** UnStable's ranks inspired this mod, and its code is never copied.
 
-## Map (planned)
+## Map
 
 | path | role |
 | --- | --- |
-| `main.lua` | entry point; the `WinningWays` global |
-| `src/` | the value engine (dyadics, games, nim arithmetic) and the content |
-| `tools/` | ogdoad scripts that generate test fixtures |
-| `tests/` | unit tests on LuaJIT; an in-game self-test later |
-| `DESIGN.md` | the rules |
+| `main.lua` | entry point; the `WinningWays` global; loads the engine as `WinningWays.engine` |
+| `src/engine/num.lua` | numbers k·ω + x: order, arithmetic, sign expansions, simplest numbers, notation |
+| `src/engine/game.lua` | short games over those numbers: canonical form, order, sums, stops, thermographs, heat, cool |
+| `src/engine/nim.lua` | nim arithmetic on the ranks 0–15 (F₁₆) |
+| `src/engine/play.lua` | how a hand of values scores, and the ranks a value plays as |
+| `tools/fixtures.py` | regenerates `tests/fixtures/ogdoad.lua` from ogdoad |
+| `tests/` | unit tests on LuaJIT (`known_test.lua`, `ogdoad_test.lua`); an in-game self-test later |
+| `DESIGN.md` | the rules; § 11 is the engine |
+
+Engine modules are pure Lua with no game state. Each one takes the shared engine table as its chunk argument
+(`loadfile(path)(E)` in tests, `SMODS.load_file(path)(E)` in the game), and they load in the order num, game, nim,
+play. Values print and parse in one ASCII notation (`3`, `-7/2`, `w/2-1`, `{9|5}`), which doubles as the save
+format.
 
 ## Verify
 
 - `scripts/test` runs the unit tests on LuaJIT. It uses `luajit` from PATH, or borrows an unfused copy of the LÖVE
   runtime from the local Balatro install. Nothing gets installed on the Mac, which is deliberately Homebrew-free.
 - `tests/main.lua` lists the suites; each suite file returns a function that takes `test(name, body)`.
+- After changing the engine, the ogdoad fixtures must still pass. Regenerate them with
+  `~/.venv/bin/python -I tools/fixtures.py` (about 2.5 minutes, deterministic) only when the fixture script itself
+  changes.
 - For in-game checks, follow Quintessence's pattern (`~/Work/quintessence/AGENTS.md`): env-var hooks that run checks
   or take a screenshot and quit. The game needs Steam running.
 
