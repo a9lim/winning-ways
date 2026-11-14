@@ -1,8 +1,8 @@
 # Winning Ways — design sketch
 
-*Status: design only; nothing is implemented. **Decided** sections record what a9 and Claude have agreed.
-**Candidates** are proposals still waiting on a9's call. Section 10 lists the facts this rests on, each one checked
-with ogdoad.*
+*Status: the value engine is being built (§ 11); none of the content exists yet. **Decided** sections record what a9
+and Claude have agreed. **Candidates** are proposals still waiting on a9's call. § 10 lists the facts the design
+rests on, each one checked with ogdoad or marked standard.*
 
 Winning Ways is a Balatro mod about Conway's numbers and games. It's named for Berlekamp, Conway and Guy's book, and it
 makes one promise: the maths is exact. Every value a card can hold is a real surreal number or combinatorial game,
@@ -130,11 +130,32 @@ Nim-squares a card's rank. The cycles are 2↔3, 4→6→5→7→4, 8→K→10�
 
 The set's Fool: it copies the last Move used. The Tweedledum-and-Tweedledee strategy is copying your opponent's move.
 
+### Repaint
+
+Hackenbush's negation paints every blue edge red. Up to three cards swap colour (♠↔♥, ♣↔♦): a flush fixer with a
+game-theory reason.
+
+### Fuzz
+
+Adds * to up to two cards. *Fuzz* is a working name: "Star" is taken by the vanilla Tarot, and n* is fuzzy with n.
+"Nimbus" (a nimber halo) is another option.
+- For hands nothing changes: n* plays as n.
+- In nim arithmetic, n* is the heap n ⊕ 1, so Fuzz is Bouton's tuning knob.
+- Fuzzy cards also cancel in pairs under Sum: 5* + 5* = 10.
+
+### Mex
+
+The leftmost selected card becomes the mex of the other selected cards. On its own, a card becomes a 0; beside a 0 it
+becomes a 1; beside a 0 and a 1 it becomes a 2. It's the easy way to make born ranks, and it feeds Grundy.
+
 ### Omega (Spectral)
 
-A selected 2 becomes ω, its smallest cube root: in nim arithmetic ω³ = 2. No finite rank has a cube root of 2 (the
-nim-cubes of 1–15 are only 1, 8, 10, K and A). As a result, Wee decks, which are full of 2s, never get stuck with an
-unusable Omega, and every Omega they use costs them a 2.
+A selected card becomes ω. The rule is revised and waits on a9's yes. It used to require a 2, but a Spectral pack's
+hand often holds none: 8 cards contain a 2 only about 52% of the time.
+- **The ω³ = 2 nod stays in the text:** ω is the smallest cube root of 2 in nim arithmetic, and no finite rank is one
+  (the nim-cubes of 1–15 are only 1, 8, 10, K and A).
+- **Optional bonus:** a 2 could also bring ω's siblings ω·2 and ω·3, the other two cube roots. Since infinities don't
+  eat each other, that's three eaters from one card, which is probably too strong.
 
 ## 4. Jokers — Decided
 
@@ -154,11 +175,21 @@ unusable Omega, and every Omega they use costs them a 2.
   - **The numbers need tuning:** as raw +mult it averages about +8 per card, which is far too much.
 - **Grundy** (uncommon): gains +mult equal to each scored hand's mex, the smallest rank counting from 0 that is
   missing from the scoring cards. It does nothing until you've made a 0, and a 0-1-2-3-4 straight adds 5.
+- **Hotstrat** (common): retrigger the hottest scored card twice, like Hanging Chad. It does nothing in a deck with no
+  hot cards, the way suit jokers do nothing without their suit.
+- **Thermograph** (rare): hot cards score their mean, with no bite, and add their temperature as +mult.
+- **Sprouts** (rare): if the first hand of a round is exactly two cards, add their Cut to the deck; the parents stay.
+  Conway and Paterson's Sprouts adds a new spot on every line drawn. The shape is like DNA's.
+- **Cantor** (uncommon): when a Blind is selected, add a card whose rank and suit pair isn't in your deck (the
+  diagonal argument). When every pair is present, it adds a born rank.
+- **Cantor's Paradise** (uncommon): gains ×0.1 mult each time an ω card eats a card; Canio for the eating engine. The
+  name is from Hilbert: "No one shall expel us from the paradise that Cantor has created."
 
-## 5. Boss Blinds — Decided
+## 5. Blinds and decks — Decided
 
-- **The Heap:** a hand whose scoring cards nim-sum to 0 scores nothing. Because a ⊕ a = 0, Pairs, Two Pairs and Four
-  of a Kinds never score under it.
+- **The Heap** (Boss): a hand whose scoring cards nim-sum to 0 scores nothing. Because a ⊕ a = 0, Pairs, Two Pairs
+  and Four of a Kinds never score under it.
+- **Field Deck:** 64 cards, ranks 0 through Knight (the field F₁₆) in every suit.
 
 ## 6. Left out
 
@@ -169,42 +200,26 @@ unusable Omega, and every Omega they use costs them a 2.
 - **A joker that pays the nim-product:** exact, but too hard for players to plan around.
 - **An UnStable dependency:** the mod is standalone. If UnStable is installed, its decimal ranks could be read as
   numbers (not yet discussed).
+- **Split**, the inverse of Cut: too situational. Its uses were undoing a Cut, destroying a 0 and lowering a rank by
+  one, and none of them comes up often.
+- **Sente:** only useful in a very hot deck.
+- **Dedekind** (mass Cut of the whole hand): too close to Immolate. Its positional reading of {L|R} moved to Conway
+  (§ 7).
+- **Conway** as "gains ×0.5 mult per Move used": not legendary, and too close to Constellation.
 
-## 7. Candidates — Moves
+## 7. Candidates — Jokers
 
-- **Split**, the inverse of Cut: a card splits into its Left and Right options.
-  - 3½ becomes a 3 and a 4.
-  - {A|2} becomes the Ace and the 2 again, undoing a wild.
-  - An integer n has one option, so it becomes n − 1.
-  - A 0 has no options and vanishes, so Split doubles as a destroy.
-  - ω can't be split, because it has no largest option.
-  - The Left child keeps the modifiers. Otherwise Cut followed by Split would duplicate editions.
-- **Repaint:** Hackenbush's negation paints every blue edge red. Up to three cards swap colour (♠↔♥, ♣↔♦); a flush
-  fixer with a game-theory reason.
-- **Star:** adds * to up to two cards. For hands nothing changes (n* plays as n), but nim-wise n* is the heap n ⊕ 1,
-  so Star is Bouton's tuning knob.
-- **Mex:** the leftmost selected card becomes the mex of the other selected cards. On its own, a card becomes a 0;
-  beside a 0 it becomes a 1, beside a 0 and a 1 a 2. A rank-setter that feeds Grundy.
-- **Dedekind** (Spectral): Cuts your whole hand from the outside in (1st with 8th, 2nd with 7th, …), turning eight
-  cards into four. Arrange the hand first. It gives mass deck-thinning and wilds, and it needs a Spectral-sized cost.
+a9 thought most of these were great. They wait on tuning and a final call.
 
-## 8. Candidates — Jokers
+**Hot games.**
 
-**Hot games.** These are about the Blind's bite.
-
-- **Hotstrat** (common): retrigger the hottest scored card.
-- **Sente** (uncommon): the Blind skips its first reply, so you take the top value of the two hottest cards. Sente is
-  Go's word for keeping the initiative.
 - **Coupons** (uncommon, economy): Berlekamp priced temperature with coupon stacks. Earn $1 per point of temperature
   on each hot card the Blind takes.
-- **Thermograph** (rare): hot cards score their mean, with no bite, and add their temperature as +mult.
 
 **Numbers and surreals.**
 
 - **Birthday** (uncommon): pays for complicated values, e.g. +mult per day a scored card was born after its integer
-  part (3 is born on day 3, 3½ on day 4, 3¼ on day 5).
-- **Sprouts** (rare): if the first hand of a round is exactly two cards, add their Cut to the deck; the parents stay.
-  Conway and Paterson's Sprouts adds a new spot on every line drawn. The shape is like DNA's.
+  part (3 is born on day 3, 3½ on day 4, 3¼ on day 5). Needs a number.
 - **Magic Square** (uncommon): ×3 mult if three scored ranks from A to 9 (Ace as 1) sum to 15. Pick Fifteen is
   tic-tac-toe in disguise, played on the 3×3 magic square.
 - **Wythoff** (uncommon): ×2 mult if the hand contains a Wythoff pair: 1·2, 3·5, 4·7, 6·10, 8·K or 9·Kn. These are the
@@ -214,16 +229,12 @@ unusable Omega, and every Omega they use costs them a 2.
 
 - **Nothing** (uncommon): each 0 held in hand gives ×1.5 mult; Baron for the game with no moves.
 - **Moore** (rare, for experts): ×mult if, in every binary place, the played ranks' bits sum to a multiple of 3.
-  These are the losing positions of Moore's Nim₂, Bouton's big brother.
+  These are the losing positions of Moore's Nim₂, Bouton's big brother. It's opaque, so cut it if the roster is full.
 
 **Transfinite.**
 
-- **Cantor** (uncommon): when a Blind is selected, add a card whose rank and suit pair isn't in your deck (the
-  diagonal argument). When every pair is present, it adds a born rank.
 - **Hilbert's Hotel** (rare): takes no Joker slot, because there's always room for one more, and gives +1 Joker slot.
-  Probably needs a cost.
-- **Cantor's Paradise** (uncommon): gains ×0.1 mult each time an ω card eats a card; Canio for the eating engine. The
-  name is from Hilbert: "No one shall expel us from the paradise that Cantor has created."
+  That makes it worth two slots, so it needs a cost. Ectoplasm's −1 hand size is one option.
 
 **Rows.** The hand is ordered.
 
@@ -235,19 +246,29 @@ unusable Omega, and every Omega they use costs them a 2.
 
 **Legendaries: the authors.**
 
-- **Conway:** gains ×0.5 mult per Move used.
+- **Conway** (reworked): each played card can also act as {its left neighbour | its right neighbour}. This is the
+  positional Cut card from the first sketch, applied to every card, and only while it's played: no values change.
+  - [4, x, 6] lets x play as 5; [K, x, K] lets it play as K; [A, x, 2] lets it play as any rank.
+  - Rising neighbours that are adjacent, like [Q, x, K], give 12½ and no rank. Bigger cards go on the left.
+  - It turns three Kings and two junk cards into Five of a Kind ([K, x, K, y, K]), so it's probably the strongest
+    card in the mod. That suits a legendary, but it needs watching.
 - **Berlekamp:** each scored hot card gives ×1.5 mult. He wrote the book on thermography (and on Dots and Boxes).
 - **Guy:** the Strong Law of Small Numbers. Each scored card of rank 5 or lower, 0 and 1 included, gives ×1.5 mult: a
   Triboulet for small numbers.
 
-## 9. Candidates — Blinds, decks, and later
+## 8. Candidates — Blinds and decks
 
 - **Zugzwang** (Boss): the Blind moves first, so you score the Right stop. It only hurts hot cards, the way The Plant
   only hurts face cards.
 - **The Misère** (Boss): the last mover loses, so your final hand of the round scores nothing.
-- **Field Deck:** 64 cards, ranks 0 through Knight (the field F₁₆) in every suit.
 - **Ordinal Deck:** starts with an ω card and a Cut.
 - **Later:** vouchers, tags, challenges, and the Moves' Game Pack art.
+
+## 9. Open questions
+
+- Omega's revised rule (§ 3), and whether a 2 brings ω's siblings.
+- Fuzz or Nimbus.
+- Conway's strength.
 
 ## 10. Facts this rests on
 
@@ -275,7 +296,7 @@ Checked with ogdoad's Python bindings unless marked standard.
   - Wythoff's losing positions are (⌊nφ⌋, ⌊nφ²⌋).
   - Moore's Nim_k loses exactly when every binary place sums to 0 mod k + 1.
 
-## 11. Engine (for when building starts)
+## 11. Engine
 
 - **Values:**
   - Dyadics are stored as numerator / 2^k, which LuaJIT's doubles represent exactly up to 2^53.
