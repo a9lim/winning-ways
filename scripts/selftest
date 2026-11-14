@@ -1,0 +1,21 @@
+#!/bin/bash
+# Boot Balatro with the in-game self-test (tests/ingame.lua) and print its results.
+# Needs Steam running and Winning Ways installed in the Mods folder (balala, or a symlink
+# for a dev checkout). The game opens, runs the checks at the main menu and quits.
+set -uo pipefail
+
+out="${1:-${TMPDIR:-/tmp}/winning-ways-selftest.txt}"
+rm -f "$out"
+
+for _ in $(seq 120); do pgrep -x steam_osx >/dev/null && break; /bin/sleep 1; done
+pgrep -x steam_osx >/dev/null || { echo "Steam isn't running." >&2; exit 2; }
+
+WINNINGWAYS_SELFTEST="$out" balala >/dev/null
+for _ in $(seq 180); do [[ -s "$out" ]] && break; /bin/sleep 1; done
+if [[ ! -s "$out" ]]; then
+  echo "No results after 3 minutes; the game's log:" >&2
+  balala logs -n 60 >&2
+  exit 2
+fi
+cat "$out"
+grep -q "0 failed$" "$out"

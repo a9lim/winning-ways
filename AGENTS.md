@@ -41,13 +41,14 @@ format.
 - After changing the engine, the ogdoad fixtures must still pass. Regenerate them with
   `~/.venv/bin/python -I tools/fixtures.py` (about 2.5 minutes, deterministic) only when the fixture script itself
   changes.
-- For in-game checks, follow Quintessence's pattern (`~/Work/quintessence/AGENTS.md`): env-var hooks that run checks
-  or take a screenshot and quit. The game needs Steam running.
+- `scripts/selftest` boots the game with `tests/ingame.lua`, checks at the main menu that the engine loaded and
+  works on the game's own LuaJIT, and quits. It needs Steam running (`open -g -a Steam`) and the mod in `Mods/`.
+  Grow it as content arrives, following Quintessence's self-test (`~/Work/quintessence/tests/ingame.lua`).
 
 ## Dev setup
 
-Once there's code, symlink this repo into `~/Library/Application Support/Balatro/Mods/WinningWays`. balala leaves
-symlinked checkouts alone. `balala` launches the game, and `balala logs -f` follows its log.
+`~/Library/Application Support/Balatro/Mods/WinningWays` is a symlink to this repo; balala leaves symlinked checkouts
+alone. `balala` launches the game, and `balala logs -f` follows its log.
 
 ## Release
 
