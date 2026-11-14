@@ -24,13 +24,19 @@ holds a plan and a test harness, and nothing else. `DESIGN.md` is the source of 
 | `src/engine/game.lua` | short games over those numbers: canonical form, order, sums, stops, thermographs, heat, cool |
 | `src/engine/nim.lua` | nim arithmetic on the ranks 0–15 (F₁₆) |
 | `src/engine/play.lua` | how a hand of values scores, and the ranks a value plays as |
+| `src/engine/hands.lua` | which rank each card plays as: the candidate assignments for a hand |
+| `src/ranks.lua` | the born ranks 0, 1 and Knight |
+| `src/cards.lua` | values on cards, hand reading (evaluate, get_id, get_X_same, the straight part), chips |
+| `art/placeholder_ranks.py` | placeholder fronts for the born ranks (`assets/*/ranks.png`) |
 | `tools/fixtures.py` | regenerates `tests/fixtures/ogdoad.lua` from ogdoad |
-| `tests/` | unit tests on LuaJIT (`known_test.lua`, `ogdoad_test.lua`); an in-game self-test later |
+| `tests/` | unit tests on LuaJIT (`known_test.lua`, `ogdoad_test.lua`, `hands_test.lua`); `ingame.lua` |
 | `DESIGN.md` | the rules; § 11 is the engine |
 
-Engine modules are pure Lua with no game state. Each one takes the shared engine table as its chunk argument
+Engine modules (`src/engine/`) are pure Lua with no game state; `src/cards.lua` is where they meet the game.
+Inside it, `Gm` is the engine's game module: never name it `G`, which is Balatro's global.
+Engine modules Each one takes the shared engine table as its chunk argument
 (`loadfile(path)(E)` in tests, `SMODS.load_file(path)(E)` in the game), and they load in the order num, game, nim,
-play. Values print and parse in one ASCII notation (`3`, `-7/2`, `w/2-1`, `{9|5}`), which doubles as the save
+play, hands. Values print and parse in one ASCII notation (`3`, `-7/2`, `w/2-1`, `{9|5}`), which doubles as the save
 format.
 
 ## Verify

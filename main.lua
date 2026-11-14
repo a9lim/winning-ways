@@ -1,10 +1,13 @@
--- Winning Ways. The value engine lives in src/engine/; no cards use it yet (DESIGN.md is the plan).
+-- Winning Ways: Conway's numbers and games as card values. DESIGN.md is the plan; AGENTS.md the map.
 WinningWays = SMODS.current_mod
 
+local function load(path, ...) return assert(SMODS.load_file(path))(...) end
+
 local E = {}
-for _, name in ipairs({ "num", "game", "nim", "play" }) do
-  assert(SMODS.load_file("src/engine/" .. name .. ".lua"))(E)
-end
+for _, name in ipairs({ "num", "game", "nim", "play", "hands" }) do load("src/engine/" .. name .. ".lua", E) end
 WinningWays.engine = E
 
-if os.getenv("WINNINGWAYS_SELFTEST") then assert(SMODS.load_file("tests/ingame.lua"))() end
+load("src/ranks.lua")
+load("src/cards.lua")
+
+if os.getenv("WINNINGWAYS_SELFTEST") then load("tests/ingame.lua") end

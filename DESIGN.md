@@ -66,7 +66,24 @@ A card **acts as any rank its value equals or is confused with**. For example:
   value of the next-hottest, and so on, alternating. This is exact for sums of switches. For general games the
   engine searches the (small) sum exactly.
 - A hand of plain numbers scores exactly as in vanilla.
-- **Infinite parts never become chips.** A card scores its value's finite part: ω scores 0 and ω + 13 scores 13.
+- **Chips for the number a card ends on:**
+  - **A rank from 0 to Knight** scores that rank's own chips. J, Q and K still score 10 and the Ace 11, so taking 14
+    from a wild scores an Ace's 11.
+  - **Any other number** scores its finite part: 3½ scores 3.5.
+  - **Infinite parts never become chips:** ω scores 0, and ω + 13 scores 13.
+
+### 2.3½ Values on cards
+
+- A card stores its value as its canonical notation (`card.ability.ww_value`, such as `{w|2}`). Cards without one
+  are worth their rank.
+- **Host rank.** A valued card sits on a host rank: the rank nearest its mean among the ranks it plays as, or the
+  top rank when the mean is infinite. The host is what the card reports whenever no hand is assigning it a rank.
+  - The wild {ω|2} sits on the Knight.
+  - A value with no rank (3½, ω) counts as having no rank, like a Stone card, except that equal values still pair.
+- **Other effects.** Rank changes from outside the mod, such as Strength, turn a valued card back into a plain card
+  of the new rank. Copies (Death, Cryptid) keep the value.
+- **Straights.** An Ace leads into the Knight anywhere in a straight (J-Q-K-A-Kn, K-A-Kn with Four Fingers). The Ace
+  still plays low only at the start (A-2-3-4-5), and still can't wrap (K-A-2 isn't a straight).
 
 ### 2.4 Transfinites
 
@@ -135,13 +152,12 @@ The set's Fool: it copies the last Move used. The Tweedledum-and-Tweedledee stra
 Hackenbush's negation paints every blue edge red. Up to three cards swap colour (♠↔♥, ♣↔♦): a flush fixer with a
 game-theory reason.
 
-### Fuzz
+### Nimbus
 
-Adds * to up to two cards. *Fuzz* is a working name: "Star" is taken by the vanilla Tarot, and n* is fuzzy with n.
-"Nimbus" (a nimber halo) is another option.
+Adds * to up to two cards: a nimber halo. The vanilla Tarot already has the name "Star".
 - For hands nothing changes: n* plays as n.
-- In nim arithmetic, n* is the heap n ⊕ 1, so Fuzz is Bouton's tuning knob.
-- Fuzzy cards also cancel in pairs under Sum: 5* + 5* = 10.
+- In nim arithmetic n* is the heap n ⊕ 1, so Nimbus is Bouton's tuning knob.
+- Haloed cards cancel in pairs under Sum: 5* + 5* = 10.
 
 ### Mex
 
@@ -266,7 +282,7 @@ a9 thought most of these were great. They wait on tuning and a final call.
 
 ## 9. Open questions
 
-- Fuzz or Nimbus.
+- None right now.
 
 ## 10. Facts this rests on
 
@@ -337,8 +353,25 @@ Built and tested (`src/engine/`, `tests/`); nothing in the game uses it yet.
   ogdoad has no simplest-number oracle for transfinite numbers, so `tests/known_test.lua` checks those itself: each
   result lies between its bounds, and none of its prefixes does. ogdoad is AGPL and stays a development tool;
   nothing from it ships.
+- **Rank assignment** (`hands.lua`) proposes the assignments worth trying for a hand, one per rank pattern:
+  - every rank that flexible cards can join, which covers Five, Four and Three of a Kind and Pairs;
+  - the highest two ranks that can make a Full House, and the highest that can make Two Pair;
+  - every straight window a matching can fill;
+  - a default.
+
+  Tie groups of equal rankless values pair only with each other.
+- **In the game** (`src/cards.lua`, `src/ranks.lua`):
+  - **Ranks:** the born ranks are registered, with placeholder fronts made by `art/placeholder_ranks.py`.
+  - **Reading a hand:** `evaluate_poker_hand` runs the game's own evaluator once per candidate assignment, so other
+    mods' hands count too, and keeps the best hand by the hand list's order, then the most scoring cards.
+  - **Hooks:** while a hand is assigned, `get_id`, `get_nominal` and `is_face` report the rank a card plays as.
+    `get_X_same` handles tie groups. The mod owns the straight part, written from scratch for the Ace-to-Knight
+    rule.
+  - **Scoring:** `SMODS.calculate_main_scoring` resolves the scoring cards' values, and `get_chip_bonus` pays each
+    card the chips for the number it ends on.
+  - **Speed:** reading a hand with two wilds and a hot card takes about 3 ms in the game.
+- **Not yet exercised end to end:** the scoring hook has only been checked by setting each card's final number by
+  hand, because nothing can make a valued card in a real run until the Moves exist.
 - **Still to build:**
-  - **Storage:** a card stores its value as its canonical string.
-  - **Hand evaluation:** each card's ranks feed a matching, and values with no rank pair by equality.
   - **Card faces:** procedural text on a blank front ("3½", "5*", "7±2", "ω"), with the exact {L|R} in the
     tooltip. This is the riskiest piece, so prototype it first.

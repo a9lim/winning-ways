@@ -3,7 +3,7 @@
 --
 -- Each file returns a function that takes `test(name, body)`; `body` gets `eq`.
 
-local files = { "tests/known_test.lua", "tests/ogdoad_test.lua" }
+local files = { "tests/known_test.lua", "tests/ogdoad_test.lua", "tests/hands_test.lua" }
 
 local passed, failed, checks = 0, 0, 0
 for _, file in ipairs(files) do
