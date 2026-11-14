@@ -1,8 +1,10 @@
 -- Surreal numbers of the form k·ω + x, where k and x are dyadic rationals.
 --
 -- This is every number the mod can build: the finite dyadics, ω with its multiples and halves, and finite
--- shifts of those. Lua numbers are IEEE doubles, which are exactly the dyadics that fit in 53 bits, so
--- k and x are stored as plain numbers; operations check that they stay exact.
+-- shifts of those. k and x are stored as plain Lua doubles, restricted to a grid that makes every
+-- operation exact: multiples of 2^-32 below 2^20 in magnitude. That needs 52 bits, inside a double's 53, so
+-- sums and differences of grid values are exact. Anything finer or larger (a 33rd nested Cut between
+-- neighbours, say) is rejected when it is made, never rounded.
 --
 -- Order is lexicographic, k first. Sign expansions are run lists {s = ±1, m = .., n = ..}, where a run's
 -- length is the ordinal ω·m + n. A number's expansion is k's signs, each repeated ω times, followed by x's
@@ -19,9 +21,13 @@ local floor, abs = math.floor, math.abs
 local Num = {}
 Num.__index = Num
 
+local GRAIN, LIMIT = 2 ^ 32, 2 ^ 20
+M.GRAIN, M.LIMIT = GRAIN, LIMIT
+
 local function exact(v)
-  assert(v == v and v ~= math.huge and v ~= -math.huge, "number left the dyadics")
-  assert(abs(v) < 2 ^ 52, "number out of exact range")
+  assert(type(v) == "number" and v == v, "not a number")
+  assert(abs(v) < LIMIT, "number out of the engine's range (|x| < 2^20)")
+  assert(floor(v * GRAIN) == v * GRAIN, "number finer than the engine's grain (2^-32)")
   return v
 end
 
@@ -230,15 +236,19 @@ end
 --- simplest_between(x, nil) is {x|} and simplest_between(nil, nil) is 0.
 function M.simplest_between(a, b)
   if a == nil and b == nil then return M.zero end
-  if a == nil then return M.from_signs(shortest_below(M.signs(b))) end
-  if b == nil then return M.from_signs(shortest_above(M.signs(a))) end
-  assert(M.lt(a, b), "simplest_between needs a < b")
-  local P, ra, rb = lcp(M.signs(a), M.signs(b))
-  if #ra > 0 and #rb > 0 then return M.from_signs(P) end
-  if #ra == 0 then
-    return M.from_signs(concat(P, { { s = 1, m = 0, n = 1 } }, shortest_below(drop_one(rb))))
+  local r
+  if a == nil then r = M.from_signs(shortest_below(M.signs(b)))
+  elseif b == nil then r = M.from_signs(shortest_above(M.signs(a)))
+  else
+    assert(M.lt(a, b), "simplest_between needs a < b")
+    local P, ra, rb = lcp(M.signs(a), M.signs(b))
+    if #ra > 0 and #rb > 0 then r = M.from_signs(P)
+    elseif #ra == 0 then r = M.from_signs(concat(P, { { s = 1, m = 0, n = 1 } }, shortest_below(drop_one(rb))))
+    else r = M.from_signs(concat(P, { { s = -1, m = 0, n = 1 } }, shortest_above(drop_one(ra)))) end
   end
-  return M.from_signs(concat(P, { { s = -1, m = 0, n = 1 } }, shortest_above(drop_one(ra))))
+  -- The grid check in new() already refuses a result too fine to store; this guards the cut itself.
+  assert((a == nil or M.lt(a, r)) and (b == nil or M.lt(r, b)), "simplest_between left its interval")
+  return r
 end
 
 --- A number's canonical options: its longest prefix followed by + (Left) and by − (Right). Each is a
@@ -289,20 +299,36 @@ function M.encode(a)
   return s
 end
 
--- "p" or "p/q" with an optional sign.
+local function power_of_two(q)
+  if q < 1 then return false end
+  while q > 1 do
+    if q % 2 ~= 0 then return false end
+    q = q / 2
+  end
+  return true
+end
+
+-- "p" or "p/q" with an optional sign; q must be a power of two, so "1/3" is rejected, not approximated.
 local function parse_dyadic(s)
   s = s:gsub("^%+", "")
   local p, q = s:match("^(-?%d+)/(%d+)$")
-  if p then return tonumber(p) / tonumber(q) end
-  local v = tonumber(s)
-  return assert(v, "bad number: " .. s) and v
+  if p then
+    q = tonumber(q)
+    assert(power_of_two(q), "not a dyadic: " .. s)
+    return tonumber(p) / q
+  end
+  assert(s:match("^-?%d+$"), "bad number: " .. s)
+  return tonumber(s)
 end
 
 function M.parse(s)
   local coef, den, rest = s:match("^([+-]?%d*)w/?(%d*)(.*)$")
   if not coef then return new(parse_dyadic(s)) end
   local k = (coef == "" or coef == "+") and 1 or (coef == "-" and -1 or tonumber(coef))
-  if den ~= "" then k = k / tonumber(den) end
+  if den ~= "" then
+    assert(power_of_two(tonumber(den)), "not a dyadic coefficient: " .. s)
+    k = k / tonumber(den)
+  end
   local x = rest == "" and 0 or parse_dyadic(rest)
   return new(x, k)
 end

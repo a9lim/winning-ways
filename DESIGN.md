@@ -150,12 +150,12 @@ becomes a 1; beside a 0 and a 1 it becomes a 2. It's the easy way to make born r
 
 ### Omega (Spectral)
 
-A selected card becomes ω. The rule is revised and waits on a9's yes. It used to require a 2, but a Spectral pack's
-hand often holds none: 8 cards contain a 2 only about 52% of the time.
+A selected card becomes ω. An earlier version required a 2, but a Spectral pack's hand often holds none: 8 cards
+contain a 2 only about 52% of the time.
 - **The ω³ = 2 nod stays in the text:** ω is the smallest cube root of 2 in nim arithmetic, and no finite rank is one
   (the nim-cubes of 1–15 are only 1, 8, 10, K and A).
-- **Optional bonus:** a 2 could also bring ω's siblings ω·2 and ω·3, the other two cube roots. Since infinities don't
-  eat each other, that's three eaters from one card, which is probably too strong.
+- **No bonus for using a 2.** Making ω's siblings ω·2 and ω·3, the other two cube roots, as well would give three
+  eaters from one card, since infinities don't eat each other. That's too strong.
 
 ## 4. Jokers — Decided
 
@@ -175,8 +175,8 @@ hand often holds none: 8 cards contain a 2 only about 52% of the time.
   - **The numbers need tuning:** as raw +mult it averages about +8 per card, which is far too much.
 - **Grundy** (uncommon): gains +mult equal to each scored hand's mex, the smallest rank counting from 0 that is
   missing from the scoring cards. It does nothing until you've made a 0, and a 0-1-2-3-4 straight adds 5.
-- **Hotstrat** (common): retrigger the hottest scored card twice, like Hanging Chad. It does nothing in a deck with no
-  hot cards, the way suit jokers do nothing without their suit.
+- **Hotstrat** (common): retrigger every scored hot card once, the way Hack retriggers 2–5 and Sock and Buskin
+  retriggers face cards. It does nothing in a deck with no hot cards.
 - **Thermograph** (rare): hot cards score their mean, with no bite, and add their temperature as +mult.
 - **Sprouts** (rare): if the first hand of a round is exactly two cards, add their Cut to the deck; the parents stay.
   Conway and Paterson's Sprouts adds a new spot on every line drawn. The shape is like DNA's.
@@ -184,6 +184,12 @@ hand often holds none: 8 cards contain a 2 only about 52% of the time.
   diagonal argument). When every pair is present, it adds a born rank.
 - **Cantor's Paradise** (uncommon): gains ×0.1 mult each time an ω card eats a card; Canio for the eating engine. The
   name is from Hilbert: "No one shall expel us from the paradise that Cantor has created."
+- **Conway** (legendary): each played card can also act as {its left neighbour | its right neighbour}. This is the
+  positional Cut card from the first sketch, applied to every card, and only while it's played: no values change.
+  - [4, x, 6] lets x play as 5; [K, x, K] lets it play as K; [A, x, 2] lets it play as any rank.
+  - Rising neighbours that are adjacent, like [Q, x, K], give 12½ and no rank. Bigger cards go on the left.
+  - It turns three Kings and two junk cards into Five of a Kind ([K, x, K, y, K]), so it's probably the strongest
+    card in the mod. That suits a legendary, but it needs watching in play.
 
 ## 5. Blinds and decks — Decided
 
@@ -244,14 +250,8 @@ a9 thought most of these were great. They wait on tuning and a final call.
 - **Glider** (rare): copies the Joker to its right, like Blueprint, but moves one slot right after every round,
   wrapping around. It's the glider from Conway's Life, which the last chapter of Winning Ways covers.
 
-**Legendaries: the authors.**
+**Legendaries: the authors.** Conway is decided (§ 4).
 
-- **Conway** (reworked): each played card can also act as {its left neighbour | its right neighbour}. This is the
-  positional Cut card from the first sketch, applied to every card, and only while it's played: no values change.
-  - [4, x, 6] lets x play as 5; [K, x, K] lets it play as K; [A, x, 2] lets it play as any rank.
-  - Rising neighbours that are adjacent, like [Q, x, K], give 12½ and no rank. Bigger cards go on the left.
-  - It turns three Kings and two junk cards into Five of a Kind ([K, x, K, y, K]), so it's probably the strongest
-    card in the mod. That suits a legendary, but it needs watching.
 - **Berlekamp:** each scored hot card gives ×1.5 mult. He wrote the book on thermography (and on Dots and Boxes).
 - **Guy:** the Strong Law of Small Numbers. Each scored card of rank 5 or lower, 0 and 1 included, gives ×1.5 mult: a
   Triboulet for small numbers.
@@ -266,9 +266,7 @@ a9 thought most of these were great. They wait on tuning and a final call.
 
 ## 9. Open questions
 
-- Omega's revised rule (§ 3), and whether a 2 brings ω's siblings.
 - Fuzz or Nimbus.
-- Conway's strength.
 
 ## 10. Facts this rests on
 
@@ -300,8 +298,10 @@ Checked with ogdoad's Python bindings unless marked standard.
 
 Built and tested (`src/engine/`, `tests/`); nothing in the game uses it yet.
 
-- **Numbers** (`num.lua`) have the form k·ω + x, with k and x dyadic. Lua's doubles hold dyadics exactly up to 2^53,
-  and every operation checks that it stayed exact.
+- **Numbers** (`num.lua`) have the form k·ω + x, with k and x dyadic, stored as doubles on a grid: multiples of
+  2^-32 below 2^20 in magnitude. That takes 52 of a double's 53 bits, so sums are exact. A value off the grid, such
+  as a 33rd nested Cut between neighbours, is refused when it's made rather than rounded. Notation that isn't
+  dyadic, like "1/3", is refused too.
   - Order is lexicographic.
   - A number's sign expansion is k's signs, each repeated ω times, followed by x's signs (Gonshor). The simplest
     number between two numbers is computed on these expansions, so {14|ω} = 15 and {ω/2|ω} = ω − 1 come out of the

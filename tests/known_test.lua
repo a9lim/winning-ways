@@ -123,6 +123,20 @@ return function(test)
     eq(opts(n(0, 1 / 2)), "inf inf", "ω/2")
   end)
 
+  test("the grid: exact or refused, never rounded", function(eq)
+    local function refuses(f, label) eq(pcall(f), false, label) end
+    refuses(function() return N.parse("1/3") end, "1/3 is not a dyadic")
+    refuses(function() return N.parse("w/3") end, "nor is w/3")
+    refuses(function() return N.parse("0.5") end, "decimals are not notation")
+    refuses(function() return N.new(2 ^ -33) end, "finer than the grain")
+    refuses(function() return N.new(2 ^ 20) end, "outside the range")
+    refuses(function() return N.half(N.new(2 ^ -32)) end, "halving the finest value")
+    refuses(function() return N.simplest_between(N.one, N.new(1 + 2 ^ -32)) end, "a cut that needs 33 bits")
+    eq(s(N.new(2 ^ -32)), "1/4294967296", "the finest value encodes")
+    eq(s(N.parse("-3w/4+5/8")), "-3w/4+5/8", "notation round-trips")
+    eq(s(N.simplest_between(N.one, N.new(1 + 2 ^ -31))), "4294967297/4294967296", "the finest cut that fits")
+  end)
+
   test("nim facts from the design", function(eq)
     local names = { [11] = "J", [12] = "Q", [13] = "K", [14] = "A", [15] = "Kn" }
     local function r(x) return names[x] or tostring(x) end
