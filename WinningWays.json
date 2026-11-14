@@ -1,0 +1,16 @@
+{
+  "id": "WinningWays",
+  "name": "Winning Ways",
+  "display_name": "Winning Ways",
+  "author": ["a9lim", "Claude"],
+  "description": "Conway's numbers and games as card ranks: Cut and Sum cards into surreal numbers, hot games, nimbers and ω.",
+  "prefix": "ww",
+  "main_file": "main.lua",
+  "priority": 0,
+  "badge_colour": "3a6ea5",
+  "badge_text_colour": "FFFFFF",
+  "version": "0.0.0",
+  "dependencies": [
+    "Steamodded (>=26.829.0)"
+  ]
+}

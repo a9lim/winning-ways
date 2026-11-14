@@ -1,0 +1,33 @@
+#!/bin/bash
+# Run the unit tests with LuaJIT, the Lua that Balatro runs on.
+#
+# Uses `luajit` from PATH when there is one (CI installs it). Otherwise it borrows the
+# LÖVE runtime from your Balatro install: an unfused copy, made once into a cache
+# folder, runs the tests headless on the game's own LuaJIT. Nothing gets installed.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+if command -v luajit >/dev/null 2>&1; then
+  exec luajit tests/main.lua
+fi
+
+app=""
+for candidate in \
+  "${BALATRO_APP:-}" \
+  "$HOME/Library/Application Support/Steam/steamapps/common/Balatro/Balatro.app"; do
+  if [[ -n "$candidate" && -x "$candidate/Contents/MacOS/love" ]]; then app="$candidate"; break; fi
+done
+if [[ -z "$app" ]]; then
+  echo "No luajit on PATH and no Balatro.app found (set BALATRO_APP)." >&2
+  exit 2
+fi
+
+runtime="${XDG_CACHE_HOME:-$HOME/.cache}/winning-ways/love.app"
+if [[ ! -x "$runtime/Contents/MacOS/love" || "$app/Contents/MacOS/love" -nt "$runtime/Contents/MacOS/love" ]]; then
+  # The game's own copy is fused with Balatro.love and would boot the game instead.
+  rm -rf "$runtime"
+  mkdir -p "$runtime/Contents/Resources"
+  cp -R "$app/Contents/Frameworks" "$app/Contents/MacOS" "$app/Contents/Info.plist" "$runtime/Contents/"
+  rm -f "$runtime/Contents/MacOS/steam_appid.txt"
+fi
+exec "$runtime/Contents/MacOS/love" tests
