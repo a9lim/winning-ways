@@ -11,7 +11,7 @@ every rule is a theorem or a definition from the literature, and ogdoad (a9's li
 ## 1. The idea
 
 Conway built every number and every game from one definition: a position {L | R}, given by the options Left and Right
-can move to. Balatro's ranks are already numbers (2–10, J = 11, Q = 12, K = 13, A = 14), so every card is already a
+can move to. Balatro's ranks are already numbers (2–10, J = 11, Q = 13, K = 14, A = 15), so every card is already a
 game. The mod adds ways to build new values out of old cards, plus a scoring rule that behaves exactly like vanilla
 until a non-number shows up.
 
@@ -28,15 +28,17 @@ Each family breaks one assumption the deck makes about ranks:
 
 - Every card has a **value**: a short game whose leaves are numbers. A number is either a finite dyadic or a
   transfinite ω·k + x.
-- Vanilla cards are the integers 2–14.
+- **Ranks are integers:** 2–10, J = 11, C = 12, Q = 13, K = 14, A = 15. The Ace is 1111 in binary, the top of F₁₆.
 - **Born ranks** are not in the starting deck; only Moves (and Generator) make them:
   - **0** = {|}, the game with no moves.
   - **1** = {0|}.
-  - **Knight** = {A|} = 15. It is a face card (tarot's fourth court card, which the French deck dropped), scores 15
-    chips, and sits above the Ace in straights (J-Q-K-A-Kn). The corner letter is open; "C" for *Cavalier* is one
-    option.
+  - **C, the Cavalier** = {J|Q} = 12, tarot's fourth court card, which the French deck dropped. It is a face card and
+    scores 10, like the other court cards.
 - With the born ranks, the deck's ranks 0–15 form the field F₁₆ under nim arithmetic.
-- Straights run through the born ranks, from 0-1-2-3-4 up to J-Q-K-A-Kn, and the Ace still plays low (A-2-3-4-5).
+- **Straights:** the Cavalier is optional. 10-J-Q-K-A and 10-J-C-Q-K are both straights, so no deck changes and
+  vanilla's straights are untouched. The born ranks extend straights downward (0-1-2-3-4). The Ace still tops a
+  straight or plays low at its start (A-2-3-4-5), and still can't wrap (K-A-2 isn't a straight). These are ordinary
+  next lists: the Jack is followed by the Queen or the Cavalier, so Steamodded's own straight finder handles them.
 
 ### 2.2 Loose confusion
 
@@ -48,7 +50,7 @@ A card **acts as any rank its value equals or is confused with**. For example:
 | 3½ | no rank (scores 3.5 chips) |
 | 5* | 5 |
 | 5±1 = {6 \| 4} | 4, 5 or 6 |
-| 8±6 = {A \| 2} | every rank from 2 to A |
+| 8±6 = {K \| 2} | every rank from 2 to K |
 | {ω \| 2} | every rank from 2 up: the **wild rank** |
 | ω | no rank |
 
@@ -67,39 +69,51 @@ A card **acts as any rank its value equals or is confused with**. For example:
   engine searches the (small) sum exactly.
 - A hand of plain numbers scores exactly as in vanilla.
 - **Chips for the number a card ends on:**
-  - **A rank from 0 to Knight** scores that rank's own chips. J, Q and K still score 10 and the Ace 11, so taking 14
-    from a wild scores an Ace's 11.
-  - **Any other number** scores its finite part: 3½ scores 3.5.
-  - **Infinite parts never become chips:** ω scores 0, and ω + 13 scores 13.
+  - **A finite part from 0 to 15** scores that rank's own chips. J, C, Q and K still score 10 and the Ace 11, so
+    taking 15 from a wild scores an Ace's 11.
+  - **Any other finite part** scores itself: 3½ scores 3.5.
+  - **Infinite parts never become chips:** ω scores 0, and ω + 14 scores a King's 10.
 
-### 2.3½ Values on cards
+### 2.3½ Values on cards: rank + modifier
 
-- A card stores its value as its canonical notation (`card.ability.ww_value`, such as `{w|2}`). Cards without one
-  are worth their rank.
-- **Host rank.** A valued card sits on a host rank: the rank nearest its mean among the ranks it plays as, or the
-  top rank when the mean is infinite. The host is what the card reports whenever no hand is assigning it a rank.
-  - The wild {ω|2} sits on the Knight.
-  - A value with no rank (3½, ω) counts as having no rank, like a Stone card, except that equal values still pair.
-- **Other effects.** Rank changes from outside the mod, such as Strength, turn a valued card back into a plain card
-  of the new rank. Copies (Death, Cryptid) keep the value.
-- **Straights.** An Ace leads into the Knight anywhere in a straight (J-Q-K-A-Kn, K-A-Kn with Four Fingers). The Ace
-  still plays low only at the start (A-2-3-4-5), and still can't wrap (K-A-2 isn't a straight).
+- **A card's value is its rank plus a modifier.** The modifier is any game, and it is stored as canonical notation
+  in `card.ability.ww_mod`:
+  - 3½ is a 3 with +½;
+  - 5* is a 5 with *;
+  - 7±2 is a 7 with ±2.
+
+  Cards without a modifier are worth their rank.
+- **Its own slot.** The modifier sits beside enhancement, edition and seal, so a card can be Glass *and* +½. It will
+  be drawn as a badge over the normal rank front.
+- **Rank changes keep it.** Strength, Ouija and Generator change the rank, the modifier stays, and the value shifts
+  with the rank: 7±2 on an 8 is 8±2. This is coherent because heating and cooling commute with adding a number:
+  ∫^t(G + x) = ∫^t G + x and (G + x)_t = G_t + x. Copies (Death, Cryptid) keep the modifier.
+- **Which rank a made value sits on.** When a Move makes a value V, the card sits on the rank nearest V's mean among
+  the ranks V plays as (the lower one on a tie), or on the nearest rank at all when V plays as none. Its modifier is
+  V minus that rank. So 3½ sits on the 3 with +½, and 7±2 on the 7 with ±2. The wild {ω|2} has an infinite mean, so
+  it sits on the Ace, with the modifier {ω−15 | −13}.
+- **Equal values play alike.** A 3 with +½ and a 4 with −½ are both 3½, so they pair.
+- **No rank.** A value that plays as no rank (3½, ω) counts as having no rank, like a Stone card, except that equal
+  values still pair.
+- **A dormant modifier.** On a card with no rank of its own (Stone) or another mod's rank, the modifier lies dormant
+  until the card has one of ours again.
 
 ### 2.4 Transfinites
 
-- **ω only enters from outside**, through the Omega Spectral. No chain of Moves on finite cards can reach it, because
-  every value they build is born on a finite day.
+- **ω only enters from outside**, through the Omega Spectral, which adds ω to a card's modifier. No chain of Moves on
+  finite cards can reach it, because every value they build is born on a finite day.
 - **An ω card:**
   - is above every rank, and pairs only with an equal value;
   - always scores, like a Stone card;
   - **eats** the finite cards between it and the nearest infinite card to its left (n + ω = ω). Eaten cards don't
     count toward the hand, and are destroyed;
-  - **grows like Ceremonial Dagger**: the eaten cards' chips become its permanent bonus chips. Its value stays
-    exactly ω; the bonus is stored the way Hiker's is.
+  - **grows like Ceremonial Dagger**: the eaten cards' chips become its permanent bonus chips. Its value doesn't
+    change; the bonus is stored the way Hiker's is.
+  - scores its rank's chips: a King with +ω is ω + 14, and scores a King's 10.
 - **Infinities don't eat each other.** [junk, ω, junk, ω] adds up to ω + ω = ω·2, so each ω eats its own junk and
   both survive.
 - **Two additions.** The played row uses ordinal addition, which depends on order. Sum uses Conway's sum, which
-  commutes. So ω·k only comes from Sum (ω + ω = ω·2), and Sum(K, ω) = ω + 13, which scores 13 chips.
+  commutes. So ω·k only comes from Sum (ω + ω = ω·2), and Sum(K, ω) = ω + 14.
 - **The wild rank {ω|2}** (made with Cut) has infinite temperature, so it is always the hottest card in a hand. You
   take ω (0 chips), and the Blind gets first pick of your other hot cards.
 
@@ -113,7 +127,9 @@ Moves are a new consumable type (working name), sold in Game Packs.
 - Both parents are used up and a new card is born: the old positions become the new card's options.
   - The new card takes both parents' enhancement, edition and seal.
   - When both parents have one of a kind, the left parent's wins, and so does its suit.
-- With no cards selected, Cut makes a new 0. With one card it makes {A|}, which rounds up: 7 → 8, 3½ → 4, A → Knight.
+- With no cards selected, Cut makes a new 0. With one card it makes {A|}, which rounds up: 7 → 8, 3½ → 4, K → A,
+  and A → 16, an Ace with +1, which plays as no rank.
+- Cut(J, Q) = {11|13} = 12 makes a Cavalier: it's the simplest number between the Jack and the Queen.
 
 | Cut on | value | plays as |
 | --- | --- | --- |
@@ -122,7 +138,8 @@ Moves are a new consumable type (working name), sold in Game Packs.
 | 3, 4 | 3½ | no rank |
 | 5, 5 | 5* | 5 |
 | 9, 5 | 7±2 | 5–9 |
-| A, 2 | 8±6 | 2–A |
+| J, Q | 12 | C |
+| A, 2 | 8½±6½ | 2–A |
 | ω, 2 | {ω \| 2} | every rank |
 
 ### Sum
@@ -131,7 +148,7 @@ A + B under Conway's sum, with the same inheritance as Cut:
 
 - 3 + 4 = 7.
 - 5±1 + 5±1 = 10, because ±1 is its own negative.
-- K + ω = ω + 13.
+- K + ω = ω + 14.
 
 ### Heat and Cool
 
@@ -141,7 +158,8 @@ A + B under Conway's sum, with the same inheritance as Cut:
 
 ### Frobenius
 
-Nim-squares a card's rank. The cycles are 2↔3, 4→6→5→7→4, 8→K→10→A→8 and 9→Q→J→Kn→9; 0 and 1 stay where they are.
+Nim-squares a card's rank, keeping its modifier. The cycles are 2↔3, 4→6→5→7→4, 8→Q→10→K→8 and the court cycle
+9→C→J→A→9; 0 and 1 stay where they are.
 
 ### Tweedledum
 
@@ -154,7 +172,7 @@ game-theory reason.
 
 ### Nimbus
 
-Adds * to up to two cards: a nimber halo. The vanilla Tarot already has the name "Star".
+Adds * to the modifiers of up to two cards: a nimber halo. The vanilla Tarot already has the name "Star".
 - For hands nothing changes: n* plays as n.
 - In nim arithmetic n* is the heap n ⊕ 1, so Nimbus is Bouton's tuning knob.
 - Haloed cards cancel in pairs under Sum: 5* + 5* = 10.
@@ -166,10 +184,11 @@ becomes a 1; beside a 0 and a 1 it becomes a 2. It's the easy way to make born r
 
 ### Omega (Spectral)
 
-A selected card becomes ω. An earlier version required a 2, but a Spectral pack's hand often holds none: 8 cards
-contain a 2 only about 52% of the time.
+Adds ω to a selected card's modifier. The card keeps its rank and its rank's chips, and starts eating (§ 2.4). An
+earlier version turned a 2 into ω, but a Spectral pack's hand often holds no 2: 8 cards contain one only about 52% of
+the time.
 - **The ω³ = 2 nod stays in the text:** ω is the smallest cube root of 2 in nim arithmetic, and no finite rank is one
-  (the nim-cubes of 1–15 are only 1, 8, 10, K and A).
+  (the nim-cubes of 1–15 are only 1, 8, 10, Q and K).
 - **No bonus for using a 2.** Making ω's siblings ω·2 and ω·3, the other two cube roots, as well would give three
   eaters from one card, since infinities don't eat each other. That's too strong.
 
@@ -177,17 +196,18 @@ contain a 2 only about 52% of the time.
 
 - **Bouton** (rare): ×3 mult if the played cards nim-sum to 0 and include at least three distinct ranks. Your
   kickers are your Nim move.
-  - Of 8-card hands, 99.4% can make some Bouton play, 75.5% can make one that contains a Pair, and 0.53% can make
+  - Of 8-card hands, 99.3% can make some Bouton play, 75.4% can make one that contains a Pair, and 0.60% can make
     one as a flush.
   - No straight ever nim-sums to 0.
   - The 0 card is invisible to nim-sums, so it is a free kicker. That also rescues Two Pair: a, a, b, b, 0 has three
     distinct ranks.
-- **Generator** (uncommon): after scoring, each scored card's rank is nim-multiplied by 15. That moves it one step
-  along 15's cycle: 15 → 9 → K → Q → 3 → 10 → 7 → J → 8 → 2 → 5 → A → 6 → 4 → 1 → 15.
-  - **Payout:** each card pays its place on the cycle, its discrete log: Knight 1, 9 is 2, …, 4 is 14, 1 is 15. A
+- **Generator** (uncommon): after scoring, each scored card's rank is nim-multiplied by the Ace, 15, which
+  generates F₁₆'s multiplicative group. That moves the card one step along the Ace's cycle, and its modifier stays:
+  A → 9 → Q → C → 3 → 10 → 7 → J → 8 → 2 → 5 → K → 6 → 4 → 1 → A.
+  - **Payout:** each card pays its place on the cycle, its discrete log: the Ace 1, 9 is 2, …, 4 is 14, 1 is 15. A
     card's payout rises by one each time it scores, then wraps.
   - **Effects on the deck:** it keeps pairs, flushes and nim-zero hands (nim-multiplication distributes over
-    nim-addition), scrambles straights, and turns 4s into 1s and 1s into Knights.
+    nim-addition), scrambles straights, mints Cavaliers from Queens, and turns 4s into 1s and 1s into Aces.
   - **The numbers need tuning:** as raw +mult it averages about +8 per card, which is far too much.
 - **Grundy** (uncommon): gains +mult equal to each scored hand's mex, the smallest rank counting from 0 that is
   missing from the scoring cards. It does nothing until you've made a 0, and a 0-1-2-3-4 straight adds 5.
@@ -203,7 +223,7 @@ contain a 2 only about 52% of the time.
 - **Conway** (legendary): each played card can also act as {its left neighbour | its right neighbour}. This is the
   positional Cut card from the first sketch, applied to every card, and only while it's played: no values change.
   - [4, x, 6] lets x play as 5; [K, x, K] lets it play as K; [A, x, 2] lets it play as any rank.
-  - Rising neighbours that are adjacent, like [Q, x, K], give 12½ and no rank. Bigger cards go on the left.
+  - Rising neighbours that are adjacent, like [Q, x, K], give 13½ and no rank. Bigger cards go on the left.
   - It turns three Kings and two junk cards into Five of a Kind ([K, x, K, y, K]), so it's probably the strongest
     card in the mod. That suits a legendary, but it needs watching in play.
 
@@ -211,7 +231,7 @@ contain a 2 only about 52% of the time.
 
 - **The Heap** (Boss): a hand whose scoring cards nim-sum to 0 scores nothing. Because a ⊕ a = 0, Pairs, Two Pairs
   and Four of a Kinds never score under it.
-- **Field Deck:** 64 cards, ranks 0 through Knight (the field F₁₆) in every suit.
+- **Field Deck:** 64 cards, ranks 0 through A with the Cavalier (the field F₁₆) in every suit.
 
 ## 6. Left out
 
@@ -244,7 +264,7 @@ a9 thought most of these were great. They wait on tuning and a final call.
   part (3 is born on day 3, 3½ on day 4, 3¼ on day 5). Needs a number.
 - **Magic Square** (uncommon): ×3 mult if three scored ranks from A to 9 (Ace as 1) sum to 15. Pick Fifteen is
   tic-tac-toe in disguise, played on the 3×3 magic square.
-- **Wythoff** (uncommon): ×2 mult if the hand contains a Wythoff pair: 1·2, 3·5, 4·7, 6·10, 8·K or 9·Kn. These are the
+- **Wythoff** (uncommon): ×2 mult if the hand contains a Wythoff pair: 1·2, 3·5, 4·7, 6·10, 8·Q or 9·A. These are the
   losing positions of Wythoff's game, ⌊nφ⌋ and ⌊nφ²⌋: golden-ratio cousins of vanilla's Fibonacci.
 
 **Nimbers.**
@@ -293,13 +313,16 @@ Checked with ogdoad's Python bindings unless marked standard.
 - **The hotstrat** matched the exact Left stop on 200 random sums of switches.
 - **Heat and Cool:** heating leaves 5 unchanged and turns {6|4} into {7|3}. Cooling {6|4} by 1 gives stops (5, 5).
 - **Nimbers:**
-  - Ranks 2–A contain 22 distinct-rank triples, 55 quadruples and 72 quintuples that nim-sum to 0.
-  - A random 5-card hand nim-sums to 0 6.2% of the time.
-  - An 8-card hand holds a zero-sum triple 91.5% of the time.
-  - No straight, including the ones through born ranks, nim-sums to 0.
+  - The standard deck's ranks (2–J and Q–A, which are 2–11 and 13–15) contain 22 distinct-rank triples, 55
+    quadruples and 72 quintuples that nim-sum to 0.
+  - A random 5-card hand nim-sums to 0 6.25% of the time.
+  - An 8-card hand holds a zero-sum triple 91.6% of the time.
+  - No straight nim-sums to 0, counting all 16 five-rank runs, including those through the Cavalier and the born
+    ranks.
   - Any 5 ranks contain a group that nim-sums to 0 (standard: linear dependence in F₂⁴).
-- **Squares** (nim-multiplication) permute ranks in the Frobenius cycles above. **15 generates F₁₆'s
+- **Squares** (nim-multiplication) permute ranks in the Frobenius cycles above. **15, the Ace, generates F₁₆'s
   multiplicative group**: its powers visit every nonzero rank once.
+- **Cut(J, Q) = {11|13} = 12**, the Cavalier.
 - **ω:**
   - ω³ = 2 in nim arithmetic, and the three cube roots of 2 are ω, ω·2 and ω·3. They nim-sum to 0 and nim-multiply
     to 2 (Vieta).
@@ -320,7 +343,7 @@ Built and tested (`src/engine/`, `tests/`); nothing in the game uses it yet.
   dyadic, like "1/3", is refused too.
   - Order is lexicographic.
   - A number's sign expansion is k's signs, each repeated ω times, followed by x's signs (Gonshor). The simplest
-    number between two numbers is computed on these expansions, so {14|ω} = 15 and {ω/2|ω} = ω − 1 come out of the
+    number between two numbers is computed on these expansions, so {15|ω} = 16 and {ω/2|ω} = ω − 1 come out of the
     same code as {3|4} = 3½.
   - Canonical options come from the expansions too. ω's Left options (0, 1, 2, …) are an infinite family with no
     best member.
@@ -365,13 +388,16 @@ Built and tested (`src/engine/`, `tests/`); nothing in the game uses it yet.
   - **Reading a hand:** `evaluate_poker_hand` runs the game's own evaluator once per candidate assignment, so other
     mods' hands count too, and keeps the best hand by the hand list's order, then the most scoring cards.
   - **Hooks:** while a hand is assigned, `get_id`, `get_nominal` and `is_face` report the rank a card plays as.
-    `get_X_same` handles tie groups. The mod owns the straight part, written from scratch for the Ace-to-Knight
-    rule.
+    `get_X_same` handles tie groups. Straights are Steamodded's own: the optional Cavalier is just another entry in
+    the Jack's next list.
+  - **Values:** a card's value is computed as rank + modifier and cached by both. `WW.set_value` puts a made value
+    on its rank, and `WW.add_mod` adds to a modifier (for Nimbus and Omega).
   - **Scoring:** `SMODS.calculate_main_scoring` resolves the scoring cards' values, and `get_chip_bonus` pays each
     card the chips for the number it ends on.
   - **Speed:** reading a hand with two wilds and a hot card takes about 3 ms in the game.
 - **Not yet exercised end to end:** the scoring hook has only been checked by setting each card's final number by
-  hand, because nothing can make a valued card in a real run until the Moves exist.
+  hand, because nothing in a real run can give a card a modifier until the Moves exist.
 - **Still to build:**
-  - **Card faces:** procedural text on a blank front ("3½", "5*", "7±2", "ω"), with the exact {L|R} in the
-    tooltip. This is the riskiest piece, so prototype it first.
+  - **Card faces:** with modifiers, a card shows its normal rank front plus a modifier badge (+½, *, ±2, ω), with
+    the exact value in the tooltip. That's far easier than procedural fronts, but it is still the next thing to
+    prototype.

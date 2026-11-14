@@ -29,11 +29,13 @@ return function(test)
     eq(offers(c, 4, 13), true, "wild as K")
   end)
 
-  test("straights: the wild fills the gap, and runs reach the Knight", function(eq)
+  test("straights: the wild fills the gap, with or without the Cavalier", function(eq)
     local c = H.candidates({ fixed(4), flex(WILD), fixed(6), fixed(7), fixed(8) })
     eq(offers(c, 2, 5), true, "4 _ 6 7 8")
-    c = H.candidates({ fixed(11), fixed(12), fixed(13), fixed(14), flex(WILD) })
-    eq(offers(c, 5, 15), true, "J Q K A _ -> Knight")
+    c = H.candidates({ fixed(10), fixed(11), flex(WILD), fixed(14), fixed(15) })
+    eq(offers(c, 3, 13), true, "10 J _ K A -> Queen")
+    c = H.candidates({ fixed(11), flex(WILD), fixed(13), fixed(14), fixed(15) })
+    eq(offers(c, 2, 12), true, "J _ Q K A -> Cavalier")
     c = H.candidates({ flex({ 0, 1 }), fixed(1), fixed(2), fixed(3), fixed(4) })
     eq(offers(c, 1, 0), true, "0-1-2-3-4")
   end)
@@ -41,18 +43,19 @@ return function(test)
   test("windows follow the Ace rules", function(eq)
     local has = {}
     for _, w in ipairs(H.straight_windows(5, false)) do has[table.concat(w, " ")] = true end
-    eq(has["14 2 3 4 5"], true, "A-2-3-4-5")
-    eq(has["11 12 13 14 15"], true, "J-Q-K-A-Kn")
+    eq(has["15 2 3 4 5"], true, "A-2-3-4-5")
+    eq(has["10 11 13 14 15"], true, "10-J-Q-K-A")
+    eq(has["11 12 13 14 15"], true, "J-C-Q-K-A")
+    eq(has["9 10 11 12 13"], true, "9-10-J-C-Q")
     eq(has["0 1 2 3 4"], true, "0-1-2-3-4")
-    eq(has["12 13 14 2 3"], nil, "no wrapping through the Ace")
-    eq(has["13 14 15 2 3"], nil, "nothing after the Knight")
+    eq(has["13 14 15 2 3"], nil, "no wrapping through the Ace")
     local skips = {}
     for _, w in ipairs(H.straight_windows(5, true)) do skips[table.concat(w, " ")] = true end
     eq(skips["2 4 6 8 10"], true, "Shortcut skips")
     local four = {}
     for _, w in ipairs(H.straight_windows(4, true)) do four[table.concat(w, " ")] = true end
-    eq(four["12 13 14 15"], true, "Q-K-A-Kn, the Ace in the middle leading to the Knight")
-    eq(four["11 12 13 15"], nil, "but a skip never jumps the Ace")
+    eq(four["11 13 14 15"], true, "J-Q-K-A")
+    eq(four["14 2 3 4"], nil, "a skip never jumps the Ace")
   end)
 
   test("full house and two pair use two ranks", function(eq)

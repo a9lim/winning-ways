@@ -1,4 +1,5 @@
--- The born ranks: 0 = {|}, 1 = {0|} and the Knight = {A|} = 15. None is in the starting deck; Moves make them.
+-- The born ranks: 0 = {|}, 1 = {0|}, and the Cavalier C = {J|Q} = 12, tarot's fourth court card, between the
+-- Jack and the Queen. None is in the starting deck; Moves make them, and the Field Deck starts with them.
 -- The fronts are placeholders (art/placeholder_ranks.py) until the card faces are drawn.
 
 SMODS.Atlas { key = "ranks", path = "ranks.png", px = 71, py = 95 }
@@ -31,18 +32,20 @@ SMODS.Rank {
   in_pool = never,
 }
 
--- Above the Ace in straights (J-Q-K-A-Kn). Steamodded's straights only let an Ace end one, so the mod owns
--- the straight part (src/cards.lua) to let the Ace lead into the Knight.
 SMODS.Rank {
-  key = "Knight",
-  card_key = "Kn",
-  shorthand = "Kn",
+  key = "C",
+  card_key = "C",
+  shorthand = "C",
   pos = { x = 2 },
   lc_atlas = "ww_ranks",
   hc_atlas = "ww_ranks",
-  nominal = 15,
-  face_nominal = 0.5,
+  nominal = 10,
+  face_nominal = 0.15, -- between the Jack (0.1) and the Queen (0.2)
   face = true,
-  next = {},
+  next = { "Queen" },
   in_pool = never,
 }
+
+-- The Cavalier is optional in straights: J-Q still follows, and so does J-C-Q. The Queen stays first in the
+-- Jack's list, so Strength still turns a Jack into a Queen.
+table.insert(SMODS.Ranks.Jack.next, "ww_C")

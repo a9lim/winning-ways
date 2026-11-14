@@ -25,8 +25,8 @@ holds a plan and a test harness, and nothing else. `DESIGN.md` is the source of 
 | `src/engine/nim.lua` | nim arithmetic on the ranks 0–15 (F₁₆) |
 | `src/engine/play.lua` | how a hand of values scores, and the ranks a value plays as |
 | `src/engine/hands.lua` | which rank each card plays as: the candidate assignments for a hand |
-| `src/ranks.lua` | the born ranks 0, 1 and Knight |
-| `src/cards.lua` | values on cards, hand reading (evaluate, get_id, get_X_same, the straight part), chips |
+| `src/ranks.lua` | the born ranks 0, 1 and the Cavalier (C, between J and Q) |
+| `src/cards.lua` | values on cards (rank + modifier), hand reading (evaluate, get_id, get_X_same), chips |
 | `art/placeholder_ranks.py` | placeholder fronts for the born ranks (`assets/*/ranks.png`) |
 | `tools/fixtures.py` | regenerates `tests/fixtures/ogdoad.lua` from ogdoad |
 | `tests/` | unit tests on LuaJIT (`known_test.lua`, `ogdoad_test.lua`, `hands_test.lua`); `ingame.lua` |

@@ -1,4 +1,4 @@
--- Nim arithmetic on the ranks 0–15, which form the field F₁₆ (Knight = 15, Ace = 14).
+-- Nim arithmetic on the ranks 0–15, which form the field F₁₆ (C = 12, Q = 13, K = 14, Ace = 15).
 --
 -- Nim-addition is XOR. Nim-multiplication follows Conway's rules: for distinct Fermat 2-powers (2, 4, 16, …)
 -- the nim-product is the ordinary product, and a Fermat 2-power F squares to 3F/2. 15 generates the
@@ -66,7 +66,7 @@ do
   end
 end
 
---- The discrete log of a nonzero rank to base 15, in 1..15 (Knight → 1, 1 → 15).
+--- The discrete log of a nonzero rank to base 15 (the Ace), in 1..15 (Ace → 1, 1 → 15).
 function M.log15(a)
   return assert(log15[a], "no discrete log for 0")
 end

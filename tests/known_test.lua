@@ -22,7 +22,7 @@ return function(test)
 
   test("the wild rank", function(eq)
     local wild = cut(w, n(2))
-    eq(table.concat(P.ranks(wild), ","), "2,3,4,5,6,7,8,9,10,11,12,13,14,15", "plays as 2 through Knight")
+    eq(table.concat(P.ranks(wild), ","), "2,3,4,5,6,7,8,9,10,11,12,13,14,15", "plays as 2 through Ace")
     eq(s(G.temperature(wild)), "w/2-1", "infinitely hot")
     eq(s(G.left_stop(wild)), "w", "you take ω")
     eq(N.finite(G.left_stop(wild)), 0, "which scores no chips")
@@ -138,20 +138,20 @@ return function(test)
   end)
 
   test("nim facts from the design", function(eq)
-    local names = { [11] = "J", [12] = "Q", [13] = "K", [14] = "A", [15] = "Kn" }
+    local names = { [11] = "J", [12] = "C", [13] = "Q", [14] = "K", [15] = "A" }
     local function r(x) return names[x] or tostring(x) end
     local cycle, x = {}, 15
     for i = 1, 16 do cycle[i] = r(x); x = nim.step(x) end
-    eq(table.concat(cycle, " "), "Kn 9 K Q 3 10 7 J 8 2 5 A 6 4 1 Kn", "15's cycle")
+    eq(table.concat(cycle, " "), "A 9 Q C 3 10 7 J 8 2 5 K 6 4 1 A", "15's cycle, from the Ace")
     eq(nim.log15(15) .. " " .. nim.log15(9) .. " " .. nim.log15(4) .. " " .. nim.log15(1), "1 2 14 15", "discrete logs")
     local sq = {}
     for v = 0, 15 do sq[#sq + 1] = r(v) .. ">" .. r(nim.square(v)) end
-    eq(table.concat(sq, " "), "0>0 1>1 2>3 3>2 4>6 5>7 6>5 7>4 8>K 9>Q 10>A J>Kn Q>J K>10 A>8 Kn>9", "Frobenius")
+    eq(table.concat(sq, " "), "0>0 1>1 2>3 3>2 4>6 5>7 6>5 7>4 8>Q 9>C 10>K J>A C>J Q>10 K>8 A>9", "Frobenius")
     local cubes = {}
     for v = 1, 15 do cubes[nim.pow(v, 3)] = true end
     local list = {}
     for v = 0, 15 do if cubes[v] then list[#list + 1] = r(v) end end
-    eq(table.concat(list, " "), "1 8 10 K A", "the nim-cubes, so no finite rank cubes to 2")
+    eq(table.concat(list, " "), "1 8 10 Q K", "the nim-cubes, so no finite rank cubes to 2")
     eq(nim.sum({ 2, 4, 6 }), 0, "a zero-sum triple")
     eq(nim.mex({ 0, 1, 2, 4 }), 3, "mex")
   end)

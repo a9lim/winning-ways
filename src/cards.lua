@@ -1,18 +1,18 @@
 -- Values on playing cards, and how hands of them are read and scored (DESIGN.md § 2).
 --
--- A card's value lives in card.ability.ww_value as its canonical notation; cards without one are worth
--- their rank as an integer. A valued card also has a host rank, its nearest rank, which is what it reports
--- whenever no hand is assigning it one. Changing a card's rank by other means (Strength, say) clears its
--- value, so vanilla rank effects turn it back into a plain card. Copies (Death, Cryptid) keep the value,
--- because copy_card copies the ability table.
+-- A card's value is its rank plus a modifier. Ranks are integers (2–10, J 11, C 12, Q 13, K 14, A 15, and the
+-- born 0 and 1); the modifier is any game, kept in card.ability.ww_mod as canonical notation. 3½ is a 3 with
+-- +½ (or a 4 with −½: equal values play alike), 5* is a 5 with *, 7±2 a 7 with ±2. The modifier is its own
+-- slot, beside enhancement, edition and seal, so a card can be Glass and +½. Rank changes from anywhere
+-- (Strength, Ouija, Generator) keep the modifier and shift the value with the rank; copies keep it too.
 --
 -- Reading a hand: evaluate_poker_hand tries the rank assignments that src/engine/hands.lua proposes, runs the
 -- game's own evaluator on each, and keeps the best by the hand list's order. While a hand is assigned, a
 -- flexible card's get_id, get_nominal and is_face report the rank it plays as.
 --
 -- Scoring: when the played cards score, src/engine/play.lua plays out their values as one game, and each card
--- scores the number it ends on, in chips: a rank's own chips for 0–Knight (so J, Q and K still score 10),
--- otherwise the number's finite part (3½ scores 3.5).
+-- scores the number it ends on, in chips: a finite part from 0 to 15 scores that rank's chips (so J, C, Q and K
+-- still score 10, and taking ω + 14 scores a King's 10); any other finite part scores itself (3½ scores 3.5).
 
 local WW = WinningWays
 local E = WW.engine
@@ -20,7 +20,7 @@ local N, Gm, P, H = E.num, E.game, E.play, E.hands
 
 local KEYS = {
   [0] = "ww_0", [1] = "ww_1", [2] = "2", [3] = "3", [4] = "4", [5] = "5", [6] = "6", [7] = "7", [8] = "8",
-  [9] = "9", [10] = "10", [11] = "Jack", [12] = "Queen", [13] = "King", [14] = "Ace", [15] = "ww_Knight",
+  [9] = "9", [10] = "10", [11] = "Jack", [12] = "ww_C", [13] = "Queen", [14] = "King", [15] = "Ace",
 }
 local INTS = {}
 for r, k in pairs(KEYS) do INTS[k] = r end
@@ -29,7 +29,7 @@ function WW.rank_int(key) return INTS[key] end
 
 -- values ------------------------------------------------------------------------------------------------
 
-local parsed, rank_sets = {}, {}
+local parsed, rank_sets, sums = {}, {}, {}
 local function parse(s)
   local v = parsed[s]
   if not v then v = Gm.parse(s); parsed[s] = v end
@@ -44,52 +44,60 @@ end
 
 local base_has_no_rank = SMODS.has_no_rank
 
-function WW.has_value(card) return card.ability ~= nil and card.ability.ww_value ~= nil end
+function WW.has_mod(card) return card.ability ~= nil and card.ability.ww_mod ~= nil end
+function WW.mod_of(card) return WW.has_mod(card) and parse(card.ability.ww_mod) or nil end
 
---- A card's value: the one it stores, or its rank as an integer. nil for a card with no rank (Stone) and for
---- other mods' ranks.
+--- A card's value, rank + modifier. nil for a card without one of our ranks (Stone, another mod's rank): a
+--- modifier on such a card lies dormant until it has a rank again.
 function WW.value_of(card)
-  if WW.has_value(card) then return parse(card.ability.ww_value) end
   if base_has_no_rank(card) then return nil end
   local r = INTS[card.base.value]
-  return r and N.new(r) or nil
+  if not r then return nil end
+  if not WW.has_mod(card) then return N.new(r) end
+  local key = r .. "|" .. card.ability.ww_mod
+  local v = sums[key]
+  if not v then v = Gm.add(N.new(r), parse(card.ability.ww_mod)); sums[key] = v end
+  return v
 end
 
---- The ranks a card can play as, as integers; nil when the card isn't one of ours.
+--- The ranks a card can play as, as integers; nil when it has no value.
 function WW.ranks_of(card)
-  if WW.has_value(card) then return ranks_of_value(parse(card.ability.ww_value)) end
   local v = WW.value_of(card)
-  return v and { v.x } or nil
+  if not v then return nil end
+  if not WW.has_mod(card) then return { v.x } end
+  return ranks_of_value(v)
 end
 
--- The rank nearest a value's mean among the ranks it plays as (any rank 0–15 when it plays as none). An
--- infinite mean picks the top.
-local function host_rank(v)
+--- The rank a card made with value v sits on: the rank nearest v's mean among those it plays as (the lower on
+--- a tie), or the nearest rank to the mean when it plays as none. An infinite mean picks the top or bottom.
+function WW.rank_for(v)
   local mean = Gm.mean(v)
   local target = N.is_finite(mean) and N.finite(mean) or (mean.k > 0 and 1e9 or -1e9)
   local ranks = ranks_of_value(v)
-  if #ranks == 0 then return math.max(0, math.min(15, math.floor(target + 0.5))) end
+  if #ranks == 0 then return math.max(0, math.min(15, math.ceil(target - 0.5))) end
   local best = ranks[1]
   for _, r in ipairs(ranks) do
     if math.abs(r - target) < math.abs(best - target) then best = r end
   end
   return best
 end
-WW.host_rank = host_rank
 
-local setting = false
+local function store_mod(card, m)
+  if N.is(m) and N.eq(m, N.zero) then card.ability.ww_mod = nil else card.ability.ww_mod = Gm.encode(m) end
+end
 
---- Give a card a value (a canonical number or game). An integer from 0 to 15 makes it that plain rank.
+--- Make a card worth v (a canonical number or game): it moves to rank_for(v) and keeps v − rank as its
+--- modifier. An integer from 0 to 15 is that plain rank.
 function WW.set_value(card, v)
-  if N.is(v) and N.is_integer(v) and v.x >= 0 and v.x <= 15 then
-    assert(SMODS.change_base(card, nil, KEYS[v.x]))
-    return card
-  end
-  setting = true
-  local ok, changed = pcall(SMODS.change_base, card, nil, KEYS[host_rank(v)])
-  setting = false
-  assert(ok and changed, changed)
-  card.ability.ww_value = Gm.encode(v)
+  local r = WW.rank_for(v)
+  assert(SMODS.change_base(card, nil, KEYS[r]))
+  store_mod(card, Gm.sub(v, N.new(r)))
+  return card
+end
+
+--- Add a game to a card's modifier (Nimbus adds *, Omega adds ω). The rank stays.
+function WW.add_mod(card, m)
+  store_mod(card, Gm.add(WW.mod_of(card) or N.zero, m))
   return card
 end
 
@@ -100,14 +108,17 @@ local ties = setmetatable({}, { __mode = "k" })   -- rankless card -> tie token,
 
 local set_base = Card.set_base
 function Card:set_base(card, initial, manual_sprites)
-  if not setting and self.ability then self.ability.ww_value = nil end
   active[self], ties[self] = nil, nil
   return set_base(self, card, initial, manual_sprites)
 end
 
 function SMODS.has_no_rank(card)
-  if WW.has_value(card) and #ranks_of_value(parse(card.ability.ww_value)) == 0 then return true end
-  return base_has_no_rank(card)
+  if base_has_no_rank(card) then return true end
+  if WW.has_mod(card) then
+    local v = WW.value_of(card)
+    if v and #ranks_of_value(v) == 0 then return true end
+  end
+  return false
 end
 
 local get_id = Card.get_id
@@ -144,7 +155,7 @@ function get_X_same(num, hand, or_more)
     local k = ties[c]
     if not k then
       local id = c:get_id()
-      if id > 0 then k = id end
+      if id and id > 0 then k = id end
     end
     if k then
       if not groups[k] then
@@ -165,72 +176,6 @@ function get_X_same(num, hand, or_more)
   end
   return out
 end
-
--- Straights, written for the ranks' next lists as Steamodded's are, with one addition: an Ace may lead into
--- the Knight from anywhere in a straight. An Ace (or any straight_edge rank) is otherwise only allowed at
--- either end, and a Shortcut skip may not jump over one.
-local function straight_steps(key, at_start, wrap)
-  local rank = SMODS.Ranks[key]
-  local out = {}
-  if at_start or wrap or not rank.straight_edge then
-    for _, n in ipairs(rank.next) do out[#out + 1] = n end
-  end
-  if key == "Ace" and SMODS.Ranks.ww_Knight then out[#out + 1] = "ww_Knight" end
-  return out
-end
-
-function WW.get_straight(hand, min_length, skip, wrap)
-  min_length = math.max(2, min_length or 5)
-  if #hand < min_length then return {} end
-  local by_key, key_of_id = {}, {}
-  for _, k in ipairs(SMODS.Rank.obj_buffer) do key_of_id[SMODS.Ranks[k].id] = k end
-  for _, c in ipairs(hand) do
-    local id = c:get_id()
-    local k = id and id > 0 and key_of_id[id]
-    if k then
-      by_key[k] = by_key[k] or {}
-      table.insert(by_key[k], c)
-    end
-  end
-  local runs = {}
-  local function extend(run, used)
-    local last = run[#run]
-    local nexts = {}
-    for _, n in ipairs(straight_steps(last, #run == 1, wrap)) do
-      nexts[#nexts + 1] = n
-      if skip and (wrap or not SMODS.Ranks[n].straight_edge) then
-        for _, m in ipairs(straight_steps(n, false, wrap)) do nexts[#nexts + 1] = m end
-      end
-    end
-    local extended = false
-    for _, n in ipairs(nexts) do
-      if by_key[n] and not used[n] then
-        extended = true
-        run[#run + 1], used[n] = n, true
-        extend(run, used)
-        run[#run], used[n] = nil, nil
-      end
-    end
-    if not extended and #run >= min_length then
-      local cards = {}
-      for _, k in ipairs(run) do
-        for _, c in ipairs(by_key[k]) do cards[#cards + 1] = c end
-      end
-      runs[#runs + 1] = cards
-    end
-  end
-  for _, k in ipairs(SMODS.Rank.obj_buffer) do
-    if by_key[k] then extend({ k }, { [k] = true }) end
-  end
-  table.sort(runs, function(a, b) return #a > #b end)
-  return runs
-end
-
-SMODS.PokerHandPart:take_ownership("_straight", {
-  func = function(hand)
-    return WW.get_straight(hand, SMODS.four_fingers("straight"), SMODS.shortcut(), SMODS.wrap_around_straight())
-  end,
-}, true)
 
 -- The best hand in G.handlist that these results contain: its position, and its name.
 local function top_of(results)
@@ -253,9 +198,11 @@ function evaluate_poker_hand(hand)
   local cards, any = {}, false
   for i, c in ipairs(hand) do
     active[c], ties[c] = nil, nil
-    local ranks = WW.ranks_of(c)
-    if WW.has_value(c) then any = true end
-    cards[i] = { ranks = ranks or {}, key = WW.has_value(c) and c.ability.ww_value or ("#" .. i) }
+    local v = WW.value_of(c)
+    local modded = v ~= nil and WW.has_mod(c)
+    if modded then any = true end
+    -- Tie groups are keyed by value, so a 3 with +½ pairs with a 4 with −½.
+    cards[i] = { ranks = WW.ranks_of(c) or {}, key = modded and Gm.encode(v) or ("#" .. i) }
   end
   if not any then return evaluate(hand) end
 
@@ -285,12 +232,13 @@ end
 
 --- The chips a card scores for ending on the number x.
 function WW.chips_of(x)
-  if N.is_integer(x) and x.x >= 0 and x.x <= 15 then return SMODS.Ranks[KEYS[x.x]].nominal end
-  return N.finite(x)
+  local f = N.finite(x)
+  if f == math.floor(f) and f >= 0 and f <= 15 then return SMODS.Ranks[KEYS[f]].nominal end
+  return f
 end
 
---- Play out the scoring cards' values: {total, finals, moves, cards}, or nil when none of them has a value
---- (then everything scores exactly as vanilla). Debuffed cards don't take part.
+--- Play out the scoring cards' values: {total, finals, moves, cards}, or nil when none of them has a
+--- modifier (then everything scores exactly as vanilla). Debuffed cards don't take part.
 function WW.resolve(scoring_hand)
   local cards, values, any = {}, {}, false
   for _, c in ipairs(scoring_hand) do
@@ -298,7 +246,7 @@ function WW.resolve(scoring_hand)
       local v = WW.value_of(c)
       if v then
         cards[#cards + 1], values[#values + 1] = c, v
-        if WW.has_value(c) then any = true end
+        if WW.has_mod(c) then any = true end
       end
     end
   end

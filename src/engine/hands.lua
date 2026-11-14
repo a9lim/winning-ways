@@ -7,7 +7,7 @@
 -- the highest pair of ranks that can make a Full House, and the highest that can make Two Pair; every
 -- straight a matching can fill; and a default where every flexible card plays its highest rank.
 --
--- Ranks are integers 0–15 (J 11, Q 12, K 13, A 14, Knight 15). Cards whose values have no rank but are
+-- Ranks are integers 0–15 (J 11, C 12, Q 13, K 14, A 15). Cards whose values have no rank but are
 -- equal (two 3½s) form tie groups, and play as tokens "tie1", "tie2", which only ever pair with each other.
 --
 -- Loading: `loadfile(path)(E)` registers the module as E.hands, and returns it. It needs no other module.
@@ -16,15 +16,17 @@ local E = ...
 local M = {}
 E.hands = M
 
-local ACE, KNIGHT = 14, 15
+local JACK, CAVALIER, QUEEN, ACE = 11, 12, 13, 15
 
--- Successors of a rank in a straight. The Ace plays low only at the start of a straight (A-2-3-4-5); in
--- the middle it can only be followed by the Knight. A skip (Shortcut) may not jump over the Ace.
+-- Successors of a rank in a straight, as the ranks' next lists have them. The Cavalier is optional: a Jack is
+-- followed by the Queen or the Cavalier. The Ace tops a straight, or plays low at its start (A-2-3-4-5), and a
+-- skip (Shortcut) may not jump over it.
 local function successors(r, at_start, skip)
   local out = {}
   local function step(x)
-    if x == ACE then return at_start and { 2, KNIGHT } or { KNIGHT } end
-    if x >= KNIGHT then return {} end
+    if x == ACE then return at_start and { 2 } or {} end
+    if x == JACK then return { QUEEN, CAVALIER } end
+    if x > ACE then return {} end
     return { x + 1 }
   end
   for _, n in ipairs(step(r)) do
@@ -57,7 +59,7 @@ function M.straight_windows(length, skip)
       end
     end
   end
-  for start = 0, KNIGHT do extend({ start }) end
+  for start = 0, ACE do extend({ start }) end
   return out
 end
 

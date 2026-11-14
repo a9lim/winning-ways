@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Placeholder card fronts for the born ranks 0, 1 and Knight, until the real faces are drawn.
+"""Placeholder card fronts for the born ranks 0, 1 and C (the Cavalier), until the real faces are drawn.
 
-One column per rank (0, 1, Knight) and one row per suit in Steamodded's rank-atlas order (Hearts, Clubs,
+One column per rank (0, 1, C) and one row per suit in Steamodded's rank-atlas order (Hearts, Clubs,
 Diamonds, Spades). Each cell is a plain card with the rank in a small pixel font, in the suit's colour. Writes
 assets/1x/ranks.png and its exact nearest-neighbour double assets/2x/ranks.png.
 
@@ -17,10 +17,9 @@ SUITS = [("Hearts", (240, 52, 100)), ("Clubs", (35, 89, 85)), ("Diamonds", (240,
 GLYPHS = {
     "0": ["###", "#.#", "#.#", "#.#", "###"],
     "1": [".#.", "##.", ".#.", ".#.", "###"],
-    "K": ["#.#", "##.", "#..", "##.", "#.#"],
-    "n": ["...", "##.", "#.#", "#.#", "#.#"],
+    "C": [".##", "#..", "#..", "#..", ".##"],
 }
-RANKS = ["0", "1", "Kn"]
+RANKS = ["0", "1", "C"]
 CARD, EDGE = (255, 255, 255), (78, 86, 95)
 
 
