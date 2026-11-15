@@ -8,11 +8,16 @@ local out_path = os.getenv("WINNINGWAYS_SHOWCASE")
 local palette = os.getenv("WINNINGWAYS_SHOWCASE_PALETTE")
 local saved_palettes, saved_cb
 
--- WINNINGWAYS_SHOWCASE_SET=moves shows the Moves, Omega and the Game Packs beside vanilla consumables instead.
-local rows = os.getenv("WINNINGWAYS_SHOWCASE_SET") == "moves" and {
+-- WINNINGWAYS_SHOWCASE_SET=moves shows the Moves, Omega and the Game Packs beside vanilla consumables instead;
+-- =jokers shows the jokers beside vanilla ones.
+local set = os.getenv("WINNINGWAYS_SHOWCASE_SET")
+local rows = set == "moves" and {
   { "c_ww_cut", "c_ww_sum", "c_ww_heat", "c_ww_cool", "c_ww_frobenius", "c_fool", "c_strength" },
   { "c_ww_tweedledum", "c_ww_repaint", "c_ww_nimbus", "c_ww_mex", "c_ww_omega", "c_trance", "c_familiar" },
   { "p_ww_game_normal_1", "p_ww_game_normal_2", "p_ww_game_jumbo_1", "p_ww_game_mega_1", "p_celestial_normal_1", "p_arcana_normal_1" },
+} or set == "jokers" and {
+  { "j_ww_bouton", "j_ww_generator", "j_ww_grundy", "j_ww_hotstrat", "j_ww_thermograph", "j_joker", "j_dna" },
+  { "j_ww_sprouts", "j_ww_cantor", "j_ww_paradise", "j_ww_conway", "j_triboulet", "j_fibonacci", "j_splash" },
 } or {
   { "H_ww_0", "C_ww_1", "D_ww_C", "S_ww_C", "H_J", "H_Q", "H_K", "H_A", "S_T" },
   { "D_3", "C_6", "H_T", "H_7", "C_5", "S_Q" },
@@ -51,7 +56,8 @@ local function build()
   end
   WW.apply_lab(all)
   -- A line of the game's own font, to check the symbol fallback (src/font.lua).
-  local sample = "Worth {ω|2}  ±½  ⅜  ↑ ↓  ∞ ⊕ ⊗  −¼  " .. WW.pretty(WW.value_of(all[#all - 1]))
+  local last = WW.value_of(all[#all - 1])
+  local sample = "Worth {ω|2}  ±½  ⅜  ↑ ↓  ∞ ⊕ ⊗  −¼  " .. (last and WW.pretty(last) or "")
   G.ww_font_check = UIBox {
     definition = { n = G.UIT.ROOT, config = { colour = G.C.CLEAR }, nodes = {
       { n = G.UIT.T, config = { text = sample, scale = 0.5, colour = G.C.WHITE, shadow = true } },

@@ -217,6 +217,27 @@ after_hand(function()
   check("but Three of a Kind (9 ⊕ 9 ⊕ 9 = 9) scores 171", gained() == 171, gained())
 end)
 
+-- WINNINGWAYS_RUNTEST_SHOT=<prefix> saves two screenshots of the run as it stands (The Heap's chip, the Field Deck's
+-- back, the jokers in their slots): <prefix>-1.png with the first five jokers, <prefix>-2.png with the rest.
+local shot = os.getenv("WINNINGWAYS_RUNTEST_SHOT")
+if shot then
+  local function capture(i)
+    love.graphics.captureScreenshot(function(image)
+      local f = io.open(("%s-%d.png"):format(shot, i), "wb")
+      if f then f:write(image:encode("png"):getString()); f:close() end
+    end)
+  end
+  steps[#steps + 1] = { frames = 30, run = function()
+    hold({ "bouton", "generator", "grundy", "hotstrat", "thermograph" })
+  end }
+  steps[#steps + 1] = { frames = 120, run = function() capture(1) end }
+  steps[#steps + 1] = { frames = 30, run = function()
+    hold({ "sprouts", "cantor", "paradise", "conway" })
+  end }
+  steps[#steps + 1] = { frames = 120, run = function() capture(2) end }
+  steps[#steps + 1] = { frames = 30, run = function() end }
+end
+
 local update = Game.update
 local done = false
 local since = love.timer.getTime()

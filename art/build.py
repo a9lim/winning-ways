@@ -8,7 +8,7 @@ small Lua tables the mod reads (art/glyphs.lua, art/layout.lua) and the
 symbol font (assets/fonts/ww_symbols.ttf); then checks the sizes and metrics
 the Lua side depends on.
 
-The rank fronts, Omega and the packs are derived from Balatro's own textures, read from the
+The rank fronts, Omega, the packs, the jokers and the blind chip are derived from Balatro's own textures, read from the
 installed game archive (override its path with BALATRO_LOVE). Without the
 game the build stops with a message saying so.
 
@@ -25,9 +25,12 @@ from PIL import Image
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
+import backs   # noqa: E402
+import blinds  # noqa: E402
 import font    # noqa: E402
 import fronts  # noqa: E402
 import glyphs  # noqa: E402
+import jokers  # noqa: E402
 import mods    # noqa: E402
 import moves   # noqa: E402
 import packs   # noqa: E402
@@ -41,6 +44,9 @@ EXPECT = {
     "glyphs.png": (266, 9),                                   # 38 cells of 7x9
     "moves.png": (639, 95), "omega.png": (71, 95),            # 9 Moves; one Spectral
     "packs.png": (284, 95),                                   # 4 Game Packs
+    "jokers.png": (710, 95),                                  # 10 cells of 71x95 (8 is Conway, 9 his soul)
+    "blinds.png": (714, 34),                                  # The Heap: 21 frames of 34x34
+    "backs.png": (71, 95),                                    # the Field Deck
 }
 
 
@@ -61,7 +67,7 @@ def main():
         print(f"build.py: {e}", file=sys.stderr)
         return 2
     made = set()
-    for mod in (fronts, mods, glyphs, moves, packs):
+    for mod in (fronts, mods, glyphs, moves, packs, jokers, blinds, backs):
         for name, art in mod.outputs().items():
             write(name, art)
             made.add(name)

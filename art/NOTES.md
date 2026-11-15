@@ -4,13 +4,14 @@ Pixel art as code. Engine: `art/pixel.py`. One program per sheet;
 `~/.venv/bin/python -I art/build.py` regenerates everything into `assets/1x`
 and `assets/2x` (2x = exact nearest-neighbour x2 of the 1x; build.py checks
 it and every sheet size) and writes `art/glyphs.lua` and `art/layout.lua`.
-`art/look.py fronts|fronts_hc|courts|courts_hc|mods|glyphs [k]` renders
+`art/look.py fronts|fronts_hc|courts|courts_hc|mods|glyphs|moves|packs|font|jokers|blinds|backs [k]` renders
 previews beside vanilla cells into `art/preview/` (gitignored).
 
 `art/vanilla.py` reads Balatro's textures at build time from the installed
 game archive (`Balatro.love`, a zip; override with `BALATRO_LOVE`). Nothing
 from the archive is stored in the repo as source, but two built sheets
-contain LocalThunk's pixels: see `assets/NOTICE.md`.
+contain LocalThunk's pixels (the table's last column): see
+`assets/NOTICE.md`.
 
 | sheet | 1x size | program | vanilla pixels |
 |---|---|---|---|
@@ -20,6 +21,9 @@ contain LocalThunk's pixels: see `assets/NOTICE.md`.
 | `moves.png` | 639x95 (9 cells of 71x95) | `moves.py` | no (frame geometry only) |
 | `omega.png` | 71x95 | `moves.py` | yes |
 | `packs.png` | 284x95 (4 cells of 71x95) | `packs.py` | yes |
+| `jokers.png` | 710x95 (10 cells of 71x95) | `jokers.py` | yes (JOKER lettering; Conway's background) |
+| `blinds.png` | 714x34 (21 frames of 34x34) | `blinds.py` | yes (disc, rim, shine) |
+| `backs.png` | 71x95 | `backs.py` | no (frame geometry only) |
 | `fonts/ww_symbols.ttf` | 14 glyphs | `font.py` | no |
 
 ## Rank fronts (`fronts.py`)
@@ -178,6 +182,88 @@ The name band is the normal pack's (rows 56..77), with CELESTIAL filled
 over in the band's own colour and re-lettered GAME in the band's letterforms
 (E, A as vanilla letters them; G, M drawn to match); PACK is vanilla's.
 
+## Jokers (`jokers.py`)
+
+Cells, left to right: `bouton generator grundy hotstrat thermograph sprouts
+cantor paradise conway conway_soul` (`jokers.ORDER`; Conway's `pos` is cell
+8 and his `soul_pos` cell 9).
+
+Measured from vanilla's `Jokers.png` (cells are (column, row)):
+
+- **Frame**, the plain Joker (0, 0): the silhouette (its alpha), a
+  one-pixel `bfc7d5` edge, white inside. A joker with a ground (Greedy
+  Joker (6, 1), Splash (6, 10)) fills the window x 4..66, y 4..90 less its
+  four corner pixels, leaving a two-pixel white margin.
+- **JOKER lettering**: vanilla's own pixels, the `4f6367` ink of (0, 0) in
+  x 5..13, y 7..50, and its half-turn in the other corner; dark on white
+  and cream, white on a dark or blue ground, as vanilla does it. Nearly
+  every vanilla joker carries it, and a card without it reads as a
+  consumable. Alternative considered: no lettering (brief: no words): the
+  cards stopped looking like jokers beside DNA and Splash.
+- **Picture**: flat colour, one lighter and one darker tone, under a
+  one-pixel `4f6367` outline (`put()` outlines a layer and lays it down),
+  in vanilla's joker colours (`fd5f55 009cfd fda200 56a786` and their
+  shades as measured on the Joker and Perkeo).
+
+| cell | picture | drawn |
+|---|---|---|
+| `bouton` | Nim: rows of 1, 2 and 3 matches (1 ⊕ 2 ⊕ 3 = 0), and under them ⊕ = 0 | here |
+| `generator` | a dynamo on slate: a gold wheel with fifteen studs (the Ace's 15-cycle), the first stud red, a red A on the hub, an arrow for the turn, sparks | here |
+| `grundy` | Solomon Grundy's headstone, carved 0 1 2 and, under a rule, a dotted red gap, 4 5: the gap is the mex; a flower | here |
+| `hotstrat` | three fires, small to large, and an arrow coming down on the hottest | here |
+| `thermograph` | graph paper; the tent in red on the number line, the mast and its arrow, the mean dropped in dots, the temperature read off in blue; a thermometer | here |
+| `sprouts` | a blue spot and a red spot joined by two curves; the new spot on one is gold and has sprouted two leaves, the new spot on the other is plain | here |
+| `cantor` | five rows of binary digits, the diagonal in red boxes, a rule, and in blue the row that differs from each | here |
+| `paradise` | sky, sea, an island with a palm; an ω in the sun and three ω on the wing | here |
+| `conway` | legendary background: Triboulet's (4, 8), hue turned to 0.74 (violet, the one hue vanilla's five don't use), plate kept and re-signed | vanilla + here |
+| `conway_soul` | Conway, head and shoulders | here |
+
+Digits and ω on the cards are `glyphs.png`'s. Alternatives considered:
+Bouton as stacks of counters (kept for the blind chip instead); Grundy as
+a week calendar (unreadable at this size); Hotstrat as a jester strategist
+(a face in 40 px says nothing about heat).
+
+**Conway.** Built as vanilla builds a legendary: a marbled background card
+with a plate, and the figure in a second cell that the game floats over it.
+The plate (rows 78..87) is vanilla's; TRIBOULET is filled over in the
+plate's paper `f7f1e4` and replaced by `{ ▪ | ▪ }`, a blue Left and a red
+Right between braces: his notation for a game, where vanilla has the
+name. (Alternative: CONWAY in the plate's blackletter. Not done: no words
+on the cards.) **The soul is a figure, not an emblem**: John Horton Conway
+as he looked late in life, bald forehead, long grey hair to the shoulders,
+full beard, a grin, a green jumper with a Life glider on it. It sits where
+vanilla's souls sit (x 12..58, y 12..69; vanilla's span x 14..56, y 10..69) and is drawn with their means
+(flat tones, a `4f6367` outline, eyes and mouth in a few pixels), but with
+a person's skin rather than a clown's white face. No vanilla pixels.
+
+## The Heap (`blinds.py`)
+
+Vanilla's "turn" is not a turn: in `BlindChips.png` frames 0..12 of a row
+are one still chip and in 13..20 a diagonal shine crosses it (the lit
+pixels are the same on every row). A boss chip is four tones: body, rim
+light above (also the shine), rim dark below, and a glyph in a darker tone
+of the body (lighter where the shine crosses it).
+
+`blinds.png` takes disc, rim and shine, frame by frame, from The Wall
+(row 8), removes its glyph and re-inks: body **`2a9d8f`** (the boss
+colour, `blinds.COLOUR`; a teal no vanilla boss has), light `64b7ad`, dark
+`20776d`, glyph `185850`, glyph under shine `52827c` (the same ratios as
+vanilla's `4b71e4` chip). The glyph is drawn here: six counters, one on two
+on three, both a heap and the Nim position 1 + 2 + 3 that sums to nothing.
+Previews: `blinds.png` (ours over four vanilla rows, frames 10..20) and
+`blinds_grounds.png` (the chip on its own colour and on dark grounds).
+
+## Field Deck (`backs.py`)
+
+One cell. Measured from the Red Deck, `Enhancers.png` (0, 0): the
+silhouette, a three-pixel white margin, the field on x 4..66, y 4..90 less
+its corners, a dotted white rule two pixels inside it. No vanilla pixel is
+copied. The field is the Moves' green `4d9f7c`; on it sixteen small cards,
+four by four (16 = 2^4), each an element of F16 as four bits (8 4 over
+2 1), 0 top left to 15 bottom right in reading order; 15, the Ace, in
+gold. Alternatives considered: dark tiles with lit bits (read as a block of
+flats at night), numerals on the tiles (two-digit numbers don't fit 11 px).
+
 ## Symbol font (`font.py` -> `assets/fonts/ww_symbols.ttf`)
 
 A fallback for `m6x11plus.ttf`, which lacks every one of these. Wholly
@@ -249,5 +335,9 @@ denominator. `glyphs.layout()` is the reference implementation. Widths:
   mult red, so an offset on a club or a heat on a heart shares its index's
   colour. It still reads (thin strokes vs the index's heavy ones).
 - Moves have no name on the card (a ledge instead); vanilla consumables do.
+- Jokers carry vanilla's JOKER lettering although the brief said no words;
+  `jokers.finish()` is the one place to take it off.
+- `build.py` rewrites `ww_symbols.ttf` with a new `head.modified` stamp on
+  every run (the outlines are identical); `git checkout` it or pin the stamp.
 - Font fractions are one-pixel strokes; text like "1/2" in the game font
   is the heavier alternative.

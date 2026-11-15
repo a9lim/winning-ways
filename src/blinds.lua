@@ -16,7 +16,7 @@ SMODS.Blind {
   atlas = ART and "blinds" or nil,
   pos = { x = 0, y = 0 },
   boss = { min = 2 },
-  boss_colour = HEX("4d9f7c"),
+  boss_colour = HEX("2a9d8f"), -- Fable's teal; no vanilla boss uses it
   mult = 2,
   dollars = 5,
   calculate = function(self, blind, context)
