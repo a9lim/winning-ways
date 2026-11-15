@@ -1,6 +1,6 @@
 -- The jokers (DESIGN.md § 4). "Rank" here means the rank a card plays as in the hand being scored (WW.rank_now):
 -- a wild in a Pair of Kings is a King. Cards with no rank (Stone, 3½, ω) are invisible to nim-sums and to the mex,
--- the way a 0 is.
+-- the way a 0 is. In nim-sums a card is a heap: its rank, plus 1 for a halo (5* is the heap 4).
 
 local WW = WinningWays
 local E = WW.engine
@@ -19,12 +19,19 @@ local function in_row(cards)
   return row
 end
 
---- The nim-sum of the ranks the cards play as.
+--- A card's heap for nim-sums: the rank it plays as (r, or the one given), plus 1 for a halo. nil with no rank.
+function WW.heap(card, r)
+  r = r or WW.rank_now(card)
+  if not r then return nil end
+  return WW.halo(card) and nim.add(r, 1) or r
+end
+
+--- The nim-sum of the cards' heaps.
 function WW.nim_sum(cards)
   local x = 0
   for _, c in ipairs(cards) do
-    local r = WW.rank_now(c)
-    if r then x = nim.add(x, r) end
+    local h = WW.heap(c)
+    if h then x = nim.add(x, h) end
   end
   return x
 end
@@ -40,6 +47,7 @@ end
 --- Can the played cards nim-sum to 0 with at least three distinct ranks among them? Scoring cards count as the
 --- rank they play as. A flexible kicker (one that doesn't score) can play as any of its ranks, Conway's included:
 --- you move first in a confused position, so you choose. Cards with no rank, and cards infinity ate, don't count.
+--- Ranks are what count as distinct; heaps (a halo adds 1) are what nim-sum.
 function WW.bouton(full_hand, scoring_hand)
   local scores = {}
   for _, c in ipairs(scoring_hand) do scores[c] = true end
@@ -58,22 +66,22 @@ function WW.bouton(full_hand, scoring_hand)
       local choices = {}
       for i, o in ipairs(options) do choices[i] = o end
       if #own == 0 then choices[#choices + 1] = false end
-      free[#free + 1] = choices
+      free[#free + 1] = { card = c, ranks = choices }
     elseif r then
-      fixed = nim.add(fixed, r)
+      fixed = nim.add(fixed, WW.heap(c, r))
       if not seen[r] then seen[r], distinct = true, distinct + 1 end
     end
   end
   local function search(i, x, d)
     if i > #free then return x == 0 and d >= 3 end
-    for _, r in ipairs(free[i]) do
+    for _, r in ipairs(free[i].ranks) do
       local ok
       if r == false then
         ok = search(i + 1, x, d)
       else
         local new = not seen[r]
         if new then seen[r] = true end
-        ok = search(i + 1, nim.add(x, r), d + (new and 1 or 0))
+        ok = search(i + 1, nim.add(x, WW.heap(free[i].card, r)), d + (new and 1 or 0))
         if new then seen[r] = nil end
       end
       if ok then return true end

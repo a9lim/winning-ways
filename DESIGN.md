@@ -187,8 +187,11 @@ game-theory reason.
 
 Adds * to the modifiers of up to two cards: a nimber halo. The vanilla Tarot already has the name "Star".
 - For hands nothing changes: n* plays as n.
-- Nim-sums read the rank a card plays as, so n* counts as n there too. (Reading it as the heap n ⊕ 1 instead would
-  make Nimbus Bouton's tuning knob; see § 9.)
+- **In nim-sums a halo adds 1:** n* is the heap n ⊕ 1, so 5* plays as a 5 but nim-sums as a 4. That makes Nimbus
+  Bouton's tuning knob and a way past The Heap (a 5 and a 5* nim-sum to 1). Distinct ranks still count by the rank a
+  card plays as, and Grundy's mex reads ranks. a9 decided this on 2026-11-15.
+- **The halo is a *:** a card wears it exactly when its modifier is x + * for x a number plus nothing, ↑, ↓ or a
+  switch (`WW.has_star`), so 5±1* draws ±1 under a halo. Nim-sums read the same test.
 - Haloed cards cancel in pairs under Sum: 5* + 5* = 10.
 
 ### Mex
@@ -324,6 +327,24 @@ against vanilla siblings rather than play:
     and it's the same maths as the middle cards.
   - **The Heap** shuts out pair-based hands entirely for one blind, as The Psychic shuts out short ones.
 
+## 5¾. With Quintessence
+
+Quintessence makes Wild a fifth suit that counts as every suit. In Hackenbush that is a green edge, which either
+player may cut, and a lone green edge is the nimber * (green Hackenbush is Nim). Quintessence's Wild pip is already a
+`*`. So:
+
+- **A Wild card's value carries a *:** a Wild 5 is 5*. It plays as a 5, wears the halo, nim-sums as a 4, and is a day
+  younger than 5 for Birthday. a9 decided this on 2026-11-15.
+- **The * is the suit's.** It isn't stored in `ww_mod`. `WW.mod_of` adds it on read, and writes take it off first.
+  So it comes and goes with the suit (The Star takes it away, The Lovers gives it), and every Move acts on the whole
+  value:
+  - Nimbus on a Wild 5 gives a plain 5 (* + * = 0).
+  - Heat gives 5±1.
+  - Cut gives exactly {L|R}, storing a * where it must cancel the suit's.
+- A Wild ω card still eats: ω + * is ω with a halo.
+- The born ranks have Wild fronts, values play in Spectrum hands, and Repaint leaves Wild cards alone, because a green
+  edge is its own negative.
+
 ## 6. Left out
 
 - **Clifford algebras:** off-theme. They are about suits, not ranks, and {L|R} doesn't build them.
@@ -380,8 +401,7 @@ a9 thought most of these were great. They wait on tuning and a final call.
 
 ## 9. Open questions
 
-- **Should n* nim-sum as n ⊕ 1?** It would make Nimbus a tuning knob for Bouton and The Heap: 5* would count as
-  a 4 heap while still playing as a 5. It's a balance change, not a fix.
+- None right now.
 
 ## 10. Facts this rests on
 

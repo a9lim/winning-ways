@@ -86,7 +86,7 @@ local TIPS = {
   "j_ww_bouton", "j_ww_generator", "j_ww_grundy", "j_ww_hotstrat", "j_ww_thermograph", "j_ww_sprouts",
   "j_ww_cantor", "j_ww_paradise", "j_ww_birthday", "j_ww_hilbert", "j_ww_conway", "j_ww_berlekamp", "j_ww_guy",
   "c_ww_cut", "c_ww_sum", "c_ww_heat", "c_ww_cool", "c_ww_frobenius", "c_ww_tweedledum", "c_ww_repaint",
-  "c_ww_nimbus", "c_ww_mex", "c_ww_omega", "p_ww_game_normal_1", "H_7", "c_lovers",
+  "c_ww_nimbus", "c_ww_mex", "c_ww_omega", "p_ww_game_normal_1", "H_7", "c_lovers", "quint_W_5",
 }
 local tip, tip_card = 0, nil
 local function next_tip()
@@ -99,7 +99,7 @@ local function next_tip()
   local params = { bypass_discovery_center = true, bypass_discovery_ui = true }
   if G.P_CARDS[key] then
     tip_card = Card(x, y, G.CARD_W, G.CARD_H, G.P_CARDS[key], G.P_CENTERS.c_base, params)
-    WW.set_value(tip_card, Gm.of({ N.new(9) }, { N.new(5) })) -- 7±2: the Modifier box
+    if key == "H_7" then WW.set_value(tip_card, Gm.of({ N.new(9) }, { N.new(5) })) end -- 7±2: the Modifier box
   else
     tip_card = Card(x, y, G.CARD_W, G.CARD_H, G.P_CARDS.empty, G.P_CENTERS[key], params)
   end

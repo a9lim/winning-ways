@@ -46,7 +46,7 @@ A new kind of consumable, sold in Game Packs and in the shop:
 | Frobenius | squares ranks in nim arithmetic |
 | Tweedledum | copies the last Move used |
 | Repaint | swaps ♠ with ♥ and ♣ with ♦ |
-| Nimbus | adds a * halo |
+| Nimbus | adds a * halo: 5* plays as a 5 but nim-sums as a 4 |
 | Mex | turns a card into the smallest rank the others miss |
 | Omega (Spectral) | adds ω |
 
@@ -77,8 +77,9 @@ A new kind of consumable, sold in Game Packs and in the shop:
 
 ## Other mods
 
-With [Quintessence](https://github.com/a9lim/quintessence), the born ranks have Wild-suit fronts, values play in its
-Spectrum hands, and Repaint leaves Wild cards alone (a green Hackenbush edge is its own negative).
+With [Quintessence](https://github.com/a9lim/quintessence), a Wild card is a green Hackenbush edge, which is worth *:
+a Wild 5 is 5*, and Nimbus turns it back into a plain 5. The born ranks have Wild-suit fronts, values play in its
+Spectrum hands, and Repaint leaves Wild cards alone (a green edge is its own negative).
 
 ## Credits
 

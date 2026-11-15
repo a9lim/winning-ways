@@ -17,10 +17,13 @@ function WW.is_infinite(card)
   return not (N.is_finite(Gm.left_stop(v)) and N.is_finite(Gm.right_stop(v)))
 end
 
---- Does this card eat: a positive infinite number, not debuffed?
+local STAR = Gm.of({ N.zero }, { N.zero })
+
+--- Does this card eat: a positive infinite number, not debuffed? A halo doesn't stop it: a Wild ω card is ω + *.
 function WW.is_eater(card)
   if card.debuff then return false end
   local v = WW.value_of(card)
+  if v ~= nil and not N.is(v) and WW.halo(card) then v = Gm.add(v, STAR) end
   return v ~= nil and N.is(v) and v.k > 0
 end
 

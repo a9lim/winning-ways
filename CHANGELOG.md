@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- A halo adds 1 in nim-sums: 5* plays as a 5 but counts as a 4 for Bouton and The Heap, so Nimbus is Bouton's
+  tuning knob and a way past The Heap.
+- With Quintessence, a Wild card is a green Hackenbush edge, worth *: a Wild 5 is 5*, wears the halo, and Nimbus turns
+  it into a plain 5.
+- A hot card with a * draws its ± under the halo, and a bare * reads "*" in tooltips, not "+0*".
+
 ## 1.0.1 (2026-11-15)
 
 - Every tooltip rewritten in vanilla's voice: shorter lines, vanilla's own phrasings ("Played cards give … when

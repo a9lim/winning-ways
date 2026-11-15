@@ -215,7 +215,7 @@ end
 
 local ORDER = { "cut", "sum", "heat", "cool", "frobenius", "tweedledum", "repaint", "nimbus", "mex" }
 -- The info box each Move's text leans on, as vanilla's Tarots show the enhancement they give.
-local INFO = { cut = "ww_hot", heat = "ww_hot", cool = "ww_hot", mex = "ww_mex" }
+local INFO = { cut = "ww_hot", heat = "ww_hot", cool = "ww_hot", mex = "ww_mex", nimbus = "ww_nim_sum" }
 for i, key in ipairs(ORDER) do
   local move = WW.MOVES[key]
   SMODS.Consumable {

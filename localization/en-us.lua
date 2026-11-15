@@ -259,7 +259,8 @@ return {
         text = {
           "Add ranks in binary",
           "without carrying",
-          "{C:inactive}(ex: {C:attention}3 5 6{C:inactive} -> {C:attention}0{C:inactive})",
+          "A {C:attention}*{} adds {C:attention}1",
+          "{C:inactive}(ex: {C:attention}3 5 6{C:inactive} -> {C:attention}0{C:inactive}, {C:attention}5* 4{C:inactive} -> {C:attention}0{C:inactive})",
         },
       },
       ww_omega = {
@@ -277,6 +278,15 @@ return {
           "{C:attention}#1#{}",
           "Worth {C:chips}#2#{}",
           "Plays as {C:attention}#3#{}",
+        },
+      },
+      ww_modifier_green = {
+        name = "Modifier",
+        text = {
+          "{C:attention}#1#{}",
+          "Worth {C:chips}#2#{}",
+          "Plays as {C:attention}#3#{}",
+          "{C:inactive}(Wild cards carry a *)",
         },
       },
     },

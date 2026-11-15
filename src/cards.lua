@@ -60,8 +60,38 @@ end
 
 local base_has_no_rank = SMODS.has_no_rank
 
-function WW.has_mod(card) return card.ability ~= nil and card.ability.ww_mod ~= nil end
-function WW.mod_of(card) return WW.has_mod(card) and parse(card.ability.ww_mod) or nil end
+local STAR = Gm.of({ N.zero }, { N.zero })
+local UP = Gm.of({ N.zero }, { STAR })
+local DOWN = Gm.neg(UP)
+
+--- Is this card a green edge? Quintessence's Wild suit counts as every suit, as a green Hackenbush edge can be cut
+--- by either player, and a lone green edge is *. So a Wild card's value carries a *: a Wild 5 is 5*, which plays as
+--- a 5, and Nimbus on it gives a plain 5 (* + * = 0). The * belongs to the suit: it isn't stored, it comes and
+--- goes with the suit, and the stored modifier is the rest.
+function WW.is_green(card) return card.base ~= nil and card.base.suit == "quint_Wild" end
+
+-- The modifier a card shows and plays with, as canonical notation: the stored one, plus * on a green edge. nil
+-- when it's 0.
+local green_keys = {}
+local function mod_key(card)
+  local stored = card.ability and card.ability.ww_mod
+  if not WW.is_green(card) then return stored end
+  local k = stored or ""
+  local e = green_keys[k]
+  if e == nil then
+    local m = Gm.add(stored and parse(stored) or N.zero, STAR)
+    e = (N.is(m) and N.eq(m, N.zero)) and false or Gm.encode(m)
+    green_keys[k] = e
+  end
+  return e or nil
+end
+WW.mod_key = mod_key
+
+function WW.has_mod(card) return card.ability ~= nil and mod_key(card) ~= nil end
+function WW.mod_of(card)
+  local k = card.ability and mod_key(card)
+  return k and parse(k) or nil
+end
 
 --- A card's value, rank + modifier. nil for a card without one of our ranks (Stone, another mod's rank): a
 --- modifier on such a card lies dormant until it has a rank again.
@@ -69,11 +99,38 @@ function WW.value_of(card)
   if base_has_no_rank(card) then return nil end
   local r = INTS[card.base.value]
   if not r then return nil end
-  if not WW.has_mod(card) then return N.new(r) end
-  local key = r .. "|" .. card.ability.ww_mod
+  local m = card.ability and mod_key(card)
+  if not m then return N.new(r) end
+  local key = r .. "|" .. m
   local v = sums[key]
-  if not v then v = Gm.add(N.new(r), parse(card.ability.ww_mod)); sums[key] = v end
+  if not v then v = Gm.add(N.new(r), parse(m)); sums[key] = v end
   return v
+end
+
+local function is_switch(g)
+  return Gm.is_game(g) and #g.L == 1 and #g.R == 1 and N.is(g.L[1]) and N.is(g.R[1])
+    and N.eq(g.L[1], N.neg(g.R[1]))
+end
+WW.is_switch = is_switch
+
+--- Does a modifier carry a *: is it x + *, where x is a number plus nothing, ↑, ↓ or a switch ±t? Those are the
+--- shapes a card draws, so this is exactly when it wears the nimbus halo.
+local halos = {}
+function WW.has_star(m)
+  if N.is(m) then return false end
+  local k = Gm.encode(m)
+  if halos[k] == nil then
+    local rest = Gm.sub(m, Gm.mean(m))
+    local plain = Gm.add(rest, STAR)
+    halos[k] = Gm.eq(rest, STAR) or Gm.eq(plain, UP) or Gm.eq(plain, DOWN) or is_switch(plain)
+  end
+  return halos[k]
+end
+
+--- Does a card wear a halo? In nim-sums a halo adds 1: n* is the heap n ⊕ 1 (DESIGN.md § 3, Nimbus).
+function WW.halo(card)
+  local m = card.ability and mod_key(card)
+  return m ~= nil and WW.has_star(parse(m))
 end
 
 --- The ranks a card can play as, as integers; nil when it has no value.
@@ -103,7 +160,9 @@ function WW.rank_for(v)
   return best
 end
 
+-- Store a card's modifier. A green edge's * is the suit's, so it comes off first (−* = *).
 local function store_mod(card, m)
+  if WW.is_green(card) then m = Gm.add(m, STAR) end
   if N.is(m) and N.eq(m, N.zero) then card.ability.ww_mod = nil else card.ability.ww_mod = Gm.encode(m) end
 end
 

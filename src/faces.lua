@@ -88,19 +88,24 @@ local function classify(rank, mod)
     if N.eq(mod, N.zero) then return nil end
     return { glyphs = number(mod, true) }
   end
-  local mean = Gm.mean(mod)
-  local rest = Gm.sub(mod, mean)
+  -- A * is the halo (WW.has_star, which nim-sums read too): take it off and draw what's left under it.
+  local halo = WW.has_star(mod)
+  local plain = halo and Gm.add(mod, STAR) or mod
+  if N.is(plain) then
+    return { glyphs = N.eq(plain, N.zero) and {} or number(plain, true), nimbus = halo }
+  end
+  local mean = Gm.mean(plain)
+  local rest = Gm.sub(plain, mean)
   local out = N.eq(mean, N.zero) and {} or number(mean, true)
-  if Gm.eq(rest, STAR) then return { glyphs = out, nimbus = true } end
   for _, tiny in ipairs({ { UP, "↑" }, { DOWN, "↓" } }) do
-    if Gm.eq(rest, tiny[1]) or Gm.eq(rest, Gm.add(tiny[1], STAR)) then
+    if Gm.eq(rest, tiny[1]) then
       out[#out + 1] = { tiny[2], "infinitesimal" }
-      return { glyphs = out, nimbus = not Gm.eq(rest, tiny[1]) }
+      return { glyphs = out, nimbus = halo }
     end
   end
   if is_switch(rest) then
     out[#out + 1] = { "±", "heat" }
-    return { glyphs = number(rest.L[1], false, "heat", out) }
+    return { glyphs = number(rest.L[1], false, "heat", out), nimbus = halo }
   end
   -- A general game: its stops, L|R.
   local glyphs = number(Gm.left_stop(value), false, "heat")
@@ -114,7 +119,7 @@ function WW.badge_of(card)
   if not WW.has_mod(card) then return nil end
   local rank = WW.rank_int(card.base.value)
   if not rank then return nil end
-  local key = rank .. "|" .. card.ability.ww_mod
+  local key = rank .. "|" .. WW.mod_key(card)
   if looks[key] == nil then looks[key] = classify(rank, WW.mod_of(card)) or false end
   return looks[key] or nil
 end
@@ -270,7 +275,7 @@ local function pretty(v, signed)
   -- Games with a familiar shape read the way the badges do: x* for {x|x}, m±t for a finite switch.
   if #v.L == 1 and #v.R == 1 and N.is(v.L[1]) and N.is(v.R[1]) then
     local a, b = v.L[1], v.R[1]
-    if N.eq(a, b) then return pretty(a, signed) .. "*" end
+    if N.eq(a, b) then return (N.eq(a, N.zero) and "" or pretty(a, signed)) .. "*" end
     if N.is_finite(a) and N.is_finite(b) then
       local m, t = N.half(N.add(a, b)), N.half(N.sub(a, b))
       return (N.eq(m, N.zero) and "" or pretty(m, signed)) .. "±" .. pretty(t)
@@ -302,12 +307,16 @@ end
 local generate = generate_card_ui
 function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges_, hide_desc, main_start, main_end, card)
   local ui = generate(_c, full_UI_table, specific_vars, card_type, badges_, hide_desc, main_start, main_end, card)
-  if not full_UI_table and card and WW.has_mod(card) then
+  -- A Wild card always says what it's worth: its * (Wild 5 is 5*), or, once Nimbus has cancelled it, a plain 5.
+  local green = card and WW.is_green(card)
+  if not full_UI_table and card and (WW.has_mod(card) or green) then
     local value = WW.value_of(card)
     if value then
       local look = WW.badge_of(card)
-      local mod = look and look.wild and localize("k_ww_wild_rank") or pretty(WW.mod_of(card), true)
-      generate({ set = "Other", key = "ww_modifier", vars = { mod, pretty(value), ranks_text(WW.ranks_of(card)) } }, ui)
+      local mod = look and look.wild and localize("k_ww_wild_rank")
+        or (WW.has_mod(card) and pretty(WW.mod_of(card), true) or "*+* = 0")
+      local key = green and "ww_modifier_green" or "ww_modifier"
+      generate({ set = "Other", key = key, vars = { mod, pretty(value), ranks_text(WW.ranks_of(card)) } }, ui)
     end
   end
   return ui

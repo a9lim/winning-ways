@@ -269,6 +269,22 @@ local function jokers()
   check("Bouton: a 4 kicker can't", not WW.bouton({ k1, q, four }, { k1 }))
   check("Bouton: a scoring wild plays as its assigned rank, not any", not WW.bouton({ k1, q, w }, { k1, w }))
 
+  -- A halo adds 1 to a heap (DESIGN.md § 3, Nimbus): 5* plays as a 5 but nim-sums as a 4.
+  local star = cut(n(0), n(0))
+  local s5 = card("D_5", Gm.add(n(5), star))
+  check("5* is the heap 4", WW.heap(s5) == 4, WW.heap(s5))
+  check("so a Pair with one 5* escapes The Heap", WW.nim_sum({ f1, s5 }) == 1, WW.nim_sum({ f1, s5 }))
+  check("Bouton: 5* 4 and a 0 kicker", WW.bouton({ s5, four, z }, { s5, four }))
+  check("a bare * reads *, not +0*", WW.pretty(star, true) == "*", WW.pretty(star, true))
+  local hs = card("S_5", Gm.add(cut(n(6), n(4)), star))
+  check("5±1* wears a halo over its ±1", WW.halo(hs) and WW.look_text(WW.badge_of(hs)) == "heat:± heat:1 *",
+    WW.look_text(WW.badge_of(hs)))
+  -- The * closes a hot card's range at both ends: 5±1* = {6*|4*} plays only as 5 (±1* − 1 = {*|−2*} ≤ 0).
+  check("5±1* plays only as 5", table.concat(WW.ranks_of(hs), ",") == "5", table.concat(WW.ranks_of(hs), ","))
+  -- K K 4 0 nim-sum to 4, so Bouton needs the 5±1* kicker to be the heap 5 ⊕ 1 = 4; as a plain 5 it would be 5.
+  local sk, dk = card("S_K"), card("D_K")
+  check("Bouton: a 5±1* kicker is the heap 4", WW.bouton({ hs, sk, dk, card("H_4"), card("C_0") }, { sk, dk }))
+
   -- Grundy's mex.
   check("mex of 0 1 2 4 is 3", WW.mex_of({ card("H_0"), card("S_1"), card("D_2"), card("C_4") }) == 3)
   check("mex without a 0 is 0", WW.mex_of({ card("H_9"), card("S_1") }) == 0)
@@ -366,6 +382,39 @@ local function quintessence()
     { born, card("S_1"), card("H_2"), card("D_3"), card("C_4") }, "spa_Straight_Spectrum")
   WW.MOVES.repaint.apply({ hot })
   check("Repaint leaves a Wild card Wild", hot.base.suit == "quint_Wild", hot.base.suit)
+
+  -- A Wild card is a green Hackenbush edge, worth *: a Wild 5 is 5*. The * is the suit's, not stored.
+  local g5 = card("quint_W_5")
+  check("a Wild 5 is worth 5*", WW.pretty(WW.value_of(g5)) == "5*", WW.pretty(WW.value_of(g5)))
+  check("and plays as a 5", g5:get_id() == SMODS.Ranks["5"].id and g5.ability.ww_mod == nil)
+  check("it wears the halo", WW.look_text(WW.badge_of(g5)) == " *", WW.look_text(WW.badge_of(g5)))
+  check("a Pair with a Wild 5 nim-sums to 1, so it escapes The Heap", WW.nim_sum({ g5, card("H_5") }) == 1)
+  WW.MOVES.nimbus.apply({ g5 })
+  check("Nimbus on a Wild 5 makes a plain 5 (* + * = 0)",
+    WW.pretty(WW.value_of(g5)) == "5" and not WW.halo(g5) and WW.badge_of(g5) == nil, WW.pretty(WW.value_of(g5)))
+  assert(SMODS.change_base(g5, "Hearts"))
+  check("which is a 5* again off the Wild suit", WW.pretty(WW.value_of(g5)) == "5*", WW.pretty(WW.value_of(g5)))
+  assert(SMODS.change_base(g5, "quint_Wild"))
+  check("and a 5 back on it", WW.pretty(WW.value_of(g5)) == "5", WW.pretty(WW.value_of(g5)))
+  local h5 = card("quint_W_5")
+  WW.MOVES.heat.apply({ h5 })
+  check("Heat on a Wild 5 heats its *: 5±1", WW.pretty(WW.value_of(h5)) == "5±1", WW.pretty(WW.value_of(h5)))
+  local c6 = card("quint_W_6")
+  WW.MOVES.cut.apply({ c6 })
+  -- {6*|} is the simplest number not ≤ 6*, which is 6 itself ({*|} = 0: whoever moves first loses).
+  check("Cut on a Wild 6 (6*) makes exactly {6*|} = 6, storing the * that cancels the suit's",
+    WW.pretty(WW.value_of(c6)) == "6" and c6.ability.ww_mod == "{0|0}", WW.pretty(WW.value_of(c6)))
+  local om = card("quint_W_K")
+  WW.MOVES.omega.apply({ om })
+  check("a Wild ω card still eats", WW.is_eater(om))
+  local flush = {}
+  for i, r in ipairs({ "2", "3", "4", "5", "6" }) do flush[i] = card("quint_W_" .. r) end
+  local r = WW.resolve(flush)
+  check("a Wild Straight Flush scores its ranks, 20, the *s cancelling out", r and N.encode(r.total) == "20",
+    r and N.encode(r.total))
+  local born = 0
+  for _, c in ipairs(flush) do born = born + (WW.days_after(WW.value_of(c)) or 0) end
+  check("Birthday: each Wild card is a day younger than its rank", born == 5, born)
 end
 
 -- Every string a UI definition shows: text nodes, and the strings of the DynaTexts in names.
@@ -392,7 +441,7 @@ local function tooltips()
     j_ww_bouton = 1, j_ww_generator = 1, j_ww_grundy = 1, j_ww_hotstrat = 1, j_ww_thermograph = 1,
     j_ww_sprouts = 2, j_ww_paradise = 1, j_ww_conway = 2, j_ww_berlekamp = 1, j_ww_cantor = 0, j_ww_birthday = 0,
     j_ww_hilbert = 1, j_ww_guy = 0, c_ww_cut = 1, c_ww_heat = 1, c_ww_cool = 1, c_ww_mex = 1, c_ww_omega = 1,
-    c_ww_sum = 0, c_ww_frobenius = 0, c_ww_repaint = 0, c_ww_nimbus = 0, c_ww_tweedledum = 0,
+    c_ww_sum = 0, c_ww_frobenius = 0, c_ww_repaint = 0, c_ww_nimbus = 1, c_ww_tweedledum = 0,
     p_ww_game_normal_1 = 0, p_ww_game_jumbo_1 = 0, p_ww_game_mega_1 = 0,
   }
   local params = { bypass_discovery_center = true, bypass_discovery_ui = true }
@@ -433,6 +482,12 @@ local function tooltips()
     end
   end
   check("{C:ww_move} names the Moves' bright green", loc_colour("ww_move") == G.C.SET.Move)
+  -- With Quintessence, a Wild card's tooltip says what its * is.
+  if G.P_CARDS.quint_W_5 then
+    local g = card("quint_W_5")
+    local text = table.concat(strings_of(g:generate_UIBox_ability_table()), " / ")
+    check("a Wild 5's tooltip: worth 5*, and why", text:find("5*", 1, true) and text:find("Wild cards carry", 1, true), text)
+  end
 end
 
 local function speed()
