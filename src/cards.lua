@@ -95,6 +95,12 @@ function WW.set_value(card, v)
   return card
 end
 
+--- Replace a card's modifier (Heat and Cool act on the modifier: heating and cooling commute with adding the rank).
+function WW.set_mod(card, m)
+  store_mod(card, m)
+  return card
+end
+
 --- Add a game to a card's modifier (Nimbus adds *, Omega adds ω). The rank stays.
 function WW.add_mod(card, m)
   store_mod(card, Gm.add(WW.mod_of(card) or N.zero, m))
@@ -177,6 +183,14 @@ function get_X_same(num, hand, or_more)
   return out
 end
 
+--- Which rankless values pair. Finite ones pair when equal, so a 3 with +½ pairs with a 4 with −½. Infinite numbers
+--- pair when they lie in the same galaxy, a finite distance apart (nonstandard analysis's word): ω + 13 pairs with
+--- ω + 2, but not with 2ω. Seen from the finite ranks, everything in a galaxy is equally far away.
+function WW.tie_key(v)
+  if N.is(v) and not N.is_finite(v) then return "galaxy " .. N.encode(N.new(0, v.k)) end
+  return Gm.encode(v)
+end
+
 -- The best hand in G.handlist that these results contain: its position, and its name.
 local function top_of(results)
   for i, name in ipairs(G.handlist) do
@@ -201,8 +215,7 @@ function evaluate_poker_hand(hand)
     local v = WW.value_of(c)
     local modded = v ~= nil and WW.has_mod(c)
     if modded then any = true end
-    -- Tie groups are keyed by value, so a 3 with +½ pairs with a 4 with −½.
-    cards[i] = { ranks = WW.ranks_of(c) or {}, key = modded and Gm.encode(v) or ("#" .. i) }
+    cards[i] = { ranks = WW.ranks_of(c) or {}, key = modded and WW.tie_key(v) or ("#" .. i) }
   end
   if not any then return evaluate(hand) end
 

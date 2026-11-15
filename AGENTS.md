@@ -28,6 +28,8 @@ holds a plan and a test harness, and nothing else. `DESIGN.md` is the source of 
 | `src/ranks.lua` | the born ranks 0, 1 and the Cavalier (C, between J and Q) |
 | `src/cards.lua` | values on cards (rank + modifier), hand reading (evaluate, get_id, get_X_same), chips |
 | `src/faces.lua` | how modifiers show: badge frames, runtime-composed labels, the nimbus halo, the tooltip |
+| `src/moves.lua` | the Move consumables, the Omega Spectral and the Game Packs; each effect is `WW.MOVES[key].apply` |
+| `src/font.lua` | attaches Fable's symbol font (ω ½ ↑ …) as a fallback to Balatro's pixel font |
 | `src/lab.lua` | the Laboratory Deck, a development deck with a sample of every modifier (remove before release) |
 | `localization/en-us.lua` | all text |
 | `art/` | Fable's sheet programs on `art/pixel.py`; `art/build.py` rebuilds `assets/`; `art/NOTES.md` has provenance |

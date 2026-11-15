@@ -57,7 +57,10 @@ A card **acts as any rank its value equals or is confused with**. For example:
 - **Hand type:** you choose the ranks. You are the first player in a confused position, and the first player wins
   those. Assigning ranks is a matching problem like Quintessence's suit matching, and easier, because each card's
   options form one range of ranks.
-- **Equal values pair**, even when they have no rank: two 3½s are a Pair, and so are two ωs.
+- **Equal values pair**, even when they have no rank: two 3½s are a Pair.
+- **Infinite cards pair by galaxy**, the set of values a finite distance apart (nonstandard analysis's word):
+  ω + 13 pairs with ω + 2, but not with 2ω. Seen from the finite ranks, everything in one galaxy is equally far
+  away.
 - **Rank-specific jokers** see the rank a card played as. Wee sees a 2 in a Five of a Kind of 2s.
 
 ### 2.3 Scoring: the hand is a game
@@ -103,7 +106,7 @@ A card **acts as any rank its value equals or is confused with**. For example:
 - **ω only enters from outside**, through the Omega Spectral, which adds ω to a card's modifier. No chain of Moves on
   finite cards can reach it, because every value they build is born on a finite day.
 - **An ω card:**
-  - is above every rank, and pairs only with an equal value;
+  - is above every rank, and pairs with any card in its galaxy (§ 2.2);
   - always scores, like a Stone card;
   - **eats** the finite cards between it and the nearest infinite card to its left (n + ω = ω). Eaten cards don't
     count toward the hand, and are destroyed;
@@ -119,7 +122,10 @@ A card **acts as any rank its value equals or is confused with**. For example:
 
 ## 3. Moves — Decided
 
-Moves are a new consumable type (working name), sold in Game Packs.
+Moves are a new consumable type, sold in Game Packs and, at half the Tarots' rate, in the shop. They're built
+(`src/moves.lua`): each effect is a plain function of the selected cards, left to right, so the self-test runs
+them directly. Tweedledum remembers the last Move used, as The Fool does. A Cut on no cards adds a 0 of a random
+suit to the hand.
 
 ### Cut
 
@@ -332,6 +338,12 @@ Checked with ogdoad's Python bindings unless marked standard.
   - ±x is its own negative.
   - Wythoff's losing positions are (⌊nφ⌋, ⌊nφ²⌋).
   - Moore's Nim_k loses exactly when every binary place sums to 0 mod k + 1.
+
+## 10½. Questions a9 asked along the way
+
+- **Doesn't K + ω reduce to ω?** Not for surreal numbers, whose (Conway's) sum commutes, so K + ω = ω + 14, a
+  different number from ω. Only ordinal addition, which depends on order, absorbs: 14 + ω = ω, but ω + 14 ≠ ω even
+  there. That ordinal rule is what the played row uses for eating (§ 2.4); values use Conway's sum.
 
 ## 11. Engine
 
