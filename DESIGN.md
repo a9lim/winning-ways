@@ -391,12 +391,30 @@ a9 thought most of these were great. They wait on tuning and a final call.
 - **Glider** (rare): copies the Joker to its right, like Blueprint, but moves one slot right after every round,
   wrapping around. It's the glider from Conway's Life, which the last chapter of Winning Ways covers.
 
+**Hackenbush.** Black suits are blue edges (yours), red suits red edges (the Blind's), Wild cards green (either
+side's), and the leftmost card is the ground. Cutting an edge removes everything above it, and you may cut only your
+own colour. Cutting is the mechanic, not reading a stalk's value: you can reorder a hand freely, so a stalk read from
+it only reflects which card you put first.
+
+- **Hackenbush** (rare): discarding a black card also discards every card to its right, and red cards can't be
+  discarded, so they leave only by falling. One discard can clear most of a hand, which makes it strong beside
+  Castle, Yorick and Mail-In Rebate. Test it in a real run before deciding.
+- **Hackenbush** (Move): fuses up to 3 selected cards into {black | red}, with Wild cards on both sides. Colour picks
+  the side, so order doesn't matter, and it makes games with several options, which Cut never can: ♠9 ♣3 | ♥5 is
+  {9, 3 | 5} = 7±2.
+- **A stalk across hands** (uncommon): each all-black hand adds a blue edge and each all-red hand a red one, and the
+  joker pays the stalk's value. After the first red hand every gain is a fraction (sign expansion). It's the weakest
+  of the three, but it pairs with Birthday.
+
 **Legendaries: the authors.** Conway, Berlekamp and Guy are all decided (§ 4).
 
 ## 8. Candidates — Blinds and decks
 
 - **Zugzwang** (Boss): the Blind moves first, so you score the Right stop. It only hurts hot cards, the way The Plant
   only hurts face cards.
+- **The Axe** (Boss): the Blind's side of Hackenbush (§ 7). After each hand it cuts your leftmost red card and every
+  card to its right. Sorting reds to the right limits the damage, but that fights the other uses of card order (ω
+  eats leftward, Conway reads neighbours). a9 likes it and parked it on 2026-11-15.
 - **Later:** vouchers, tags, challenges, and the Moves' Game Pack art.
 
 ## 9. Open questions
