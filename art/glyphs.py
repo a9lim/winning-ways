@@ -1,0 +1,191 @@
+"""glyphs.py — the badge font: 38 glyphs in 7x9 cells, white on transparent.
+
+The Lua side composes a modifier's text ("+½", "±2", "+ω", "↑*") out of
+these cells at runtime and tints them, so every glyph is plain white, sits
+left-aligned in its cell, and shares one baseline.
+
+Metrics (rows are 0..8 in the cell):
+  cap height   rows 1..7   digits, arrows, ?, /        (7 tall, 5 wide)
+  baseline     row 7       the last inked row of anything that stands on it
+  x-height     rows 3..7   ω, and the small digits
+  maths axis   row 4       + and − are centred on it; * sits on it
+  full height  rows 0..8   | and the seven vulgar fractions
+  advance      inked width + 1
+
+One-pixel strokes with clipped corners, after the white ∞ on vanilla's
+Eternal sticker and the proportions of the game's font (m6x11: open-topped
+4, flagged 1, flat-topped 7). Drawn here; no pixels from the game.
+
+Small digits and the small slash build arbitrary fractions: see NOTES.md.
+
+fable, 2026-11-14 (claude-fable-5-2)
+"""
+from __future__ import annotations
+
+from pixel import Canvas, Palette
+
+CW, CH = 7, 9
+PAL = Palette(w="#ffffff")
+
+
+def _g(*rows7, top=1):
+    """Rows given from `top`; padded to 9 rows."""
+    rows = ["."] * top + list(rows7)
+    return rows + ["."] * (CH - len(rows))
+
+
+G = {
+    "0": _g(".###.", "#...#", "#...#", "#...#", "#...#", "#...#", ".###."),
+    "1": _g(".#.", "##.", ".#.", ".#.", ".#.", ".#.", "###"),
+    "2": _g(".###.", "#...#", "....#", "...#.", "..#..", ".#...", "#####"),
+    "3": _g(".###.", "#...#", "....#", "..##.", "....#", "#...#", ".###."),
+    "4": _g("#...#", "#...#", "#...#", "#####", "....#", "....#", "....#"),
+    "5": _g("#####", "#....", "####.", "....#", "....#", "#...#", ".###."),
+    "6": _g(".###.", "#....", "####.", "#...#", "#...#", "#...#", ".###."),
+    "7": _g("#####", "....#", "....#", "...#.", "..#..", "..#..", "..#.."),
+    "8": _g(".###.", "#...#", "#...#", ".###.", "#...#", "#...#", ".###."),
+    "9": _g(".###.", "#...#", "#...#", "#...#", ".####", "....#", ".###."),
+    "+": _g("..#..", "..#..", "#####", "..#..", "..#..", top=2),
+    "−": _g("#####", top=4),
+    "±": _g("..#..", "..#..", "#####", "..#..", "..#..", ".....", "#####"),
+    "/": _g("....#", "...#.", "...#.", "..#..", ".#...", ".#...", "#...."),
+    "*": _g("#.#.#", ".###.", "#####", ".###.", "#.#.#", top=2),
+    "ω": _g(".#...#.", "#.....#", "#..#..#", "#..#..#", ".##.##.", top=3),
+    "|": _g("#", "#", "#", "#", "#", "#", "#", "#", "#", top=0),
+    "↑": _g("..#..", ".###.", "#.#.#", "..#..", "..#..", "..#..", "..#.."),
+    "↓": _g("..#..", "..#..", "..#..", "..#..", "#.#.#", ".###.", "..#.."),
+    "?": _g(".###.", "#...#", "....#", "...#.", "..#..", ".....", "..#.."),
+}
+
+# Vulgar fractions: numerator top left (3x4, rows 0..3), denominator bottom
+# right (3x5, rows 4..8), a slash between that touches neither.
+NUM = {
+    "1": [".#.", "##.", ".#.", ".#."],
+    "3": ["##.", ".##", "..#", "##."],
+    "5": ["###", "##.", "..#", "##."],
+    "7": ["###", "..#", ".#.", ".#."],
+}
+DEN = {
+    "2": ["##.", "..#", ".#.", "#..", "###"],
+    "4": ["#.#", "#.#", "###", "..#", "..#"],
+    "8": ["###", "#.#", "###", "#.#", "###"],
+}
+SLASH = [(6, 0), (5, 1), (4, 2), (3, 3), (2, 5), (1, 6), (0, 7)]
+FRACTIONS = {"½": "12", "¼": "14", "¾": "34", "⅛": "18", "⅜": "38", "⅝": "58", "⅞": "78"}
+
+# Small digits, 3x5 on the baseline (rows 3..7).
+SMALL = {
+    "0": ["###", "#.#", "#.#", "#.#", "###"],
+    "1": [".#.", "##.", ".#.", ".#.", "###"],
+    "2": ["##.", "..#", ".#.", "#..", "###"],
+    "3": ["##.", "..#", ".#.", "..#", "##."],
+    "4": ["#.#", "#.#", "###", "..#", "..#"],
+    "5": ["###", "#..", "##.", "..#", "##."],
+    "6": [".##", "#..", "###", "#.#", "###"],
+    "7": ["###", "..#", ".#.", ".#.", ".#."],
+    "8": ["###", "#.#", "###", "#.#", "###"],
+    "9": ["###", "#.#", "###", "..#", "##."],
+}
+SMALL_SLASH = _g("..#", "..#", ".#.", ".#.", ".#.", "#..", "#..")
+
+NUM_DY, DEN_DY, SLASH_GAP = -3, 1, -1
+
+ORDER = (list("0123456789") + ["+", "−", "±", "/", "*", "ω", "|", "↑", "↓", "?"]
+         + list(FRACTIONS) + [f"s{d}" for d in "0123456789"] + ["s/"])
+
+
+def glyph(name):
+    c = Canvas(CW, CH, PAL)
+    if name in G:
+        c.stamp(G[name], 0, 0, {"#": "w"})
+    elif name in FRACTIONS:
+        n, d = FRACTIONS[name]
+        c.stamp(NUM[n], 0, 0, {"#": "w"})
+        c.stamp(DEN[d], 4, 4, {"#": "w"})
+        c.pxs(SLASH, "w")
+    elif name == "s/":
+        c.stamp(SMALL_SLASH, 0, 0, {"#": "w"})
+    else:
+        c.stamp(SMALL[name[1]], 0, 3, {"#": "w"})
+    return c
+
+
+def width(name):
+    m = glyph(name).mask()
+    return int(m.any(0).nonzero()[0].max()) + 1
+
+
+def sheet_canvas():
+    out = Canvas(CW * len(ORDER), CH, PAL)
+    for i, n in enumerate(ORDER):
+        out.blit(glyph(n), i * CW, 0)
+    return out
+
+
+def lua():
+    q = lambda s: '"' + s + '"'
+    order = ", ".join(q(n) for n in ORDER)
+    widths = ", ".join(f"[{q(n)}] = {width(n)}" for n in ORDER)
+    return (
+        "-- Generated by art/build.py from art/glyphs.py; do not edit.\n"
+        "-- assets/{1x,2x}/glyphs.png: one row of cells, white on transparent.\n"
+        "-- order[i] is the glyph in cell i (1-based); \"s0\"..\"s9\" and \"s/\" are the small set.\n"
+        "-- widths are inked widths in px at 1x; advance is width + spacing.\n"
+        "-- baseline is the last inked row (0-based, from the cell top) of glyphs standing on it.\n"
+        "-- Small fractions: numerator digits at dy = small.num_dy, then \"s/\", then\n"
+        "-- denominator digits at dy = small.den_dy; use small.slash_gap around the slash.\n"
+        "return {\n"
+        f"  order = {{ {order} }},\n"
+        f"  widths = {{ {widths} }},\n"
+        f"  cell = {{ w = {CW}, h = {CH} }},\n"
+        "  spacing = 1,\n"
+        "  baseline = 7,\n"
+        f"  small = {{ num_dy = {NUM_DY}, den_dy = {DEN_DY}, slash_gap = {SLASH_GAP} }},\n"
+        "}\n")
+
+
+def outputs():
+    return {"glyphs.png": (sheet_canvas(), None)}
+
+
+def layout(names, spacing=1):
+    """Where each glyph of a string goes: [(name, x, dy)], and the string's
+    inked width. This is the rule the Lua side follows.
+
+    Glyphs advance by inked width + spacing. A run of small digits before
+    an "s/" is a numerator and is raised 3 px; the run after it is a
+    denominator and is dropped 1 px; a small digit with no slash stays on
+    the baseline. The slash tucks one pixel under the numerator and one
+    over the denominator (SLASH_GAP = -1)."""
+    out, x = [], 0
+    for i, n in enumerate(names):
+        small = n.startswith("s") and n != "s/"
+        dy = 0
+        if small:
+            j = i
+            while j < len(names) and names[j].startswith("s") and names[j] != "s/":
+                j += 1
+            k = i
+            while k >= 0 and names[k].startswith("s") and names[k] != "s/":
+                k -= 1
+            if j < len(names) and names[j] == "s/":
+                dy = NUM_DY
+            elif k >= 0 and names[k] == "s/":
+                dy = DEN_DY
+        if i:
+            x += SLASH_GAP if "s/" in (n, names[i - 1]) else spacing
+        out.append((n, x, dy))
+        x += width(n)
+    return out, x
+
+
+def text(c, names, x, y, colour):
+    """Draw a string of glyph names onto canvas c (previews and tests)."""
+    placed, w = layout(names)
+    for n, gx, dy in placed:
+        m = glyph(n).mask()
+        for j in range(CH):
+            for i in range(CW):
+                if m[j, i]:
+                    c.px(x + gx + i, y + dy + j, colour)
+    return x + w

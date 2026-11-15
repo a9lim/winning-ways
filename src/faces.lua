@@ -18,20 +18,13 @@ local LAYOUT = assert(SMODS.load_file("art/layout.lua"))()
 local CELL = { number = 0, hot = 1, infinite = 2, game = 3, nimbus = 4 }
 local index = {}
 for i, name in ipairs(GLYPHS.order) do index[name] = i - 1 end
--- The small digits and slash follow ⅞ in the sheet, whatever art/glyphs.lua names them.
-if not GLYPHS.small then
-  GLYPHS.small = {}
-  local after = index["⅞"] + 1
-  for d = 0, 9 do GLYPHS.small[tostring(d)] = GLYPHS.order[after + d + 1] end
-  GLYPHS.small["/"] = GLYPHS.order[after + 11]
-end
 
 -- labels ------------------------------------------------------------------------------------------------
 
 local FRACTIONS = { [0.5] = "½", [0.25] = "¼", [0.75] = "¾", [0.125] = "⅛", [0.375] = "⅜", [0.625] = "⅝", [0.875] = "⅞" }
 
 local function digits(n, small, out)
-  for d in ("%.0f"):format(n):gmatch("%d") do out[#out + 1] = small and GLYPHS.small[d] or d end
+  for d in ("%.0f"):format(n):gmatch("%d") do out[#out + 1] = small and ("s" .. d) or d end
 end
 
 -- Glyph names for a dyadic: an optional sign, the whole part, and the fraction as one glyph (½) or small
@@ -48,7 +41,7 @@ local function dyadic(x, signed, out)
       local q = 1
       while frac * q ~= math.floor(frac * q) do q = q * 2 end
       digits(frac * q, true, out)
-      out[#out + 1] = GLYPHS.small["/"]
+      out[#out + 1] = "s/"
       digits(q, true, out)
     end
   end
@@ -75,7 +68,7 @@ local function classify(rank, mod)
     return { kind = N.is_finite(mod) and "number" or "infinite", glyphs = number(mod, true) }
   end
   local mean = Gm.mean(mod)
-  local rest = Gm.sub(mod, mean)
+  local rest = N.is_finite(mean) and Gm.sub(mod, mean) or mod
   if Gm.eq(rest, STAR) then
     return { kind = "number", glyphs = N.eq(mean, N.zero) and {} or number(mean, true), nimbus = true }
   end
@@ -118,31 +111,55 @@ local function frame(cell)
   return frames[key]
 end
 
--- The label's glyphs drawn onto a transparent card-sized canvas, centred in the text box.
-local function label(glyphs)
+-- Where each glyph goes, following art/glyphs.py's layout(): glyphs advance by inked width + spacing; a run of
+-- small digits before "s/" is a numerator (raised), the run after it a denominator (dropped), and the slash
+-- tucks in by slash_gap on both sides. Returns {name, x, dy} and the inked width.
+local function place(glyphs)
+  local out, x = {}, 0
+  local function small(n) return n and n:sub(1, 1) == "s" and n ~= "s/" end
+  for i, n in ipairs(glyphs) do
+    local dy = 0
+    if small(n) then
+      local j = i
+      while small(glyphs[j]) do j = j + 1 end
+      local k = i
+      while small(glyphs[k]) do k = k - 1 end
+      if glyphs[j] == "s/" then dy = GLYPHS.small.num_dy elseif glyphs[k] == "s/" then dy = GLYPHS.small.den_dy end
+    end
+    if i > 1 then
+      x = x + ((n == "s/" or glyphs[i - 1] == "s/") and GLYPHS.small.slash_gap or GLYPHS.spacing)
+    end
+    out[#out + 1] = { n, x, dy }
+    x = x + (GLYPHS.widths[n] or GLYPHS.cell.w)
+  end
+  return out, x
+end
+
+local function rgb(hex)
+  return tonumber(hex:sub(2, 3), 16) / 255, tonumber(hex:sub(4, 5), 16) / 255, tonumber(hex:sub(6, 7), 16) / 255
+end
+
+-- The label's glyphs drawn onto a transparent card-sized canvas, centred in the text box, in the frame's tint.
+local function label(glyphs, kind)
   local scale = G.SETTINGS.GRAPHICS.texture_scaling
-  local key = scale .. ":" .. table.concat(glyphs, " ")
+  local key = scale .. ":" .. kind .. ":" .. table.concat(glyphs, " ")
   if labels[key] then return labels[key] end
   local sheet = G.ASSET_ATLAS.ww_glyphs
-  local gap = GLYPHS.gap or 1
-  local width = 0
-  for i, g in ipairs(glyphs) do width = width + (GLYPHS.widths[g] or GLYPHS.cell.w) + (i > 1 and gap or 0) end
+  local placed, width = place(glyphs)
   local box = LAYOUT.text
-  local x = box.x + math.max(0, math.floor((box.w - width) / 2))
-  local y = box.y + math.floor((box.h - GLYPHS.cell.h) / 2)
+  local x0 = box.x + math.floor((box.w - width) / 2)
   local canvas = love.graphics.newCanvas(71, 95, { dpiscale = scale })
   canvas:setFilter("nearest", "nearest")
   love.graphics.push("all")
   love.graphics.setCanvas(canvas)
   love.graphics.clear(0, 0, 0, 0)
   love.graphics.origin()
-  love.graphics.setColor(1, 1, 1, 1)
-  for _, g in ipairs(glyphs) do
-    local i = index[g]
+  love.graphics.setColor(rgb(LAYOUT.text_colour[kind] or "#fdfdfd"))
+  for _, p in ipairs(placed) do
+    local i = index[p[1]]
     if i then
       local quad = love.graphics.newQuad(i * GLYPHS.cell.w, 0, GLYPHS.cell.w, GLYPHS.cell.h, sheet.image:getDimensions())
-      love.graphics.draw(sheet.image, quad, x, y)
-      x = x + (GLYPHS.widths[g] or GLYPHS.cell.w) + gap
+      love.graphics.draw(sheet.image, quad, x0 + p[2], box.y + p[3])
     end
   end
   love.graphics.pop()
@@ -166,7 +183,7 @@ SMODS.DrawStep {
     if not b then return end
     if #b.glyphs > 0 then
       draw(frame(b.kind), card)
-      draw(label(b.glyphs), card)
+      draw(label(b.glyphs, b.kind), card)
     end
     if b.nimbus then draw(frame("nimbus"), card) end
   end,

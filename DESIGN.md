@@ -384,7 +384,7 @@ Built and tested (`src/engine/`, `tests/`); nothing in the game uses it yet.
 
   Tie groups of equal rankless values pair only with each other.
 - **In the game** (`src/cards.lua`, `src/ranks.lua`):
-  - **Ranks:** the born ranks are registered, with placeholder fronts made by `art/placeholder_ranks.py`.
+  - **Ranks:** the born ranks are registered, with fronts Fable drew from vanilla's sprites (`art/fronts.py`).
   - **Reading a hand:** `evaluate_poker_hand` runs the game's own evaluator once per candidate assignment, so other
     mods' hands count too, and keeps the best hand by the hand list's order, then the most scoring cards.
   - **Hooks:** while a hand is assigned, `get_id`, `get_nominal` and `is_face` report the rank a card plays as.

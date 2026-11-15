@@ -124,6 +124,35 @@ local function scoring()
   check("ω scores nothing, ω + 14 a King's 10", WW.chips_of(N.omega) == 0 and WW.chips_of(n(14, 1)) == 10)
 end
 
+local function faces()
+  if not WW.badge_of then
+    check("the faces loaded (Fable's art is present)", false)
+    return
+  end
+  local cards = {}
+  for _, code in ipairs({ "D_3", "C_6", "H_T", "H_7", "C_5", "S_Q", "S_9", "H_4", "S_A", "D_8", "C_K" }) do
+    cards[#cards + 1] = card(code)
+  end
+  WW.apply_lab(cards)
+  local want = {
+    { "number", "+ ½" }, { "number", "− ¼" }, { "number", "+ ⅜" }, { "hot", "± 2" }, { "hot", "± 1" }, { "hot", "± 1" },
+    { "number", "", true }, { "number", "", true }, { "infinite", "ω | 2" }, { "game", "5 | 3" }, { "infinite", "+ ω" },
+  }
+  for i, c in ipairs(cards) do
+    local b = WW.badge_of(c)
+    local got = b and (b.kind .. " " .. table.concat(b.glyphs, " ") .. (b.nimbus and " *" or "")) or "none"
+    local w = want[i][1] .. " " .. want[i][2] .. (want[i][3] and " *" or "")
+    check("badge for lab card " .. i, got == w, ("got %s, want %s"):format(got, w))
+  end
+  local ui = cards[1]:generate_UIBox_ability_table()
+  local last = ui.info and ui.info[#ui.info]
+  check("the tooltip has a Modifier box", last and last.name == "Modifier", last and last.name)
+  local sixteenth = card("H_5")
+  WW.add_mod(sixteenth, n(5 / 16))
+  local b = WW.badge_of(sixteenth)
+  check("other fractions use small digits", b and table.concat(b.glyphs, " ") == "+ s5 s/ s1 s6", b and table.concat(b.glyphs, " "))
+end
+
 local function speed()
   local wild = cut(N.omega, n(2))
   local hand = { card("H_K", wild), card("S_9"), card("D_A", wild), card("C_7"), card("H_8", cut(n(9), n(5))) }
@@ -138,6 +167,7 @@ local function run()
   ranks()
   values()
   scoring()
+  faces()
   speed()
 end
 
