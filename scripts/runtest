@@ -1,0 +1,31 @@
+#!/bin/bash
+# Boot Balatro with the run test (tests/run.lua) and print its results: it starts a real run with saving off,
+# plays scripted hands and a Move through the game's own code, and quits. Needs Steam running and Winning Ways in
+# the Mods folder. The save files are backed up first and put back afterwards anyway.
+set -uo pipefail
+
+out="${1:-${TMPDIR:-/tmp}/winning-ways-runtest.txt}"
+rm -f "$out"
+
+for _ in $(seq 120); do pgrep -x steam_osx >/dev/null && break; /bin/sleep 1; done
+pgrep -x steam_osx >/dev/null || { echo "Steam isn't running." >&2; exit 2; }
+
+# The run test plays a real run with saving off; keep a copy of the saves anyway.
+saves="$HOME/Library/Application Support/Balatro"
+backup="$(mktemp -d)"
+for f in "$saves"/*/save.jkr; do [[ -e "$f" ]] && mkdir -p "$backup/$(basename "$(dirname "$f")")" && cp -p "$f" "$backup/$(basename "$(dirname "$f")")/"; done
+restore() {
+  for _ in $(seq 30); do pgrep -f "Balatro.app/Contents/MacOS" >/dev/null || break; /bin/sleep 1; done
+  for d in "$backup"/*/; do [[ -d "$d" ]] && cp -p "$d"save.jkr "$saves/$(basename "$d")/"; done
+  rm -rf "$backup"
+}
+trap restore EXIT
+WINNINGWAYS_RUNTEST="$out" balala >/dev/null
+for _ in $(seq 180); do [[ -s "$out" ]] && break; /bin/sleep 1; done
+if [[ ! -s "$out" ]]; then
+  echo "No results after 3 minutes; the game's log:" >&2
+  balala logs -n 60 >&2
+  exit 2
+fi
+cat "$out"
+grep -q "0 failed$" "$out"

@@ -28,6 +28,7 @@ holds a plan and a test harness, and nothing else. `DESIGN.md` is the source of 
 | `src/ranks.lua` | the born ranks 0, 1 and the Cavalier (C, between J and Q) |
 | `src/cards.lua` | values on cards (rank + modifier), hand reading (evaluate, get_id, get_X_same), chips |
 | `src/faces.lua` | how modifiers show: badge frames, runtime-composed labels, the nimbus halo, the tooltip |
+| `src/omega.lua` | infinity eating: who eats whom in the played row, growth, destruction, always-scores |
 | `src/moves.lua` | the Move consumables, the Omega Spectral and the Game Packs; each effect is `WW.MOVES[key].apply` |
 | `src/font.lua` | attaches Fable's symbol font (ω ½ ↑ …) as a fallback to Balatro's pixel font |
 | `src/lab.lua` | the Laboratory Deck, a development deck with a sample of every modifier (remove before release) |
@@ -49,6 +50,11 @@ format.
 - `scripts/test` runs the unit tests on LuaJIT. It uses `luajit` from PATH, or borrows an unfused copy of the LÖVE
   runtime from the local Balatro install. Nothing gets installed on the Mac, which is deliberately Homebrew-free.
 - `tests/main.lua` lists the suites; each suite file returns a function that takes `test(name, body)`.
+- `scripts/runtest` plays a real run through the game's own code: it picks the Small Blind, plays scripted hands
+  and uses a Move, then checks the score to the chip. `G.F_NO_SAVING` is set, and the script also backs up and
+  restores the save files. It is the only test of the scoring path as the game runs it, so run it after any change
+  to scoring, eating or the Moves. If the game crashes, close it (`pkill -f Balatro.app/Contents/MacOS`) before the
+  next run.
 - `WINNINGWAYS_SHOWCASE=<png> balala` lays out the born ranks and every kind of modifier beside vanilla cards,
   screenshots them and quits; add `WINNINGWAYS_SHOWCASE_PALETTE=lc|hc` to force the palette (the settings are put
   back). Use it after any art or drawing change.

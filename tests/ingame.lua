@@ -215,6 +215,27 @@ local function moves()
   check("the Game Packs exist", G.P_CENTERS.p_ww_game_normal_1 ~= nil and G.P_CENTERS.p_ww_game_mega_1 ~= nil)
 end
 
+local function eating()
+  local function omega(code) return WW.add_mod(card(code), N.omega) end
+  local j1, w1, j2, w2, j3 = card("H_3"), omega("S_K"), card("D_5"), omega("C_2"), card("H_9")
+  local eaten = WW.eating({ j1, w1, j2, w2, j3 })
+  check("ω eats the finite card to its left", eaten[j1] == w1)
+  check("the next ω eats only back to the first", eaten[j2] == w2 and eaten[w1] == nil)
+  check("nothing eats to the right", eaten[j3] == nil)
+  local junk, wild, w3 = card("H_4"), card("S_A", Gm.of({ N.omega }, { n(2) })), omega("D_K")
+  eaten = WW.eating({ junk, wild, w3 })
+  check("an infinite card (the wild) blocks: nothing is eaten", next(eaten) == nil)
+  local a, b, w4, c, d = card("H_7"), card("S_7"), omega("D_K"), card("C_9"), card("H_9")
+  local function place(cards) for i, x in ipairs(cards) do x.T.x = i end end
+  local hand = { a, b, w4, c, d }
+  place(hand)
+  expect("7 7 ω 9 9: the 7s are eaten, so a Pair of 9s", hand, "Pair")
+  local food, growth = WW.feed(hand)
+  check("feeding: the two 7s go", #food == 2)
+  check("the eater grows by their chips", growth[w4] == 14 and w4.ability.perma_bonus == 14, growth[w4])
+  check("an ω card always scores", SMODS.always_scores(w4) == true)
+end
+
 local function speed()
   local wild = cut(N.omega, n(2))
   local hand = { card("H_K", wild), card("S_9"), card("D_A", wild), card("C_7"), card("H_8", cut(n(9), n(5))) }
@@ -231,6 +252,7 @@ local function run()
   scoring()
   faces()
   moves()
+  eating()
   speed()
 end
 

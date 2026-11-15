@@ -117,6 +117,13 @@ A card **acts as any rank its value equals or is confused with**. For example:
   both survive.
 - **Two additions.** The played row uses ordinal addition, which depends on order. Sum uses Conway's sum, which
   commutes. So ω·k only comes from Sum (ω + ω = ω·2), and Sum(K, ω) = ω + 14.
+- **As built** (`src/omega.lua`):
+  - **Who eats:** a card eats when its value is a positive infinite number (ω + 14, 2ω, ω/2) and it isn't
+    debuffed.
+  - **Who blocks:** any infinite value stops a run of eaten cards, the wild included.
+  - **When:** the eater grows as the hand is played, so it scores its new chips that same hand. The eaten cards are
+    left out of the hand being read, so a preview already shows the hand without them; Splash can't make them
+    score; and they're destroyed once the hand has scored.
 - **The wild rank {ω|2}** (made with Cut) has infinite temperature, so it is always the hottest card in a hand. You
   take ω (0 chips), and the Blind gets first pick of your other hot cards.
 
@@ -410,8 +417,11 @@ Built and tested (`src/engine/`, `tests/`); nothing in the game uses it yet.
   - **Scoring:** `SMODS.calculate_main_scoring` resolves the scoring cards' values, and `get_chip_bonus` pays each
     card the chips for the number it ends on.
   - **Speed:** reading a hand with two wilds and a hot card takes about 3 ms in the game.
-- **Not yet exercised end to end:** the scoring hook has only been checked by setting each card's final number by
-  hand, because nothing in a real run can give a card a modifier until the Moves exist.
+- **Exercised end to end:** `scripts/runtest` starts a real run with saving switched off and plays scripted hands
+  through the game's own code:
+  - a hot card's bite: 7 7 7±2 scores exactly 159;
+  - infinity eating: 7 7 K+ω 9 9 is a Pair worth 104, the 7s are destroyed, and the King keeps +14;
+  - Cut used through the game's own button.
 - **Still to build:**
   - **Card faces:** with modifiers, a card shows its normal rank front plus a modifier badge (+½, *, ±2, ω), with
     the exact value in the tooltip. That's far easier than procedural fronts, but it is still the next thing to

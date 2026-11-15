@@ -201,7 +201,8 @@ end
 
 local evaluate = evaluate_poker_hand
 function evaluate_poker_hand(hand)
-  local main = (G.play and hand == G.play.cards) or (G.hand and hand == G.hand.highlighted)
+  -- The played or selected hand, possibly minus what infinity ate (src/omega.lua sets reading_main for that).
+  local main = WW.reading_main or (G.play and hand == G.play.cards) or (G.hand and hand == G.hand.highlighted)
   if main then
     -- Cards not in the hand being read report their own ranks again.
     local inside = {}
