@@ -34,7 +34,7 @@ the jokers, The Heap and the Field Deck are built. `DESIGN.md` is the source of 
 | `src/blinds.lua` | The Heap, a Boss Blind |
 | `src/decks.lua` | the Field Deck |
 | `src/font.lua` | attaches Fable's symbol font (ω ½ ↑ …) as a fallback to Balatro's pixel font |
-| `src/lab.lua` | the Laboratory Deck, a development deck with a sample of every modifier (remove before release) |
+| `src/lab.lua` | the modifier sample the tests use, and the Laboratory Deck (only with `WINNINGWAYS_LAB=1`) |
 | `localization/en-us.lua` | all text |
 | `art/` | Fable's sheet programs on `art/pixel.py`; `art/build.py` rebuilds `assets/`; `art/NOTES.md` has provenance |
 | `tools/fixtures.py` | regenerates `tests/fixtures/ogdoad.lua` from ogdoad |
@@ -77,8 +77,8 @@ alone. `balala` launches the game, and `balala logs -f` follows its log.
 
 ## Release
 
-Bump `version` in `WinningWays.json`, add a `CHANGELOG.md` entry, run the tests, then tag `vX.Y.Z` and publish a
-GitHub release.
+Bump `version` in `WinningWays.json`, add a `CHANGELOG.md` entry, run the tests, then tag `vX.Y.Z`. The repo has no
+GitHub remote yet; publishing one (and a GitHub release) waits for a9.
 
 ## Art
 

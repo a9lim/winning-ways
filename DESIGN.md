@@ -1,6 +1,6 @@
 # Winning Ways — design sketch
 
-*Status: the engine, values, Moves, ω eating, the decided jokers, The Heap and the Field Deck are built (§ 11).
+*Status: 1.0.0. Everything in the Decided sections is built (§ 11).
 **Decided** sections record what a9 and Claude have agreed. **Candidates** are proposals still waiting on a9's call. § 10 lists the facts the design
 rests on, each one checked with ogdoad or marked standard.*
 

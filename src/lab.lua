@@ -1,5 +1,6 @@
--- The Laboratory: a development deck for trying values before the Moves exist. It's a standard deck with a sample of
--- every kind of modifier, plus the born ranks. Remove it before release.
+-- The Laboratory: a development deck with a sample of every kind of modifier, plus the born ranks. The sample
+-- (WW.LAB, WW.apply_lab) is what the self-test and the showcase draw; the deck itself only appears when the game
+-- is launched with WINNINGWAYS_LAB=1.
 
 local WW = WinningWays
 local E = WW.engine
@@ -36,18 +37,20 @@ function WW.apply_lab(cards)
   end
 end
 
-SMODS.Back {
-  key = "lab",
-  pos = { x = 4, y = 3 },
-  apply = function(self)
-    G.E_MANAGER:add_event(Event({
-      func = function()
-        WW.apply_lab(G.playing_cards)
-        for _, code in ipairs(WW.LAB_EXTRA) do
-          create_playing_card({ front = G.P_CARDS[code], center = G.P_CENTERS.c_base }, G.deck, true, true)
-        end
-        return true
-      end,
-    }))
-  end,
-}
+if os.getenv("WINNINGWAYS_LAB") then
+  SMODS.Back {
+    key = "lab",
+    pos = { x = 4, y = 3 },
+    apply = function(self)
+      G.E_MANAGER:add_event(Event({
+        func = function()
+          WW.apply_lab(G.playing_cards)
+          for _, code in ipairs(WW.LAB_EXTRA) do
+            create_playing_card({ front = G.P_CARDS[code], center = G.P_CENTERS.c_base }, G.deck, true, true)
+          end
+          return true
+        end,
+      }))
+    end,
+  }
+end
