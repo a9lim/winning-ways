@@ -10,7 +10,10 @@ the Lua side depends on.
 
 The rank fronts, Omega, the packs, the jokers and the blind chip are derived from Balatro's own textures, read from the
 installed game archive (override its path with BALATRO_LOVE). Without the
-game the build stops with a message saying so.
+game the build stops with a message saying so. The Wild row of the rank
+fronts is derived from Quintessence's Wild sheets, read from its checkout
+beside this one (override with QUINTESSENCE_ASSETS); without it the build
+stops the same way.
 
 fable, 2026-11-14 (claude-fable-5-2)
 """
@@ -39,14 +42,14 @@ from pixel import upscale  # noqa: E402
 ASSETS = HERE.parent / "assets"
 
 EXPECT = {
-    "ranks.png": (213, 380), "ranks_hc.png": (213, 380),      # 3 x 4 cells of 71x95
+    "ranks.png": (213, 475), "ranks_hc.png": (213, 475),      # 3 x 5 cells of 71x95 (row 4: Quintessence's Wild)
     "mods.png": (142, 95), "mods_hc.png": (142, 95),          # 2 cells of 71x95
     "glyphs.png": (266, 9),                                   # 38 cells of 7x9
     "moves.png": (639, 95), "omega.png": (71, 95),            # 9 Moves; one Spectral
     "packs.png": (284, 95),                                   # 4 Game Packs
-    "jokers.png": (710, 95),                                  # 10 cells of 71x95 (8 is Conway, 9 his soul)
-    "blinds.png": (714, 34),                                  # The Heap: 21 frames of 34x34
-    "backs.png": (71, 95),                                    # the Field Deck
+    "jokers.png": (1136, 95),                                 # 16 cells of 71x95 (souls: 9, 13, 15)
+    "blinds.png": (714, 68),                                  # The Heap, The Misère: 21 frames of 34x34 each
+    "backs.png": (142, 95),                                   # the Field Deck, the Ordinal Deck
 }
 
 
@@ -60,10 +63,13 @@ def write(name, art):
 
 
 def main():
+    import quint
     import vanilla
     try:
         vanilla.texture("8BitDeck")
-    except vanilla.MissingGame as e:
+        quint.texture("wild_deck")
+        quint.texture("wild_deck_hc")
+    except (vanilla.MissingGame, quint.MissingQuintessence) as e:
         print(f"build.py: {e}", file=sys.stderr)
         return 2
     made = set()

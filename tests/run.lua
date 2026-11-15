@@ -82,7 +82,7 @@ end }
 steps[4] = { wait = function() return G.STATE == G.STATES.SELECTING_HAND end, run = function()
   check("the hot hand was Three of a Kind", G.GAME.last_hand_played == "Three of a Kind", G.GAME.last_hand_played)
   check("it scored (30 + 7 + 7 + 9) × 3 = 159", score() - before == 159, score() - before)
-  -- 7 7 K+ω 9 9: the King eats both 7s and grows by 14; a Pair of 9s, and the King always scores.
+  -- 7 7 K+ω 9 9: the King eats both 7s and grows by twice their 14; a Pair of 9s, and the King always scores.
   before = score()
   local a, b = make(1, "Hearts", "7"), make(2, "Clubs", "7")
   eater = make(3, "Spades", "King", N.omega)
@@ -91,9 +91,9 @@ steps[4] = { wait = function() return G.STATE == G.STATES.SELECTING_HAND end, ru
 end }
 steps[5] = { wait = function() return G.STATE == G.STATES.SELECTING_HAND end, run = function()
   check("with the 7s eaten, the hand was a Pair", G.GAME.last_hand_played == "Pair", G.GAME.last_hand_played)
-  check("it scored (10 + 9 + 9 + 10 + 14) × 2 = 104", score() - before == 104, score() - before)
+  check("it scored (10 + 9 + 9 + 10 + 28) × 2 = 132", score() - before == 132, score() - before)
   check("the eaten 7s are gone", not alive(ate[1]) and not alive(ate[2]))
-  check("the King kept 14 bonus chips", eater.ability.perma_bonus == 14, eater.ability.perma_bonus)
+  check("the King kept 28 bonus chips", eater.ability.perma_bonus == 28, eater.ability.perma_bonus)
   -- A Move, used through the game's own button: Cut on a 3 and a 7 makes a 4.
   left, right = make(1, "Hearts", "3"), make(2, "Spades", "7")
   cut = SMODS.add_card({ key = "c_ww_cut", area = G.consumeables })
@@ -147,13 +147,13 @@ after_hand(function()
 end)
 after_hand(function()
   check("Hotstrat: 7±2 scored twice, 5 + 9 + 9 = 23", gained() == 23, gained())
-  -- Thermograph: a lone 7±2 scores its mean, 7, and its temperature, 2, as Mult: (5 + 7) × (1 + 2).
+  -- Thermograph: a lone 7±2 scores its mean, 7, and 3 Mult per degree of its temperature, 2: (5 + 7) × (1 + 6).
   hold({ "thermograph" })
   before = score()
   play({ make(1, "Hearts", "7", Gm.of({ n(2) }, { n(-2) })) })
 end)
 after_hand(function()
-  check("Thermograph: 7±2 scored (5 + 7) × (1 + 2) = 36", gained() == 36, gained())
+  check("Thermograph: 7±2 scored (5 + 7) × (1 + 6) = 84", gained() == 84, gained())
   -- Sprouts: a first hand of exactly 3 and 7 adds their Cut, a 4. (The test makes this the round's first hand.)
   hold({ "sprouts" })
   before = score()
@@ -190,7 +190,7 @@ after_hand(function()
 end)
 after_hand(function()
   check("Cantor's Paradise gained ×0.1 per eaten card: ×1.2", subject.ability.extra.xmult == 1.2, subject.ability.extra.xmult)
-  check("the Pair scored ⌊(10 + 9 + 9 + 10 + 14) × 2 × 1.2⌋ = 124", gained() == 124, gained())
+  check("the Pair scored ⌊(10 + 9 + 9 + 10 + 28) × 2 × 1.2⌋ = 158", gained() == 158, gained())
   -- Conway: K 5 K, where the 5 can play as {K|K} = K*, is Three of a Kind; the 5 still scores 5.
   hold({ "conway" })
   before = score()
@@ -215,6 +215,46 @@ after_hand(function()
 end)
 after_hand(function()
   check("but Three of a Kind (9 ⊕ 9 ⊕ 9 = 9) scores 171", gained() == 171, gained())
+  -- Birthday: two 3½s (a 3 with +½, a 4 with −½) pair; each was born two days after 3 (3½ is ++++−, day 5),
+  -- so +6 Mult each.
+  G.GAME.blind:set_blind(G.P_BLINDS.bl_small)
+  G.GAME.blind.chips = 1e12
+  hold({ "birthday" })
+  before = score()
+  play({ make(1, "Hearts", "3", n(1 / 2)), make(2, "Spades", "4", n(-1 / 2)) })
+end)
+after_hand(function()
+  check("Birthday: the 3½s scored (10 + 3.5 + 3.5) × (2 + 6 + 6) = 238", gained() == 238, gained())
+  -- Hilbert's Hotel: two more Joker slots (its own and one more), one less hand size. Steamodded recounts the
+  -- slots on the next frame.
+  extra = { G.jokers.config.card_limit, G.hand.config.card_limit }
+  hold({ "hilbert" })
+end)
+steps[#steps + 1] = { frames = 30, run = function()
+  check("Hilbert's Hotel: +2 Joker slots while held", G.jokers.config.card_limit == extra[1] + 2, G.jokers.config.card_limit - extra[1])
+  check("and -1 hand size", G.hand.config.card_limit == extra[2] - 1, G.hand.config.card_limit - extra[2])
+  hold({})
+end }
+steps[#steps + 1] = { frames = 30, run = function()
+  check("selling it gives both back", G.jokers.config.card_limit == extra[1] and G.hand.config.card_limit == extra[2],
+    G.jokers.config.card_limit .. " " .. G.hand.config.card_limit)
+end }
+after_hand(function()
+  -- Berlekamp: a lone 7±2 takes its 9 and gives ×1.5.
+  hold({ "berlekamp" })
+  before = score()
+  play({ make(1, "Hearts", "7", Gm.of({ n(2) }, { n(-2) })) })
+end)
+after_hand(function()
+  check("Berlekamp: 7±2 scored (5 + 9) × 1.5 = 21", gained() == 21, gained())
+  -- Guy: a Pair of 3s, each ×1.5.
+  hold({ "guy" })
+  before = score()
+  play({ make(1, "Hearts", "3"), make(2, "Spades", "3") })
+end)
+after_hand(function()
+  check("Guy: 3 3 scored (10 + 3 + 3) × 2 × 1.5 × 1.5 = 72", gained() == 72, gained())
+  hold({})
 end)
 
 -- WINNINGWAYS_RUNTEST_SHOT=<prefix> saves two screenshots of the run as it stands (The Heap's chip, the Field Deck's
@@ -237,6 +277,48 @@ if shot then
   steps[#steps + 1] = { frames = 120, run = function() capture(2) end }
   steps[#steps + 1] = { frames = 30, run = function() end }
 end
+
+-- The Misère: your last hand scores nothing. The preview says so while one hand is left; a played hand is the last
+-- when none are left. Playing it ends the run.
+after_hand(function()
+  hold({})
+  G.GAME.blind:set_blind(G.P_BLINDS.bl_ww_misere)
+  G.GAME.blind.chips = 1e12
+  local pair = { G.hand.cards[1], G.hand.cards[2] }
+  local function previews(left)
+    G.GAME.current_round.hands_left = left
+    local text, _, poker_hands = G.FUNCS.get_poker_hand_info(pair)
+    return G.GAME.blind:debuff_hand(pair, poker_hands, text, true)
+  end
+  check("The Misère: with 2 hands left, the preview is clear", not previews(2))
+  check("with 1 left, the preview says it scores nothing", previews(1) == true)
+  G.GAME.current_round.hands_left = 3
+  before = score()
+  play({ make(1, "Hearts", "9"), make(2, "Spades", "9"), make(3, "Clubs", "9") })
+end)
+after_hand(function()
+  check("a hand that isn't the last scores (171)", gained() == 171, gained())
+  G.GAME.current_round.hands_left = 1
+  before = score()
+  play({ make(1, "Hearts", "9"), make(2, "Spades", "9"), make(3, "Clubs", "9") })
+end)
+steps[#steps + 1] = { wait = function() return G.STATE == G.STATES.GAME_OVER end, run = function()
+  check("the last hand scored nothing, and the run is lost", gained() == 0, gained())
+  -- The Ordinal Deck, in a second run.
+  G.GAME.viewed_back = Back(G.P_CENTERS.b_ww_ordinal)
+  G.FUNCS.start_run(nil, { stake = 1, seed = "WWORDINAL" })
+end }
+steps[#steps + 1] = { wait = function() return G.STATE == G.STATES.BLIND_SELECT and G.blind_select end, run = function()
+  local omegas = 0
+  for _, c in ipairs(G.playing_cards) do
+    local v = WW.value_of(c)
+    if v and Gm.encode(v) == "w" then omegas = omegas + 1 end
+  end
+  check("the Ordinal Deck has 53 cards", #G.playing_cards == 53, #G.playing_cards)
+  check("one of them worth exactly ω", omegas == 1, omegas)
+  local cut_held = G.consumeables.cards[1] and G.consumeables.cards[1].config.center.key
+  check("and starts with a Cut", cut_held == "c_ww_cut", cut_held)
+end }
 
 local update = Game.update
 local done = false

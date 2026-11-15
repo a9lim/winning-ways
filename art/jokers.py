@@ -1,9 +1,11 @@
 """jokers.py — the Winning Ways jokers.
 
-jokers.png: ten 71x95 cells in a row:
+jokers.png: sixteen 71x95 cells in a row:
 
     0 bouton   1 generator   2 grundy   3 hotstrat   4 thermograph
     5 sprouts  6 cantor      7 paradise 8 conway (background)  9 conway (soul)
+    10 birthday  11 hilbert  12 berlekamp (background)  13 berlekamp (soul)
+    14 guy (background)  15 guy (soul)
 
 Cells 0..7 are drawn here in vanilla's joker build: the card silhouette and
 its one-pixel `bfc7d5` edge, the white margin, the picture window (x 4..66,
@@ -12,7 +14,10 @@ measured from vanilla's Jokers.png. The JOKER corner lettering is vanilla's
 own (read from the plain Joker at build time), as on almost every vanilla
 joker. Cell 8 is a vanilla legendary's background card (Triboulet's), its
 hue turned to violet and its plate re-signed { | }; cell 9, the soul, is a
-bust of John Horton Conway, drawn here.
+bust of John Horton Conway, drawn here. Cells 10 and 11 are built like 0..7.
+Berlekamp (12, 13) and Guy (14, 15) are built like Conway: the same marble
+turned rose and green, the plates signed with a Dots-and-Boxes position and
+with the small numbers, and a bust each. The three authors are a set.
 
 fable, 2026-11-14 (claude-fable-5-2)
 """
@@ -28,7 +33,8 @@ from pixel import Canvas, Palette, dilate, erode
 
 W, H = 71, 95
 ORDER = ["bouton", "generator", "grundy", "hotstrat", "thermograph",
-         "sprouts", "cantor", "paradise", "conway", "conway_soul"]
+         "sprouts", "cantor", "paradise", "conway", "conway_soul",
+         "birthday", "hilbert", "berlekamp", "berlekamp_soul", "guy", "guy_soul"]
 CX = 35
 
 # vanilla's joker colours
@@ -423,20 +429,30 @@ def turn_hue(a, hue, sat=1.0):
 PLATE_INK, PLATE_PAPER = "#4f6367", "#f7f1e4"
 
 
-def conway():
-    """A legendary's background card: Triboulet's marble turned violet, the
-    plate signed { | } with a blue Left and a red Right."""
+def legend(hue, sat):
+    """A legendary's background card: Triboulet's marble with its hue
+    turned, the plate kept and wiped clean for a sign."""
     src = V.cell("Jokers", 4, 8)
     hx = V.hexes(src)
     plate = np.isin(hx, ["f7f1e4", "ffffff", "4f6367", "e3dac8", "b7a88a"])
     plate[:76] = False
-    a = np.where(plate[..., None], src, turn_hue(src, 0.74, 0.9))
+    a = np.where(plate[..., None], src, turn_hue(src, hue, sat))
     c = Canvas(W, H, PAL)
     v = (a[..., 0].astype(int) << 16) | (a[..., 1].astype(int) << 8) | a[..., 2]
     for u in np.unique(v[a[..., 3] > 0]):
         c.a[(a[..., 3] > 0) & (v == u)] = PAL.index(f"#{u:06x}")
     c.rect(12, 80, 58, 85, PLATE_PAPER)                  # TRIBOULET off the plate
     c.pxs([(10, 82), (60, 82)], PLATE_INK)
+    return c
+
+
+HUES = dict(conway=(0.74, 0.9), berlekamp=(0.915, 0.8), guy=(0.29, 0.62))
+
+
+def conway():
+    """Triboulet's marble turned violet, the plate signed { | } with a blue
+    Left and a red Right."""
+    c = legend(*HUES["conway"])
     brace = [".##", ".#.", "#..", "#..", ".#.", ".##"]
     c.stamp(brace, 23, 80, {"#": PLATE_INK})
     c.stamp(brace, 45, 80, {"#": PLATE_INK}, fh=True)
@@ -511,9 +527,237 @@ def conway_soul():
     return c
 
 
+# ------------------------------------------------------------ birthday ----
+FLAME = [".#.", ".#.", "#o#", "#o#", ".#."]
+
+
+def birthday():
+    """A cake with a candle a day: three whole ones for the 3, then a half
+    and a quarter. 3 1/4 is five days old."""
+    c = card()
+    l = layer()
+    yy, xx = l.grid()
+    plate = l.ellipse_mask(CX, 78, 24, 5)
+    l.fill(plate, GREY_L)
+    l.fill(plate & (yy >= 80), GREY)
+    side = (l.ellipse_mask(CX, 73, 19, 5) & (yy >= 73)) | ((np.abs(xx - CX) <= 19) & (yy >= 54) & (yy <= 73))
+    l.fill(side, "#f3dcae")                              # sponge
+    l.fill(side & (xx >= CX + 13), "#d2b07c")
+    jam = (l.ellipse_mask(CX, 65, 19, 5) & ~l.ellipse_mask(CX, 63, 19, 5)) & side
+    l.fill(jam, RED)
+    l.fill(jam & (xx >= CX + 13), RED_D)
+    top = l.ellipse_mask(CX, 54, 19, 5)
+    drip = side & (yy <= 57 + 2 * ((xx % 7) < 3) + ((xx % 7) == 1)) | (l.ellipse_mask(CX, 57, 19, 5) & side)
+    l.fill(drip, "#ffc9c4")                              # icing, run down the side
+    l.fill(drip & (xx >= CX + 13), "#ff9a92")
+    l.fill(top, WHITE)
+    l.fill(top & ~erode(top) & (yy > 54), "#ffc9c4")
+    l.a = np.roll(l.a, -3, 0)                            # centre the picture on the card
+    put(c, l)
+    k = layer()                                          # the candles
+    for x, h, col, hi, sh in ((20, 24, BLUE, BLUE_L, BLUE_D), (27, 24, BLUE, BLUE_L, BLUE_D),
+                              (34, 24, BLUE, BLUE_L, BLUE_D), (41, 12, RED, RED_L, RED_D),
+                              (48, 6, GOLD, GOLD_L, GOLD_D)):
+        base = 54 + (1 if x in (27, 41) else 0) - (1 if x in (20, 48) else 0)
+        k.rect(x, base - h, x + 2, base, col)
+        k.vline(x + 2, base - h, base, sh)
+        for y in range(base - h + 2, base, 4):
+            k.pxs([(x, y), (x + 1, y + 1)], hi)
+        k.px(x + 1, base - h - 1, LINE)                  # wick
+        k.stamp(FLAME, x, base - h - 6, {"#": GOLD, "o": "#ffe36e"})
+    k.a = np.roll(k.a, -3, 0)
+    put(c, k)
+    return finish(c)
+
+
+# ------------------------------------------------------------- hilbert ----
+def hilbert():
+    """Hilbert's Hotel: floors without end, every window lit, and the sign
+    says there is room for one more."""
+    c = card("#3c4368")
+    yy, xx = c.grid()
+    win = window()
+    c.bands(win, np.clip((yy - 4) / 86.0, 0, 1), ["#2c3252", "#343a5e", "#3c4368", "#48507a"], dither=0.1)
+    for x, y in ((17, 9), (24, 22), (11, 58), (52, 36), (60, 8), (44, 7), (19, 40), (61, 30), (13, 74)):
+        c.px(x, y, "#dfe6f5")
+    half = lambda y: 5.0 + (y - 4) * 15.5 / 86.0         # the tower narrows as it climbs
+    l = layer()
+    tower = (np.abs(xx - CX) <= half(yy)) & win
+    l.fill(tower, "#8a9ab0")
+    l.fill(tower & ((xx - CX) > half(yy) * 0.72), "#6d7c93")
+    l.fill(tower & (yy <= 12), "#7887a0")
+    l.fill(tower & (yy <= 7), "#66758f")
+    put(c, l)
+    y, h = 77.0, 7.0
+    while y - h > 3:                                     # floor on floor
+        y0, y1 = int(round(y - h)), int(round(y)) - 1
+        for i in range(5):
+            f = -0.78 + 0.39 * i
+            x0 = int(round(CX + f * half(y1) - half(y1) * 0.12))
+            x1 = max(x0, int(round(CX + f * half(y1) + half(y1) * 0.12)))
+            c.rect(x0, max(y0, 5), x1, max(y1, y0), "#ffe36e" if h >= 2 else "#e6d283")
+            if h >= 4:
+                c.hline(x0, x1, max(y1, y0), GOLD)
+        gap = max(1.0, h * 0.38)
+        y, h = y - h - gap, max(1.0, h * 0.86)
+    d = layer()                                          # the door, and its awning
+    d.rect(CX - 4, 81, CX + 4, 90, "#ffe36e")
+    d.vline(CX, 82, 90, GOLD)
+    d.rect(CX - 7, 78, CX + 7, 80, RED)
+    d.hline(CX - 7, CX + 7, 80, RED_D)
+    put(c, d)
+    c.px(CX - 2, 86, LINE)
+    c.px(CX + 2, 86, LINE)
+    s = layer()                                          # the sign: + 1
+    s.rect(45, 14, 61, 28, "#1e2b2d")
+    put(c, s, line="#ffe36e")
+    c.rect(41, 19, 43, 20, "#6d7c93")
+    text(c, ["+"], 48, 17, "#ffe36e")
+    text(c, ["1"], 56, 17, RED_L)
+    return finish(c, WHITE)
+
+
+# ----------------------------------------------------------- berlekamp ----
+def berlekamp():
+    """The marble turned rose; the plate signed with Dots and Boxes: a box
+    to Left, a box to Right, and a third with two sides still to draw, and dots beyond."""
+    c = legend(*HUES["berlekamp"])
+    c.rect(24, 81, 28, 84, BLUE)
+    c.rect(30, 81, 34, 84, RED)
+    c.hline(23, 41, 80, PLATE_INK)
+    c.hline(23, 35, 85, PLATE_INK)
+    for x in (23, 29, 35):
+        c.vline(x, 80, 85, PLATE_INK)
+    c.pxs([(41, 85), (47, 80), (47, 85)], PLATE_INK)     # dots nobody has joined yet
+    return c
+
+
+def specs(c, y, lens="#dff1fb", rim=LINE):
+    """Spectacles: two lenses, x 27..33 and 37..43, on rows y..y+5."""
+    for x0 in (27, 37):
+        c.rect(x0 + 1, y, x0 + 5, y + 5, rim)
+        c.rect(x0, y + 1, x0 + 6, y + 4, rim)
+        c.rect(x0 + 1, y + 1, x0 + 5, y + 4, lens)
+        c.rect(x0 + 2, y + 2, x0 + 3, y + 3, LINE)       # the eye
+        c.px(x0 + 2, y + 2, BLUE)
+        c.px(x0 + 5, y + 1, WHITE)
+    c.hline(34, 36, y + 2, rim)
+    c.pxs([(26, y + 2), (25, y + 2), (44, y + 2), (45, y + 2)], rim)
+
+
+def berlekamp_soul():
+    """Elwyn Berlekamp: white hair combed across, big spectacles, a smile,
+    jacket and tie, and a thermometer in the breast pocket."""
+    c = new()
+    yy, xx = c.grid()
+    body = c.ellipse_mask(CX, 70, 23, 20) & (yy >= 50) & (yy <= 68)
+    face = c.ellipse_mask(CX, 34, 11, 13.5)
+    neck = (np.abs(xx - CX) <= 6) & (yy >= 44) & (yy <= 52)
+    crown = c.ellipse_mask(CX, 29, 12, 12) & (yy <= 29)
+    hair = (crown & ~(c.ellipse_mask(CX + 3, 33, 9.5, 10) & (yy >= 23))) | c.ellipse_mask(CX - 2, 21, 9, 4)
+    ears = c.ellipse_mask(CX - 11.5, 35, 2, 3) | c.ellipse_mask(CX + 11.5, 35, 2, 3)
+    c.fill(body, BLUE)
+    c.fill(body & (((xx - CX) > 16) | (yy >= 67)), BLUE_D)
+    shirt = c.poly_mask([(CX - 9, 49), (CX + 9, 49), (CX, 63)]) & (body | neck)
+    c.fill(neck, SKIN_D)
+    c.fill(shirt, WHITE)
+    c.fill(ears, SKIN)
+    c.fill(face, SKIN)
+    c.fill(face & (xx >= CX + 8), SKIN_D)
+    c.fill(face & (yy >= 25) & (yy <= 27) & (xx > CX - 3) & (xx < CX + 7), SKIN_L)
+    c.fill(hair, HAIR_L)
+    c.fill(hair & (xx >= CX + 8), HAIR)
+    c.fill(hair & ~erode(hair) & (yy >= 23) & (xx < CX + 8), HAIR)
+    for x, y in ((29, 20), (32, 19), (35, 19), (26, 23), (38, 20), (30, 22)):
+        c.pxs([(x, y), (x + 1, y)], HAIR_D)
+    for x0 in (28, 38):                                  # brows
+        c.hline(x0, x0 + 4, 28, HAIR_D)
+    specs(c, 30)
+    c.pxs([(35, 36), (35, 37), (34, 38), (35, 38), (36, 38)], SKIN_D)   # nose
+    c.pxs([(27, 38), (28, 38), (42, 38), (43, 38)], "#f0a090")
+    c.hline(31, 39, 41, "#b5654f")                       # the smile
+    c.pxs([(30, 40), (40, 40), (29, 39), (41, 39)], "#b5654f")
+    c.hline(32, 38, 42, WHITE)
+    c.hline(33, 37, 43, "#b5654f")
+    c.hline(33, 37, 46, SKIN_D)                          # chin
+    c.pxs([(CX - 7, 50), (CX - 6, 51), (CX + 7, 50), (CX + 6, 51)], GREY_L)   # collar
+    for i in range(13):                                  # lapels
+        c.px(CX - 10 + i * 10 // 13, 51 + i, BLUE_D)
+        c.px(CX + 10 - i * 10 // 13, 51 + i, BLUE_D)
+    c.rect(CX - 1, 50, CX + 1, 52, RED_D)                # the tie
+    c.rect(CX - 1, 53, CX + 1, 60, RED)
+    c.px(CX, 61, RED)
+    c.vline(CX + 1, 53, 60, RED_D)
+    c.rect(46, 60, 51, 61, BLUE_L)                       # the pocket
+    c.rect(48, 55, 49, 60, WHITE)                        # and a thermometer in it
+    c.vline(48, 57, 60, RED)
+    c.outline(LINE)
+    return c
+
+
+# ----------------------------------------------------------------- guy ----
+def guy():
+    """The marble turned green; the plate signed with the small numbers."""
+    c = legend(*HUES["guy"])
+    for i, n in enumerate("012345"):
+        text(c, ["s" + n], 21 + i * 5, 78, PLATE_INK)
+    return c
+
+
+def guy_soul():
+    """Richard Guy: white hair and beard, wire spectacles, an anorak, a
+    rucksack's straps and a hill walker's stick."""
+    c = new()
+    yy, xx = c.grid()
+    body = c.ellipse_mask(CX, 70, 22, 19) & (yy >= 51) & (yy <= 68)
+    face = c.ellipse_mask(CX, 30, 9.5, 13)
+    hair = (c.ellipse_mask(CX, 27, 12.5, 12) & (yy <= 36)) & ~(c.ellipse_mask(CX, 24, 8, 9) & (yy >= 14))
+    hair |= c.ellipse_mask(CX - 10, 28, 4, 6) | c.ellipse_mask(CX + 10, 28, 4, 6)
+    beard = (c.ellipse_mask(CX, 40, 10.5, 11) & (yy >= 36)) | (c.ellipse_mask(CX, 38, 10.5, 4))
+    c.fill(body, RED)
+    c.fill(body & (((xx - CX) > 15) | (yy >= 67)), RED_D)
+    c.fill(body & (yy == 52) & (xx < CX + 8), RED_L)
+    for s in (-1, 1):                                    # rucksack straps
+        c.rect(CX + s * 13 - 1, 53, CX + s * 13 + 1, 68, "#864b1c")
+        c.px(CX + s * 13, 59, GOLD)
+    c.fill(hair, HAIR_L)
+    c.fill(hair & (xx >= CX + 9), HAIR)
+    c.fill(face, SKIN)
+    c.fill(face & (xx >= CX + 6), SKIN_D)
+    c.fill(face & (yy <= 21) & (np.abs(xx - CX) < 5), SKIN_L)
+    for x, y in ((24, 24), (23, 28), (46, 25), (47, 29), (25, 31)):
+        c.px(x, y, HAIR_D)
+    c.fill(beard, HAIR_L)
+    c.fill(beard & ((xx - CX) > 6), HAIR)
+    for x in (28, 31, 34, 37, 40):
+        for y in range(43, 52):
+            if beard[y, x] and (y + 2 * x) % 5:
+                c.px(x, y, HAIR)
+    for x0 in (28, 38):
+        c.hline(x0, x0 + 4, 25, HAIR)
+    specs(c, 27, lens=SKIN_L, rim="#8a94a0")
+    c.pxs([(35, 32), (35, 33), (35, 34), (34, 35), (36, 35)], SKIN_D)
+    c.pxs([(28, 35), (42, 35)], "#f0a090")
+    c.fill(c.ellipse_mask(CX, 37.5, 7.5, 2.2), HAIR)     # moustache
+    c.hline(32, 38, 40, RED_D)                           # a smile in the beard
+    c.pxs([(31, 39), (39, 39)], RED_D)
+    k = layer()                                          # the stick
+    k.rect(55, 30, 56, 68, "#a8642c")
+    k.vline(56, 30, 68, "#864b1c")
+    k.rect(53, 28, 57, 30, "#a8642c")
+    k.rect(53, 48, 58, 52, SKIN)                         # and the hand on it
+    k.hline(53, 58, 52, SKIN_D)
+    k.outline(LINE)
+    c.outline(LINE)
+    c.a = np.where(k.a > 0, k.a, c.a)
+    c.fill(dilate(beard | hair) & ~(beard | hair) & body, RED_D)
+    return c
+
+
 CELLS = dict(bouton=bouton, generator=generator, grundy=grundy, hotstrat=hotstrat,
              thermograph=thermograph, sprouts=sprouts, cantor=cantor, paradise=paradise,
-             conway=conway, conway_soul=conway_soul)
+             conway=conway, conway_soul=conway_soul, birthday=birthday, hilbert=hilbert,
+             berlekamp=berlekamp, berlekamp_soul=berlekamp_soul, guy=guy, guy_soul=guy_soul)
 
 
 def sheet_canvas():

@@ -208,13 +208,15 @@ SMODS.Joker {
   atlas = ATLAS, pos = cell(4),
   rarity = 3, cost = 8,
   blueprint_compat = true,
+  config = { extra = { mult = 3 } },
   loc_vars = function(self, info_queue, card)
     info_queue[#info_queue + 1] = { set = "Other", key = "ww_hot" }
+    return { vars = { card.ability.extra.mult } }
   end,
   calculate = function(self, card, context)
     if context.individual and context.cardarea == G.play then
       local t = finite_temperature(context.other_card)
-      if t then return { mult = t } end
+      if t then return { mult = card.ability.extra.mult * t } end
     end
   end,
 }
@@ -354,5 +356,88 @@ SMODS.Joker {
   blueprint_compat = false,
   loc_vars = function(self, info_queue, card)
     info_queue[#info_queue + 1] = { set = "Move", key = "c_ww_cut" }
+  end,
+}
+
+-- Birthday -----------------------------------------------------------------------------------------------
+
+--- How many days after its integer part a value was born: 3½ (day 4) is 1 day after 3, 3¼ (day 5) 2 days, 5*
+--- (day 6) 1 day, 7±2 = {9|5} (day 10) 3 days after 7. A game's integer part is its mean's, rounded toward 0; the
+--- integer n is born on day |n|. nil for a value born on an infinite day (ω + 14, the wild).
+function WW.days_after(v)
+  local b = Gm.birthday(v)
+  if b.m ~= 0 then return nil end
+  local mean = Gm.mean(v)
+  if not N.is_finite(mean) then return nil end
+  local x = N.finite(mean)
+  local int = x >= 0 and math.floor(x) or -math.floor(-x)
+  return b.n - math.abs(int)
+end
+
+SMODS.Joker {
+  key = "birthday",
+  atlas = ATLAS, pos = cell(10),
+  rarity = 2, cost = 6,
+  blueprint_compat = true,
+  config = { extra = { mult = 3 } },
+  loc_vars = function(self, info_queue, card) return { vars = { card.ability.extra.mult } } end,
+  calculate = function(self, card, context)
+    if context.individual and context.cardarea == G.play then
+      local v = WW.value_of(context.other_card)
+      local days = v and WW.days_after(v)
+      if days and days > 0 then return { mult = card.ability.extra.mult * days } end
+    end
+  end,
+}
+
+-- Hilbert's Hotel ----------------------------------------------------------------------------------------
+
+-- There's always room for one more: it takes no Joker slot and adds another. Steamodded counts each card's
+-- card_limit toward its area's slots, so 2 here is its own slot plus one more (a Negative edition is 1); vanilla's
+-- h_size takes the hand size, and gives it back while it's debuffed, as Juggler's does.
+SMODS.Joker {
+  key = "hilbert",
+  atlas = ATLAS, pos = cell(11),
+  rarity = 3, cost = 8,
+  blueprint_compat = false,
+  config = { card_limit = 2, h_size = -1, extra = { slots = 1, hand = 1 } },
+  loc_vars = function(self, info_queue, card)
+    return { vars = { card.ability.extra.slots, card.ability.extra.hand } }
+  end,
+}
+
+-- Berlekamp and Guy: the other two authors -----------------------------------------------------------------
+
+SMODS.Joker {
+  key = "berlekamp",
+  atlas = ATLAS, pos = cell(12), soul_pos = ART and { x = 13, y = 0 } or nil,
+  rarity = 4, cost = 20,
+  blueprint_compat = true,
+  config = { extra = { xmult = 1.5 } },
+  loc_vars = function(self, info_queue, card)
+    info_queue[#info_queue + 1] = { set = "Other", key = "ww_hot" }
+    return { vars = { card.ability.extra.xmult } }
+  end,
+  calculate = function(self, card, context)
+    if context.individual and context.cardarea == G.play and WW.is_hot(WW.value_of(context.other_card)) then
+      return { xmult = card.ability.extra.xmult }
+    end
+  end,
+}
+
+SMODS.Joker {
+  key = "guy",
+  atlas = ATLAS, pos = cell(14), soul_pos = ART and { x = 15, y = 0 } or nil,
+  rarity = 4, cost = 20,
+  blueprint_compat = true,
+  config = { extra = { xmult = 1.5, top = 5 } },
+  loc_vars = function(self, info_queue, card)
+    return { vars = { card.ability.extra.xmult, card.ability.extra.top } }
+  end,
+  calculate = function(self, card, context)
+    if context.individual and context.cardarea == G.play then
+      local r = WW.rank_now(context.other_card)
+      if r and r <= card.ability.extra.top then return { xmult = card.ability.extra.xmult } end
+    end
   end,
 }

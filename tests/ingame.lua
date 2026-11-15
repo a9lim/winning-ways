@@ -232,17 +232,29 @@ local function eating()
   expect("7 7 ω 9 9: the 7s are eaten, so a Pair of 9s", hand, "Pair")
   local food, growth = WW.feed(hand)
   check("feeding: the two 7s go", #food == 2)
-  check("the eater grows by their chips", growth[w4] == 14 and w4.ability.perma_bonus == 14, growth[w4])
+  check("the eater grows by twice their chips", growth[w4] == 28 and w4.ability.perma_bonus == 28, growth[w4])
   check("an ω card always scores", SMODS.always_scores(w4) == true)
 end
 
 local function jokers()
   for _, k in ipairs({ "bouton", "generator", "grundy", "hotstrat", "thermograph", "sprouts", "cantor", "paradise",
-    "conway" }) do
+    "conway", "birthday", "hilbert", "berlekamp", "guy" }) do
     check("j_ww_" .. k .. " exists", G.P_CENTERS["j_ww_" .. k] ~= nil)
   end
-  check("The Heap exists", G.P_BLINDS.bl_ww_heap ~= nil)
-  check("the Field Deck exists", G.P_CENTERS.b_ww_field ~= nil)
+  check("The Heap and The Misère exist", G.P_BLINDS.bl_ww_heap ~= nil and G.P_BLINDS.bl_ww_misere ~= nil)
+  check("the Field Deck and the Ordinal Deck exist", G.P_CENTERS.b_ww_field ~= nil and G.P_CENTERS.b_ww_ordinal ~= nil)
+
+  -- Birthday counts the days a value was born after its whole number.
+  local days = {
+    { n(3), 0 }, { n(3.5), 2 }, { n(3.25), 3 }, { cut(n(5), n(5)), 1 }, { cut(n(9), n(5)), 3 }, { n(-0.5), 2 },
+    { n(12), 0 },
+  }
+  for _, d in ipairs(days) do
+    local got = WW.days_after(d[1])
+    check(("Birthday: %s is %d days after its whole number"):format(Gm.encode(d[1]), d[2]), got == d[2], got)
+  end
+  check("Birthday: ω + 14 and the wild were born on infinite days",
+    WW.days_after(n(14, 1)) == nil and WW.days_after(cut(N.omega, n(2))) == nil)
 
   -- Bouton and The Heap read nim-sums of the ranks cards play as.
   local one, two, three = card("H_1"), card("S_2"), card("D_3")
@@ -332,6 +344,30 @@ local function jokers()
   G.playing_cards = deck
 end
 
+-- With Quintessence (a9's suit mod) installed: its Wild suit is a fifth suit, so the born ranks need Wild fronts,
+-- values have to work in its Spectrum hands, and Repaint leaves Wild alone (a green Hackenbush edge is its own
+-- negative).
+local function quintessence()
+  if not (SMODS.Suits.quint_Wild and G.P_CARDS.quint_W_7) then
+    check("Quintessence isn't loaded; its checks are skipped", true)
+    return
+  end
+  for _, r in ipairs({ "0", "1", "C" }) do
+    local front = G.P_CARDS["quint_W_ww_" .. r]
+    check("the Wild " .. r .. " draws from our sheet's Wild row",
+      front and front.lc_atlas == "ww_ranks" and front.hc_atlas == "ww_ranks_hc" and front.pos.y == 4,
+      front and (tostring(front.lc_atlas) .. " y " .. tostring(front.pos.y)))
+  end
+  local hot = card("quint_W_7", Gm.add(n(7), cut(n(2), n(-2))))
+  expect("a Wild 7±2 plays as the 7 of a Straight Spectrum", { card("S_5"), card("H_6"), hot, card("D_8"), card("C_9") },
+    "spa_Straight_Spectrum")
+  local born = card("quint_W_ww_0")
+  expect("a Wild 0 joins 0 1 2 3 4 as a Straight Spectrum",
+    { born, card("S_1"), card("H_2"), card("D_3"), card("C_4") }, "spa_Straight_Spectrum")
+  WW.MOVES.repaint.apply({ hot })
+  check("Repaint leaves a Wild card Wild", hot.base.suit == "quint_Wild", hot.base.suit)
+end
+
 local function speed()
   local wild = cut(N.omega, n(2))
   local hand = { card("H_K", wild), card("S_9"), card("D_A", wild), card("C_7"), card("H_8", cut(n(9), n(5))) }
@@ -350,6 +386,7 @@ local function run()
   moves()
   eating()
   jokers()
+  quintessence()
   speed()
 end
 

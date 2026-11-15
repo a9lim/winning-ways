@@ -1,7 +1,8 @@
 -- Infinity eats (DESIGN.md § 2.4). Reading the played row left to right is ordinal addition, where n + ω = ω: each
 -- card worth a positive infinite number (ω + 14, 2ω, ω/2) eats the finite cards between it and the nearest infinite
--- card to its left. Eaten cards don't count toward the hand and are destroyed after it; their chips become the
--- eater's permanent bonus chips, the way Hiker's are, so it grows like Ceremonial Dagger. Infinities don't eat each
+-- card to its left. Eaten cards don't count toward the hand and are destroyed after it; twice their chips become
+-- the eater's permanent bonus chips, the way Hiker's are, so it grows like Ceremonial Dagger (which also takes
+-- double). Infinities don't eat each
 -- other (ω + ω = ω·2), and an ω card always scores, like a Stone card.
 
 local WW = WinningWays
@@ -81,8 +82,11 @@ function SMODS.never_scores(card)
   return never_scores(card)
 end
 
---- Feed the eaters in a played row: each one's bonus chips grow by the chips of the cards it eats. Returns the
---- eaten cards and, per eater, how much it grew.
+--- How much an eater grows per chip it eats (a balance number, not maths).
+WW.EAT = 2
+
+--- Feed the eaters in a played row: each one's bonus chips grow by WW.EAT times the chips of the cards it eats.
+--- Returns the eaten cards and, per eater, how much it grew.
 function WW.feed(row)
   local eaten = WW.eating(row)
   local food, growth = {}, {}
@@ -90,7 +94,7 @@ function WW.feed(row)
     local eater = eaten[c]
     if eater then
       food[#food + 1] = c
-      growth[eater] = (growth[eater] or 0) + c:get_chip_bonus()
+      growth[eater] = (growth[eater] or 0) + WW.EAT * c:get_chip_bonus()
     end
   end
   for eater, chips in pairs(growth) do

@@ -4,26 +4,28 @@ Pixel art as code. Engine: `art/pixel.py`. One program per sheet;
 `~/.venv/bin/python -I art/build.py` regenerates everything into `assets/1x`
 and `assets/2x` (2x = exact nearest-neighbour x2 of the 1x; build.py checks
 it and every sheet size) and writes `art/glyphs.lua` and `art/layout.lua`.
-`art/look.py fronts|fronts_hc|courts|courts_hc|mods|glyphs|moves|packs|font|jokers|blinds|backs [k]` renders
+`art/look.py fronts|fronts_hc|wild|courts|courts_hc|mods|glyphs|moves|packs|font|jokers|blinds|backs [k]` renders
 previews beside vanilla cells into `art/preview/` (gitignored).
 
 `art/vanilla.py` reads Balatro's textures at build time from the installed
 game archive (`Balatro.love`, a zip; override with `BALATRO_LOVE`). Nothing
 from the archive is stored in the repo as source, but two built sheets
 contain LocalThunk's pixels (the table's last column): see
-`assets/NOTICE.md`.
+`assets/NOTICE.md`. `art/quint.py` reads Quintessence's Wild suit sheets the
+same way, from its checkout at `../quintessence/assets/1x` (override with
+`QUINTESSENCE_ASSETS`); build.py stops with a message if either is missing.
 
 | sheet | 1x size | program | vanilla pixels |
 |---|---|---|---|
-| `ranks.png`, `ranks_hc.png` | 213x380 (3x4 cells of 71x95) | `fronts.py` | yes |
+| `ranks.png`, `ranks_hc.png` | 213x475 (3x5 cells of 71x95) | `fronts.py` | yes (row 4 by way of Quintessence) |
 | `mods.png`, `mods_hc.png` | 142x95 (2 cells of 71x95) | `mods.py` | no |
 | `glyphs.png` | 266x9 (38 cells of 7x9) | `glyphs.py` | no |
 | `moves.png` | 639x95 (9 cells of 71x95) | `moves.py` | no (frame geometry only) |
 | `omega.png` | 71x95 | `moves.py` | yes |
 | `packs.png` | 284x95 (4 cells of 71x95) | `packs.py` | yes |
-| `jokers.png` | 710x95 (10 cells of 71x95) | `jokers.py` | yes (JOKER lettering; Conway's background) |
-| `blinds.png` | 714x34 (21 frames of 34x34) | `blinds.py` | yes (disc, rim, shine) |
-| `backs.png` | 71x95 | `backs.py` | no (frame geometry only) |
+| `jokers.png` | 1136x95 (16 cells of 71x95) | `jokers.py` | yes (JOKER lettering; the three legendary backgrounds) |
+| `blinds.png` | 714x68 (2 rows of 21 frames of 34x34) | `blinds.py` | yes (disc, rim, shine) |
+| `backs.png` | 142x95 (2 cells of 71x95) | `backs.py` | no (frame geometry only) |
 | `fonts/ww_symbols.ttf` | 14 glyphs | `font.py` | no |
 
 ## Rank fronts (`fronts.py`)
@@ -80,6 +82,47 @@ or from the courts' corners, which in clubs run a shade off), `court_map()`
 is (normal colour, row) -> high-contrast colour from the three courts.
 Check: `hc()` applied to vanilla's own 2, 10, A, J, Q, K reproduces
 `8BitDeck_opt2` exactly, all four suits.
+
+### The Wild row (row 4, y 380..474)
+
+For Quintessence (a9lim, MIT), whose fifth suit Wild (`quint_Wild`, pip
+`*`) a 0, 1 or Cavalier can be moved into. Rows 0..3 are pixel-identical to
+before (checked against the old sheets). The row derives from
+Quintessence's built sheets `wild_deck.png` / `wild_deck_hc.png` (13 cells:
+2..10, J, Q, K, A; its `art/NOTES.md` has their provenance) as rows 0..3
+derive from vanilla's; cells below are columns of that sheet.
+
+- **Index digits**: "0" and "1" are the strokes of Wild's "10", cell 8,
+  moved as for the other suits. Quintessence's glyphs are vanilla's spades
+  glyphs re-inked, so these are LocalThunk's strokes at one remove. "C" is
+  ours, the same glyph as rows 0..3.
+- **Small corner pip**: Wild's own 9x9 asterisk, from its 10, cell 8
+  (x 4..15, y 16..25). Quintessence's drawing, not vanilla's.
+- **0**: the centre asterisk of Wild's 3, cell 1, minus its one-pixel
+  erosion. The asterisk's arms are three pixels thick, so the outline is a
+  hollow star with a one-pixel open core: lacier than the hollow heart, but
+  the same rule. **1**: that asterisk, whole.
+- **Cavalier**: Wild has no sister suit, so it rides in on **Wild's own
+  Jack**, cell 9. That Jack is itself a collage (head of vanilla's Jack of
+  Hearts, robes and frame of the Jack of Diamonds in Wild purple), and the
+  head stands where the Jack of Hearts' does, so `CAV["H"]` fits it
+  unchanged: hat cleared, top rule made good, face filled in `374649`, the
+  same helm, the plume in Wild purple `8b64b4`. What red is left of the hat
+  goes to purple. So the Wild Cavalier has the Hearts Cavalier's pose (both
+  are the Jack of Diamonds' body) in purple, and no pose appears twice
+  *within* Wild. Alternatives considered: Wild's Queen or King under the
+  helm (a Cavalier should be Jack-sized, and the helm covers the one thing
+  that tells them apart); a fresh collage of two vanilla Jacks (then the row
+  would not derive from Quintessence's art at all).
+- **Colours**: `8b64b4`, outline `374649`. **High contrast**:
+  Quintessence's HC Wild is not ramped (flat green `1fa84f`), so
+  `wild_hc()` does not use `ramp()`; it learns (normal colour, row) ->
+  HC colour from Quintessence's own three Wild courts, normal against HC,
+  and applies it to the whole cell. Check: purple -> `1fa84f` everywhere,
+  and the Cavalier's gold and blue go as the Wild Jack's do.
+
+Preview: `look.py wild` -> `preview/wild.png` (ours beside Wild's 2, 10 and
+J; normal above, high contrast below).
 
 ## Modifiers (`mods.py`)
 
@@ -185,8 +228,10 @@ over in the band's own colour and re-lettered GAME in the band's letterforms
 ## Jokers (`jokers.py`)
 
 Cells, left to right: `bouton generator grundy hotstrat thermograph sprouts
-cantor paradise conway conway_soul` (`jokers.ORDER`; Conway's `pos` is cell
-8 and his `soul_pos` cell 9).
+cantor paradise conway conway_soul birthday hilbert berlekamp berlekamp_soul
+guy guy_soul` (`jokers.ORDER`). Legendaries: Conway `pos` 8, `soul_pos` 9;
+Berlekamp 12, 13; Guy 14, 15. Round 3 appended cells 10..15; cells 0..9 are
+pixel-identical to round 2 (checked against the old sheet).
 
 Measured from vanilla's `Jokers.png` (cells are (column, row)):
 
@@ -217,6 +262,12 @@ Measured from vanilla's `Jokers.png` (cells are (column, row)):
 | `paradise` | sky, sea, an island with a palm; an ω in the sun and three ω on the wing | here |
 | `conway` | legendary background: Triboulet's (4, 8), hue turned to 0.74 (violet, the one hue vanilla's five don't use), plate kept and re-signed | vanilla + here |
 | `conway_soul` | Conway, head and shoulders | here |
+| `birthday` | a cake with five candles: three whole (blue), a half (red), a quarter (gold) | here |
+| `hilbert` | night; a tower of lit windows narrowing up out of the card, a lit door, a `+1` sign | here |
+| `berlekamp` | legendary background: the same marble, hue 0.915 (rose); plate signed with Dots and Boxes | vanilla + here |
+| `berlekamp_soul` | Berlekamp, head and shoulders | here |
+| `guy` | legendary background: the same marble, hue 0.29 (green); plate signed `012345` | vanilla + here |
+| `guy_soul` | Guy, head and shoulders, with his stick | here |
 
 Digits and ω on the cards are `glyphs.png`'s. Alternatives considered:
 Bouton as stacks of counters (kept for the blind chip instead); Grundy as
@@ -236,7 +287,56 @@ vanilla's souls sit (x 12..58, y 12..69; vanilla's span x 14..56, y 10..69) and 
 (flat tones, a `4f6367` outline, eyes and mouth in a few pixels), but with
 a person's skin rather than a clown's white face. No vanilla pixels.
 
-## The Heap (`blinds.py`)
+**Birthday.** Derives from nothing in vanilla but the frame and lettering.
+The candles count days: three whole ones are the 3 (born on day 3), the
+half-height one makes 3½ (day 4), the quarter-height one 3¼ (day 5). Whole
+candles are blue and the fractions red and gold, so the count of *extra*
+days (what the joker pays for) is the count of candles that aren't blue.
+Sponge, jam and icing are the match's wood and the thermograph's pinks.
+Alternatives considered: a number tree with its days as rows (a diagram, and
+the Moves already own diagrams); a calendar page (needs lettering).
+
+**Hilbert's Hotel.** A ground card (`3c4368`, banded darker upward, a few
+stars), white lettering as on Generator and Paradise. The tower's half-width
+runs from 20.5 px at the foot to 5 at the top of the window and it leaves
+the card still going; each floor is 0.86 of the one below, five windows a
+floor, every one lit (the hotel is full). The vacancy sign is `+1` in
+`glyphs.png`'s digits on a dark board with a lit rim: room for one more, and
+also what the joker does to the slots. Alternatives considered: a corridor
+of doors receding to a point (the JOKER lettering sits on both walls); a
+guest stepping from door n to n+1 (two doors and a figure at this size say
+"hotel" less than one tower does); a key on a fob (reads as a generic key).
+
+**The three authors.** `jokers.legend(hue, sat)` is the one builder:
+Triboulet's marble (4, 8) with its hue turned, plate kept and wiped.
+`jokers.HUES`: Conway 0.74 (violet), Berlekamp 0.915 (rose: the hot
+colour that isn't Chicot's coral 0.00 or Yorick's gold 0.105), Guy 0.29
+(a leaf green; Perkeo's is a greyer teal at 0.46).
+Vanilla's five sit at 0.56, 0.56, 0.105, 0.00 and 0.46, so the three are
+clear of them and of each other. Plates: Conway `{ ▪ | ▪ }`; Berlekamp a
+Dots-and-Boxes row, a box to Left (blue), a box to Right (red), a third
+with two sides drawn, then loose dots; Guy the small numbers `0 1 2 3 4 5`
+in the label font's small digits, which are also exactly the ranks he pays
+on. (Alternatives: a thermograph on Berlekamp's plate: the Thermograph
+joker and Heat already carry it; a coupon stack: unreadable in six rows.
+For Guy, `1 2 4 8 16 31`, his own example of the Strong Law: needs two-digit
+numbers and an explanation.)
+
+**Berlekamp's soul**: a figure. White hair combed across from a parting,
+large dark-rimmed spectacles, a smile, blue jacket, white shirt, red tie,
+and a thermometer in the breast pocket (the one nod to thermography).
+**Guy's soul**: a figure. Bald crown with white hair at the sides, a
+trimmed white beard, wire spectacles, a red anorak with a rucksack's
+straps, and a walking stick in his hand: the hill walker. Both use
+Conway's skin and hair tones, `specs()` for the glasses, and sit in the
+same box (x 12..58, y 12..69), so the three busts are one family; they are
+told apart by silhouette (long hair and beard / clean-shaven with glasses /
+beard and stick) and by jumper colour (green, blue, red). No vanilla
+pixels. I worked from memory of how the two men looked, not from a
+photograph, so these are likenesses in the loose sense only. Alternative if
+a figure is unwanted: emblems (a thermograph mast; a rucksack).
+
+## The Heap and The Misère (`blinds.py`)
 
 Vanilla's "turn" is not a turn: in `BlindChips.png` frames 0..12 of a row
 are one still chip and in 13..20 a diagonal shine crosses it (the lit
@@ -250,12 +350,24 @@ colour, `blinds.COLOUR`; a teal no vanilla boss has), light `64b7ad`, dark
 `20776d`, glyph `185850`, glyph under shine `52827c` (the same ratios as
 vanilla's `4b71e4` chip). The glyph is drawn here: six counters, one on two
 on three, both a heap and the Nim position 1 + 2 + 3 that sums to nothing.
-Previews: `blinds.png` (ours over four vanilla rows, frames 10..20) and
-`blinds_grounds.png` (the chip on its own colour and on dark grounds).
+**The Misère** is row 1 (y 34..67), the same build (`blinds.frame(i,
+"misere")`, `blinds.tones()` gives the five tones from the boss colour by
+the same ratios). Boss colour **`a3b81c`** (`blinds.MISERE`), an acid
+yellow-green: poison. No vanilla boss has it (nearest: The Club `b9cb92`,
+pale; The Needle `5c6e31`, dark olive; The Wheel `50bf7c`, mint). The glyph
+is drawn here: a heap going down, three small counters in a row, and under
+them the last counter, which is a skull. Whoever takes it loses.
+Alternatives considered: the last counter crossed out (an X on a 6 px
+counter is a blot); The Heap's pyramid with its top counter hollow (too
+close to The Heap at a glance).
 
-## Field Deck (`backs.py`)
+Previews: `blinds.png` (ours over vanilla rows, frames 10..20),
+`blinds_grounds.png` (each chip on its own colour and on dark grounds).
 
-One cell. Measured from the Red Deck, `Enhancers.png` (0, 0): the
+## Deck backs (`backs.py`)
+
+Cells: `field ordinal` (`backs.ORDER`). `blank(colour)` is the shared
+frame. Measured from the Red Deck, `Enhancers.png` (0, 0): the
 silhouette, a three-pixel white margin, the field on x 4..66, y 4..90 less
 its corners, a dotted white rule two pixels inside it. No vanilla pixel is
 copied. The field is the Moves' green `4d9f7c`; on it sixteen small cards,
@@ -263,6 +375,19 @@ four by four (16 = 2^4), each an element of F16 as four bits (8 4 over
 2 1), 0 top left to 15 bottom right in reading order; 15, the Ace, in
 gold. Alternatives considered: dark tiles with lit bits (read as a block of
 flats at night), numerals on the tiles (two-digit numbers don't fit 11 px).
+
+**Ordinal Deck** (cell 1). The same frame on indigo `4b4a9c` (toward
+violet from the Spectral blue; compared by eye with vanilla's backs in
+`preview/backs.png`, not measured against all of them). On it the textbook picture of the ordinals as
+matchsticks, as rows: in a row the sticks shrink (to 0.4 of the first) and
+crowd (each gap 0.87 of the last) until they run together, which is the
+limit; the first row is 0, 1, 2, ... toward ω, the second starts at ω
+itself, **the gold stick** (the deck's starting card), and runs to ω·2, and
+so on; and the rows themselves shrink (each 0.7 of the last) and crowd
+toward the bottom, which is ω². Sticks are two pixels thick with a shadow
+while there is room, then one, then solid. No vanilla pixel. Alternative
+considered: the same as a spiral (at 63 px the inner turns are mush after
+ω·3; rows keep seven of them legible).
 
 ## Symbol font (`font.py` -> `assets/fonts/ww_symbols.ttf`)
 

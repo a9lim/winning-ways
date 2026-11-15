@@ -110,8 +110,8 @@ A card **acts as any rank its value equals or is confused with**. For example:
   - always scores, like a Stone card;
   - **eats** the finite cards between it and the nearest infinite card to its left (n + ω = ω). Eaten cards don't
     count toward the hand, and are destroyed;
-  - **grows like Ceremonial Dagger**: the eaten cards' chips become its permanent bonus chips. Its value doesn't
-    change; the bonus is stored the way Hiker's is.
+  - **grows like Ceremonial Dagger**: twice the eaten cards' chips become its permanent bonus chips (Dagger takes
+    double too; `WW.EAT`, a balance number, § 5½). Its value doesn't change; the bonus is stored the way Hiker's is.
   - scores its rank's chips: a King with +ω is ω + 14, and scores a King's 10.
 - **Infinities don't eat each other.** [junk, ω, junk, ω] adds up to ω + ω = ω·2, so each ω eats its own junk and
   both survive.
@@ -226,7 +226,8 @@ the time.
   missing from the scoring cards. It does nothing until you've made a 0, and a 0-1-2-3-4 straight adds 5.
 - **Hotstrat** (common): retrigger every scored hot card once, the way Hack retriggers 2–5 and Sock and Buskin
   retriggers face cards. It does nothing in a deck with no hot cards.
-- **Thermograph** (rare): hot cards score their mean, with no bite, and add their temperature as +mult.
+- **Thermograph** (rare): hot cards score their mean, with no bite, and give +3 mult per degree of temperature
+  (raised from +1 in the balance pass, § 5½).
 - **Sprouts** (rare): if the first hand of a round is exactly two cards, add their Cut to the deck; the parents stay.
   Conway and Paterson's Sprouts adds a new spot on every line drawn. The shape is like DNA's.
 - **Cantor** (uncommon): when a Blind is selected, add a card whose rank and suit pair isn't in your deck (the
@@ -239,6 +240,16 @@ the time.
   - Rising neighbours that are adjacent, like [Q, x, K], give 13½ and no rank. Bigger cards go on the left.
   - It turns three Kings and two junk cards into Five of a Kind ([K, x, K, y, K]), so it's probably the strongest
     card in the mod. That suits a legendary, but it needs watching in play.
+- **Birthday** (uncommon): each scored card gives +3 mult per day its value was born after its whole number. In
+  Conway's construction 3 is born on day 3, 3½ (sign expansion ++++−, after 4) on day 5 and 3¼ on day 6, so a 3½
+  pays 2 days. A game's whole number is its mean's, rounded toward 0, and n is born on day |n|: 5* is 1 day after 5,
+  7±2 = {9|5} (day 10) 3 days after 7. Values born on an infinite day (ω + 14, the wild) pay nothing.
+- **Hilbert's Hotel** (rare): takes no Joker slot, because there's always room for one more, and gives +1 Joker
+  slot, for −1 hand size (Ectoplasm's price). Worth two slots.
+- **Berlekamp** (legendary): each scored hot card gives ×1.5 mult. He wrote the book on thermography (and on Dots and
+  Boxes).
+- **Guy** (legendary): the Strong Law of Small Numbers. Each scored card of rank 5 or lower, 0 and 1 included, gives
+  ×1.5 mult: a Triboulet for small numbers.
 
 ### 4.1 As built (`src/jokers.lua`)
 
@@ -256,8 +267,8 @@ Claude's calls where the sketch left room, waiting on a9's say-so:
   Card's kickers don't.
 - **Hotstrat** retriggers cards whose value has temperature above 0: 7±2 and the wild, not *, ↑ or ↓.
 - **Thermograph** leaves the wild alone: its temperature is infinite (ω/2 − 1), and an infinite +mult has no
-  meaning. Every other hot card plays as its mean in the hand's play-out, so nobody moves in it, and gives its
-  temperature (which can be fractional) as +mult. With Hotstrat both happen twice.
+  meaning. Every other hot card plays as its mean in the hand's play-out, so nobody moves in it, and gives 3 mult
+  per degree (degrees can be fractional). With Hotstrat both happen twice.
 - **Sprouts** makes the new card as Cut does: a copy of the left card, worth {left | right}, taking what it lacks
   (enhancement, edition, seal) from the right one. Like DNA, the card goes into the hand.
 - **Cantor** picks a missing standard pair at random, then a missing born-rank pair (0, 1, C) once all 52 are there.
@@ -269,8 +280,12 @@ Claude's calls where the sketch left room, waiting on a9's say-so:
   for any x, as x plays as {5|} = 6. Stone cards get no ranks and act as no neighbour. The extra ranks only widen
   what cards play as, and never take a reading away: two 3½s still pair as equal values, and 3 3½ 3 is Three of a
   Kind (the 3½ is {3|3} = 3*). Every card still scores its own value (K 5 K scores the 5's 5 chips).
+- **Birthday** reads the card's value, not the number it ends on, so a hot card pays its full age.
+- **Hilbert's Hotel** declares Steamodded's `card_limit = 2` (its own slot plus one; a Negative edition is 1) and
+  vanilla's `h_size = −1`, so the slots and hand size come and go the way Negative and Juggler's do.
+- **Guy** reads the rank a card plays as, so a wild playing as a 3 counts.
 - **Costs:** Bouton $8, Generator $7, Grundy $6, Hotstrat $5, Thermograph $8, Sprouts $8, Cantor $6, Cantor's
-  Paradise $7, Conway $20.
+  Paradise $7, Birthday $6, Hilbert's Hotel $8, Conway, Berlekamp and Guy $20.
 
 ## 5. Blinds and decks — Decided
 
@@ -278,9 +293,35 @@ Claude's calls where the sketch left room, waiting on a9's say-so:
   and Four of a Kinds never score under it.
   - **As built** (`src/blinds.lua`): it reads Steamodded's final scoring cards (Splash, Stone and ω cards
     included) as the ranks they play as. It appears from Ante 2, pays $5 and has the usual ×2 target.
+- **The Misère** (Boss): the last mover loses, so your final hand of the round scores nothing.
+  - **As built:** the hand that leaves you no hands is debuffed. The preview warns while one hand is left, so you
+    know before you play it. From Ante 2.
 - **Field Deck:** 64 cards, ranks 0 through A with the Cavalier (the field F₁₆) in every suit.
   - **As built** (`src/decks.lua`): the born ranks join the deck through vanilla's `extra_cards` when it is built,
     so they count toward the starting deck size (Erosion sees 64).
+- **Ordinal Deck:** the standard 52 plus a 0 of Spades worth exactly ω, and a Cut in the consumable slot.
+
+## 5½. Balance
+
+Numbers that are Balatro-layer rather than maths, and why they are what they are. The first pass, by reasoning
+against vanilla siblings rather than play:
+
+- **ω eats double** (`WW.EAT = 2`, a9's call): an eater gains twice the eaten cards' chips, as Ceremonial Dagger takes
+  double a joker's sell value. Feeding four 7s grows it by 56 chips a hand, at the cost of four cards from the deck.
+- **Thermograph +3 mult per degree** (was +1): one hot card alone is worse off under Thermograph, because you'd have
+  taken its top value and now get its mean (7±2: 9 chips becomes 7). At +1 per degree a rare paid +2 mult for that.
+  At +3, 7±2 gives +6, and Heat adds 3 a step.
+- **Kept, with reasons:**
+  - **Bouton ×3** is nearly always available (75% of 8-card hands make one with a Pair), but it costs the hand
+    shape: kickers have to zero the nim-sum, and no straight ever does. Against The Duo (×2 on any Pair) it's fair
+    for a rare.
+  - **Generator** averages 16 chips a card, Arrowhead territory, plus rank changes that cut both ways.
+  - **Cantor's Paradise** at ×0.1 per card: a hand that feeds four cards gains ×0.4, Hologram's pace, and the deck
+    pays for it.
+  - **Birthday** at +3 per day: a 3½ pays +6, and every Cut that refines a value adds a day.
+  - **Conway's end cards** make any four-card run plus one card a straight. That's strong, but it's a legendary,
+    and it's the same maths as the middle cards.
+  - **The Heap** shuts out pair-based hands entirely for one blind, as The Psychic shuts out short ones.
 
 ## 6. Left out
 
@@ -309,8 +350,6 @@ a9 thought most of these were great. They wait on tuning and a final call.
 
 **Numbers and surreals.**
 
-- **Birthday** (uncommon): pays for complicated values, e.g. +mult per day a scored card was born after its integer
-  part (3 is born on day 3, 3½ on day 4, 3¼ on day 5). Needs a number.
 - **Magic Square** (uncommon): ×3 mult if three scored ranks from A to 9 (Ace as 1) sum to 15. Pick Fifteen is
   tic-tac-toe in disguise, played on the 3×3 magic square.
 - **Wythoff** (uncommon): ×2 mult if the hand contains a Wythoff pair: 1·2, 3·5, 4·7, 6·10, 8·Q or 9·A. These are the
@@ -322,11 +361,6 @@ a9 thought most of these were great. They wait on tuning and a final call.
 - **Moore** (rare, for experts): ×mult if, in every binary place, the played ranks' bits sum to a multiple of 3.
   These are the losing positions of Moore's Nim₂, Bouton's big brother. It's opaque, so cut it if the roster is full.
 
-**Transfinite.**
-
-- **Hilbert's Hotel** (rare): takes no Joker slot, because there's always room for one more, and gives +1 Joker slot.
-  That makes it worth two slots, so it needs a cost. Ectoplasm's −1 hand size is one option.
-
 **Rows.** The hand is ordered.
 
 - **Toads and Frogs** (common): +12 mult if the played cards alternate colour from left to right.
@@ -335,18 +369,12 @@ a9 thought most of these were great. They wait on tuning and a final call.
 - **Glider** (rare): copies the Joker to its right, like Blueprint, but moves one slot right after every round,
   wrapping around. It's the glider from Conway's Life, which the last chapter of Winning Ways covers.
 
-**Legendaries: the authors.** Conway is decided (§ 4).
-
-- **Berlekamp:** each scored hot card gives ×1.5 mult. He wrote the book on thermography (and on Dots and Boxes).
-- **Guy:** the Strong Law of Small Numbers. Each scored card of rank 5 or lower, 0 and 1 included, gives ×1.5 mult: a
-  Triboulet for small numbers.
+**Legendaries: the authors.** Conway, Berlekamp and Guy are all decided (§ 4).
 
 ## 8. Candidates — Blinds and decks
 
 - **Zugzwang** (Boss): the Blind moves first, so you score the Right stop. It only hurts hot cards, the way The Plant
   only hurts face cards.
-- **The Misère** (Boss): the last mover loses, so your final hand of the round scores nothing.
-- **Ordinal Deck:** starts with an ω card and a Cut.
 - **Later:** vouchers, tags, challenges, and the Moves' Game Pack art.
 
 ## 9. Open questions

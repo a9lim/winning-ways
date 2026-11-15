@@ -16,6 +16,12 @@ What in them is Balatro's:
   (from vanilla's "10"), the bodies of the four Cavaliers (the vanilla
   Jacks, re-inked), and the high-contrast shading. Ours: the "C" index, the
   outline pip of the 0, the helms and plumes, the composition.
+  **Row 4 (Wild)** is derived from Quintessence's Wild suit fronts
+  (a9lim, MIT): the asterisk pips are Quintessence's own drawing; the "0"
+  and "1" strokes and the body of the Wild Cavalier (Quintessence's Wild
+  Jack, a collage of vanilla's Jacks of Hearts and Diamonds) are
+  LocalThunk's pixels by way of Quintessence, as its own NOTICE says of its
+  rank glyphs and courts.
 - **omega**: the Spectral frame, name plate and vortex of vanilla's Trance.
   Ours: the ω, the cards, the OMEGA lettering (set in the plate's
   letterforms).
@@ -23,12 +29,15 @@ What in them is Balatro's:
   MEGA and PACK lettering, recoloured. Ours: the slates and their diagrams,
   the GAME lettering.
 
-- **jokers**: the JOKER corner lettering on cells 0..7 (from vanilla's
-  plain Joker), and the marbled background and name plate of cell 8
-  (vanilla's Triboulet, hue turned). Ours: every picture, the plate's
-  `{ | }`, and the whole of cell 9 (the portrait of John Horton Conway).
-- **blinds**: the chip's disc, rim and shine animation (vanilla's The Wall,
-  re-inked). Ours: the heap of counters and the colour.
+- **jokers**: the JOKER corner lettering on cells 0..7, 10 and 11 (from
+  vanilla's plain Joker), and the marbled background and name plate of
+  cells 8, 12 and 14 (vanilla's Triboulet, hue turned). Ours: every
+  picture, the signs on the three plates, and the whole of cells 9, 13 and
+  15 (the portraits of John Horton Conway, Elwyn Berlekamp and Richard
+  Guy).
+- **blinds**: both chips' disc, rim and shine animation (vanilla's The
+  Wall, re-inked). Ours: the heap of counters, the counters and skull, and
+  the colours.
 
 Everything else contains no pixels from the game and is MIT like the code:
 
@@ -36,8 +45,8 @@ Everything else contains no pixels from the game and is MIT like the code:
 - `1x/glyphs.png`, `2x/glyphs.png`
 - `1x/moves.png`, `2x/moves.png` (the frame follows the Tarot frame's
   measurements; no Tarot pixel is copied)
-- `1x/backs.png`, `2x/backs.png` (the frame follows vanilla's deck backs'
-  measurements; no pixel is copied)
+- `1x/backs.png`, `2x/backs.png` (both backs; the frame follows vanilla's
+  deck backs' measurements; no pixel is copied)
 - `fonts/ww_symbols.ttf`: wholly original outlines. Its em, ascent, descent
   and pixel size are set equal to those of the game's font, m6x11plus by
   Daniel Linssen, so the two can be mixed; no glyph is taken from it.

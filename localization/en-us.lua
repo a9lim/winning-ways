@@ -15,7 +15,16 @@ return {
         text = {
           "Start with {C:attention}64{} cards: every",
           "rank from {C:attention}0{} to {C:attention}Ace{}, the",
-          "{C:attention}Cavalier{} included, in every suit",
+          "{C:attention}Cavalier{} included, in all",
+          "four suits",
+        },
+      },
+      b_ww_ordinal = {
+        name = "Ordinal Deck",
+        text = {
+          "Start with an {C:attention}ω{} card,",
+          "a {C:attention}0{} worth exactly {C:attention}ω{},",
+          "and a {C:attention}Cut{}",
         },
       },
     },
@@ -23,6 +32,10 @@ return {
       bl_ww_heap = {
         name = "The Heap",
         text = { "Hands that nim-sum", "to 0 score nothing" },
+      },
+      bl_ww_misere = {
+        name = "The Misère",
+        text = { "The last mover loses:", "your final hand scores nothing" },
       },
     },
     Joker = {
@@ -60,8 +73,8 @@ return {
         name = "Thermograph",
         text = {
           "{C:mult}Hot{} cards score their {C:attention}mean{}",
-          "and give their {C:attention}temperature{}",
-          "as {C:mult}Mult{}",
+          "and give {C:mult}+#1#{} Mult per",
+          "degree of {C:attention}temperature{}",
         },
       },
       j_ww_sprouts = {
@@ -88,6 +101,35 @@ return {
           "Gains {X:mult,C:white} X#1# {} Mult for",
           "each card {C:attention}ω{} eats",
           "{C:inactive}(Currently {X:mult,C:white} X#2# {C:inactive} Mult)",
+        },
+      },
+      j_ww_birthday = {
+        name = "Birthday",
+        text = {
+          "Each scored card gives {C:mult}+#1#{} Mult",
+          "per day its value was born",
+          "after its whole number",
+          "{C:inactive}(3 on day 3, 3½ on day 5, 3¼ on day 6)",
+        },
+      },
+      j_ww_hilbert = {
+        name = "Hilbert's Hotel",
+        text = {
+          "Takes no Joker slot",
+          "and gives {C:dark_edition}+#1#{} more",
+          "{C:red}-#2#{} hand size",
+        },
+      },
+      j_ww_berlekamp = {
+        name = "Berlekamp",
+        text = { "Each played {C:mult}hot{} card", "gives {X:mult,C:white} X#1# {} Mult", "when scored" },
+      },
+      j_ww_guy = {
+        name = "Guy",
+        text = {
+          "Each played card of rank",
+          "{C:attention}#2#{} or lower, {C:attention}0{} and {C:attention}1{} too,",
+          "gives {X:mult,C:white} X#1# {} Mult when scored",
         },
       },
       j_ww_conway = {
@@ -181,8 +223,9 @@ return {
         name = "Omega",
         text = {
           "Adds {C:attention}ω{} to {C:attention}1{} selected card:",
-          "it eats the cards played",
-          "to its left",
+          "it eats the cards played to",
+          "its left, gaining {C:attention}double{}",
+          "their chips for good",
         },
       },
     },

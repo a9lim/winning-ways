@@ -1,4 +1,4 @@
--- The Heap, a Boss Blind (DESIGN.md § 5): a hand whose scoring cards nim-sum to 0 scores nothing. Because a ⊕ a = 0,
+-- The Boss Blinds (DESIGN.md § 5). The Heap: a hand whose scoring cards nim-sum to 0 scores nothing. Because a ⊕ a = 0,
 -- Pairs, Two Pairs and Four of a Kinds never score under it, and no straight ever nim-sums to 0. The scoring cards
 -- are Steamodded's final ones (Splash, Stone and ω cards included), counted as the ranks they play as; cards with no
 -- rank are invisible to the sum.
@@ -22,6 +22,25 @@ SMODS.Blind {
   calculate = function(self, blind, context)
     if context.debuff_hand and not blind.disabled and WW.nim_sum(context.scoring_hand) == 0 then
       return { debuff = true }
+    end
+  end,
+}
+
+-- The Misère: in misère play the last mover loses, so the hand that would be your last of the round scores
+-- nothing. Vanilla takes the hand away before scoring it, so a played hand is the last when none are left; in the
+-- preview (`check`) it's the last while one is left.
+SMODS.Blind {
+  key = "misere",
+  atlas = ART and "blinds" or nil,
+  pos = { x = 0, y = ART and 1 or 0 },
+  boss = { min = 2 },
+  boss_colour = HEX("a3b81c"), -- Fable's poison green
+  mult = 2,
+  dollars = 5,
+  calculate = function(self, blind, context)
+    if context.debuff_hand and not blind.disabled then
+      local left = G.GAME.current_round.hands_left
+      if left <= (context.check and 1 or 0) then return { debuff = true } end
     end
   end,
 }

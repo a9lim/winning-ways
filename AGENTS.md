@@ -89,5 +89,9 @@ sprites so it reads as vanilla. That's the same approach as Quintessence (`~/Wor
 - UnStable (MIT) is a second reference; its sheets go in `art/ref/`, which is gitignored.
 - 1x is the master and 2x its exact nearest-neighbour double.
 - The high-contrast deck comes from vanilla's `8BitDeck_opt2`, not from re-inking the normal one.
+- **Quintessence** (a9's suit mod, `~/Work/quintessence`) adds a Wild suit. The rank fronts' fifth row is our born
+  ranks in that suit, built by `art/quint.py` from Quintessence's own sheets, which it reads at build time from
+  `../quintessence/assets/1x` (override with `QUINTESSENCE_ASSETS`). `src/ranks.lua` maps `quint_Wild` to that row,
+  and the self-test's Quintessence checks run whenever it's installed.
 - The Lua side depends on the sheet sizes and cell orders listed in `art/NOTES.md`, and on `art/layout.lua` (the
   badge text box) and `art/glyphs.lua` (the glyph order and widths).

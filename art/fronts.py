@@ -2,7 +2,8 @@
 
 ranks.png / ranks_hc.png: columns 0, 1, C; rows Hearts, Clubs, Diamonds,
 Spades (vanilla's 8BitDeck row order, which is Steamodded's rank-atlas
-order). Cells are 71x95 and composed exactly like vanilla's: transparent
+order), then Wild, Quintessence's fifth suit (see the Wild row below; read
+through quint.py). Cells are 71x95 and composed exactly like vanilla's: transparent
 except for the ink, so the card body shows through.
 
   0   {|}, the game with no moves. The field holds one pip, but only its
@@ -33,6 +34,7 @@ from functools import lru_cache
 
 import numpy as np
 
+import quint as Q
 import vanilla as V
 from pixel import Canvas, Palette, erode, sprite_rows
 
@@ -271,6 +273,114 @@ def hc(cell, suit, court):
     return out
 
 
+# ------------------------------------------------------------- the Wild row ----
+# Quintessence's Wild suit: an asterisk for a pip, muted purple (green in the
+# high-contrast deck), courts collaged from vanilla's. This row is derived
+# from Quintessence's built sheets exactly as rows 0..3 are from vanilla's:
+# the index digits from its 10, the corner pip from its 10, the 0 and 1 from
+# its 3's centre pip, the Cavalier from its Jack.
+WILD, WILD_HC, WILD_DARK = "8b64b4", "1fa84f", "374649"
+
+
+def wild_index(rank):
+    m = np.zeros((H, W), bool)
+    ten = Q.cell(Q.TEN)[..., 3] > 0
+    if rank == "0":
+        m[7:15, 7:12] = ten[7:15, 9:14]
+    elif rank == "1":
+        m[7:15, 8:10] = ten[7:15, 6:8]
+    else:
+        m = index_mask("C").copy()
+    return m
+
+
+def wild_corners(cell, rank):
+    m = wild_index(rank)
+    m[16:26, 4:16] = Q.cell(Q.TEN)[16:26, 4:16, 3] > 0   # the small asterisk
+    paint(cell, m | m[::-1, ::-1], WILD)
+
+
+def wild_pip():
+    m = np.zeros((H, W), bool)
+    m[34:61, 20:51] = Q.cell(Q.THREE)[34:61, 20:51, 3] > 0
+    return m
+
+
+def wild_zero():
+    cell = np.zeros((H, W, 4), np.uint8)
+    wild_corners(cell, "0")
+    p = wild_pip()
+    paint(cell, p & ~erode(p), WILD)
+    return cell
+
+
+def wild_one():
+    cell = np.zeros((H, W, 4), np.uint8)
+    wild_corners(cell, "1")
+    paint(cell, wild_pip(), WILD)
+    return cell
+
+
+def wild_cavalier():
+    """Wild has no sister suit, so its Cavalier rides in on its own Jack.
+    That Jack's head is the Jack of Hearts' (where it stands in vanilla), so
+    the Hearts entry of CAV fits it; what is left of the red hat goes to
+    Wild purple, and the helm's plume is purple too."""
+    a = Q.cell(Q.JACK)
+    hx = V.hexes(a)
+    cell = a.copy()
+    cell[_corner()] = 0
+    top = cell[:48].copy()
+    p = CAV["H"]
+    for x0, y0, x1, y1 in p["clear"]:
+        top[y0:y1 + 1, x0:x1 + 1] = 0
+    x0, y0, x1, y1 = p["face"]
+    face = np.zeros(top.shape[:2], bool)
+    face[y0:y1 + 1, x0:x1 + 1] = np.isin(hx[y0:y1 + 1, x0:x1 + 1], ("e6e6e6", "acacac"))
+    top[face] = rgba(WILD_DARK)
+    top[(top[..., :3] == rgba(INK["H"])[:3]).all(-1) & (top[..., 3] > 0)] = rgba(WILD)
+    top[11:13, p["rule"][0]:p["rule"][1] + 1] = rgba(WILD_DARK)
+    key = dict(k=WILD_DARK, w="ffffff", e="e6e6e6", a="acacac", g="ffa300", p=WILD)
+    hxx, hy = p["helm"]
+    stamp(top, PLUME, hxx + 3, hy - 8, key)
+    stamp(top, HELM, hxx, hy, key)
+    cell[:48] = top
+    cell[47:] = rot180(cell)[47:]
+    wild_corners(cell, "C")
+    return cell
+
+
+@lru_cache(maxsize=None)
+def wild_court_map():
+    """(normal colour, row) -> high-contrast colour, learned from
+    Quintessence's three Wild courts, normal against high contrast."""
+    votes = defaultdict(Counter)
+    for c in (Q.JACK, Q.QUEEN, Q.KING):
+        a, b = V.hexes(Q.cell(c)), V.hexes(Q.cell(c, hc=True))
+        for y, x in zip(*np.nonzero(a != "")):
+            votes[(a[y, x], y)][b[y, x]] += 1
+    by_colour = defaultdict(dict)
+    for (h, y), v in votes.items():
+        by_colour[h][y] = v.most_common(1)[0][0]
+    return by_colour
+
+
+def wild_hc(cell):
+    """Quintessence's high-contrast Wild: purple goes to green, flat (its
+    pips and indices have no ramp); the courts' accents go as its own
+    courts' do, row by row."""
+    out = cell.copy()
+    hx = V.hexes(cell)
+    cm = wild_court_map()
+    for y, x in zip(*np.nonzero(hx != "")):
+        rows = cm.get(hx[y, x])
+        out[y, x] = rgba(rows[min(rows, key=lambda k: abs(k - y))] if rows else hx[y, x])
+    return out
+
+
+WILD_ROW = 4
+
+
 # ---------------------------------------------------------------- sheet ----
 def cells():
     """{(col, row): normal-contrast RGBA cell}."""
@@ -278,11 +388,14 @@ def cells():
 
 
 def sheet_rgba(high_contrast=False):
-    out = np.zeros((H * 4, W * 3, 4), np.uint8)
+    out = np.zeros((H * 5, W * 3, 4), np.uint8)
     for (c, r), cell in cells().items():
         if high_contrast:
             cell = hc(cell, SUITS[r], court=(c == 2))
         out[r * H:(r + 1) * H, c * W:(c + 1) * W] = cell
+    for c, f in enumerate((wild_zero, wild_one, wild_cavalier)):
+        cell = wild_hc(f()) if high_contrast else f()
+        out[WILD_ROW * H:, c * W:(c + 1) * W] = cell
     return out
 
 

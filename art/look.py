@@ -4,7 +4,7 @@ Renders big nearest-neighbour blow-ups into art/preview/ (gitignored). Card
 fronts and overlays are shown on a mock white card body, with vanilla cells
 (read from the installed game, only ever looked at) beside ours.
 
-    python -I art/look.py fronts|fronts_hc|courts|courts_hc|mods|glyphs|moves|packs|font|jokers|blinds|backs [k]
+    python -I art/look.py fronts|fronts_hc|wild|courts|courts_hc|mods|glyphs|moves|packs|font|jokers|blinds|backs [k]
 
 fable, 2026-11-14 (claude-fable-5-2)
 """
@@ -71,6 +71,17 @@ def main():
             rows.append(on_cards(row(ours[:2] + ref[:2] + ours[2:] + ref[2:])))
         save(vstack(rows[:2], gap=2), f"{what}_a.png", k)
         save(vstack(rows[2:], gap=2), f"{what}_b.png", k)
+    elif what == "wild":
+        import fronts
+        import quint
+        rows = []
+        for h in (False, True):
+            s = fronts.sheet_rgba(h)[4 * 95:]
+            ours = [s[:, c * 71:(c + 1) * 71] for c in range(3)]
+            ref = [quint.cell(c, hc=h) for c in (0, 8, 9)]
+            rows.append(on_cards(row(ours[:2] + ref[:2] + ours[2:] + ref[2:])))
+        save(vstack(rows, gap=2), "wild.png", k)
+        save(vstack(rows, gap=2), "wild_1x.png", 1)
     elif what.startswith("courts"):
         import fronts
         s = fronts.sheet_rgba(hc)
@@ -113,29 +124,40 @@ def main():
         a = row([cell(0), ref[0], cell(1), cell(2), ref[1], cell(3)])
         b = row([cell(4), ref[2], cell(5), cell(6), ref[3], cell(7)])
         d = row([cell(8), cell(9), np.asarray(soul), np.asarray(vleg), V.cell("Jokers", 7, 8), V.cell("Jokers", 7, 9)])
-        for nm, r in (("a", a), ("b", b), ("c", d)):
+        over = lambda i: (lambda im: (im.alpha_composite(Image.fromarray(cell(i + 1).copy())), np.asarray(im))[1])(
+            Image.fromarray(cell(i).copy()))
+        e = row([cell(10), V.cell("Jokers", 2, 1), cell(11), V.cell("Jokers", 3, 3), V.cell("Jokers", 6, 1)])
+        f = row([cell(12), cell(13), over(12), cell(14), cell(15), over(14)])
+        g = row([over(8), over(12), over(14), np.asarray(vleg), V.cell("Jokers", 5, 8), V.cell("Jokers", 6, 8)])
+        for nm, r in (("a", a), ("b", b), ("c", d), ("d", e), ("e", f), ("f", g)):
             save(Image.fromarray(r), f"jokers_{nm}.png", k)
         save(Image.fromarray(row([a, b[:, :71 * 4]])), "jokers_1x.png", 1)
+        save(vstack([Image.fromarray(e), Image.fromarray(g)], gap=2), "jokers_new_1x.png", 1)
         save(vstack([Image.fromarray(a), Image.fromarray(b), Image.fromarray(d)], gap=2), "jokers_2x.png", 2)
     elif what == "blinds":
         import blinds
         ours = blinds.sheet_rgba()
         B = V.texture("BlindChips")
-        rows = [ours] + [B[r * 34:(r + 1) * 34] for r in (8, 17, 21, 11)]
+        rows = [ours] + [B[r * 34:(r + 1) * 34] for r in (8, 17, 21, 11, 5, 26)]
         save(Image.fromarray(np.concatenate(rows, 0)[:, 34 * 10:]), "blinds.png", k)
         import colorsys
-        chip = Image.fromarray(ours[:, :34])
-        grounds = []
-        for bg in (blinds.COLOUR, "#4f6367", "#374244", "#1e2b2d", "#5b7a68"):
-            g = Image.new("RGBA", (50, 50), hex_rgba(bg))
-            g.alpha_composite(chip, (8, 8))
-            grounds.append(g)
-        save(hstack(grounds, gap=0), "blinds_grounds.png", k)
+        strips = []
+        for r, col in enumerate((blinds.COLOUR, blinds.MISERE)):
+            chip = Image.fromarray(ours[r * 34:(r + 1) * 34, :34])
+            grounds = []
+            for bg in (col, "#4f6367", "#374244", "#1e2b2d", "#5b7a68"):
+                g = Image.new("RGBA", (50, 50), hex_rgba(bg))
+                g.alpha_composite(chip, (8, 8))
+                grounds.append(g)
+            strips.append(hstack(grounds, gap=0))
+        save(vstack(strips, gap=0), "blinds_grounds.png", k)
+        save(vstack(strips, gap=0), "blinds_1x.png", 1)
     elif what == "backs":
         import backs
         ref = [V.cell("Enhancers", c, r) for c, r in ((0, 0), (2, 3), (1, 4), (0, 4))]
-        save(Image.fromarray(row([np.asarray(backs.back().image())] + ref)), "backs.png", k)
-        save(Image.fromarray(row([np.asarray(backs.back().image())] + ref)), "backs_1x.png", 1)
+        r = row([np.asarray(backs.sheet_canvas().image())] + ref)
+        save(Image.fromarray(r), "backs.png", k)
+        save(Image.fromarray(r), "backs_1x.png", 1)
     elif what == "glyphs":
         import glyphs
         save(glyphs.sheet_canvas().image(), "glyphs.png", 7, bg="#009dff")

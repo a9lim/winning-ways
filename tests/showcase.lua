@@ -4,6 +4,7 @@
 -- put back before quitting.
 
 local WW = WinningWays
+local N, Gm = WW.engine.num, WW.engine.game
 local out_path = os.getenv("WINNINGWAYS_SHOWCASE")
 local palette = os.getenv("WINNINGWAYS_SHOWCASE_PALETTE")
 local saved_palettes, saved_cb
@@ -25,6 +26,11 @@ local rows = set == "moves" and {
 }
 
 local function build()
+  -- With Quintessence installed, a row of its Wild suit: the born ranks and a Wild 7±2 beside its own Wild cards.
+  -- (Asked here, not at load: the cards exist only once every mod has loaded.)
+  if not set and G.P_CARDS.quint_W_ww_0 then
+    rows[#rows + 1] = { "quint_W_ww_0", "quint_W_ww_1", "quint_W_ww_C", "quint_W_7", "quint_W_J", "quint_W_T" }
+  end
   for _, ui in ipairs({ "MAIN_MENU_UI", "PROFILE_BUTTON" }) do
     if G[ui] then G[ui]:remove(); G[ui] = nil end
   end
@@ -55,6 +61,9 @@ local function build()
     end
   end
   WW.apply_lab(all)
+  for _, c in ipairs(all) do
+    if c.base.suit == "quint_Wild" and c.base.value == "7" then WW.add_mod(c, Gm.of({ N.new(2) }, { N.new(-2) })) end
+  end
   -- A line of the game's own font, to check the symbol fallback (src/font.lua).
   local last = WW.value_of(all[#all - 1])
   local sample = "Worth {ω|2}  ±½  ⅜  ↑ ↓  ∞ ⊕ ⊗  −¼  " .. (last and WW.pretty(last) or "")
