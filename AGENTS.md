@@ -60,7 +60,9 @@ format.
   next run.
 - `WINNINGWAYS_SHOWCASE=<png> balala` lays out the born ranks and every kind of modifier beside vanilla cards,
   screenshots them and quits; add `WINNINGWAYS_SHOWCASE_PALETTE=lc|hc` to force the palette (the settings are put
-  back). Use it after any art or drawing change.
+  back). `WINNINGWAYS_SHOWCASE_SET=moves` or `=jokers` shows those instead. Use it after any art or drawing change.
+- `WINNINGWAYS_RUNTEST_SHOT=<prefix> scripts/runtest` also saves two screenshots of the run (The Heap's chip, the
+  Field Deck's back, the jokers in their slots) as `<prefix>-1.png` and `<prefix>-2.png`.
 - After changing the engine, the ogdoad fixtures must still pass. Regenerate them with
   `~/.venv/bin/python -I tools/fixtures.py` (about 2.5 minutes, deterministic) only when the fixture script itself
   changes.
