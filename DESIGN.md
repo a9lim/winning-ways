@@ -399,6 +399,9 @@ Built and tested (`src/engine/`, `tests/`); nothing in the game uses it yet.
   - **Ranks:** the born ranks are registered, with fronts Fable drew from vanilla's sprites (`art/fronts.py`).
   - **Reading a hand:** `evaluate_poker_hand` runs the game's own evaluator once per candidate assignment, so other
     mods' hands count too, and keeps the best hand by the hand list's order, then the most scoring cards.
+  - **Faces:** a modifier is colour text beside the corner index, mirrored like vanilla's (3+½, 7±2, K+ω). The wild's
+    index is a white ± stamp on mult red. A * is a halo. Fable's symbol font is a fallback for Balatro's pixel font,
+    so text can say ω, ½ and ↑ (`src/faces.lua`, `src/font.lua`).
   - **Hooks:** while a hand is assigned, `get_id`, `get_nominal` and `is_face` report the rank a card plays as.
     `get_X_same` handles tie groups. Straights are Steamodded's own: the optional Cavalier is just another entry in
     the Jack's next list.

@@ -14,6 +14,7 @@ local function attach()
       v.FONT:setFallbacks(v.ww_fallback)
     end
   end
+  WinningWays.symbols = true
 end
 
 local set_language = Game.set_language

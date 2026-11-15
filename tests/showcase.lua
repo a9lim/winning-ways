@@ -8,7 +8,12 @@ local out_path = os.getenv("WINNINGWAYS_SHOWCASE")
 local palette = os.getenv("WINNINGWAYS_SHOWCASE_PALETTE")
 local saved_palettes, saved_cb
 
-local rows = {
+-- WINNINGWAYS_SHOWCASE_SET=moves shows the Moves, Omega and the Game Packs beside vanilla consumables instead.
+local rows = os.getenv("WINNINGWAYS_SHOWCASE_SET") == "moves" and {
+  { "c_ww_cut", "c_ww_sum", "c_ww_heat", "c_ww_cool", "c_ww_frobenius", "c_fool", "c_strength" },
+  { "c_ww_tweedledum", "c_ww_repaint", "c_ww_nimbus", "c_ww_mex", "c_ww_omega", "c_trance", "c_familiar" },
+  { "p_ww_game_normal_1", "p_ww_game_normal_2", "p_ww_game_jumbo_1", "p_ww_game_mega_1", "p_celestial_normal_1", "p_arcana_normal_1" },
+} or {
   { "H_ww_0", "C_ww_1", "D_ww_C", "S_ww_C", "H_J", "H_Q", "H_K", "H_A", "S_T" },
   { "D_3", "C_6", "H_T", "H_7", "C_5", "S_Q" },
   { "S_9", "H_4", "S_A", "D_8", "C_K", "H_2" },
@@ -33,13 +38,26 @@ local function build()
     local width = math.min(w - 1, #keys * G.CARD_W * 1.05)
     local area = CardArea((w - width) / 2, top + (r - 1) * row_h, width, G.CARD_H, { card_limit = #keys, type = "title" })
     for _, key in ipairs(keys) do
-      local card = Card(area.T.x, area.T.y, G.CARD_W, G.CARD_H, G.P_CARDS[key], G.P_CENTERS.c_base,
-        { bypass_discovery_center = true, bypass_discovery_ui = true })
+      local params = { bypass_discovery_center = true, bypass_discovery_ui = true }
+      local card
+      if G.P_CARDS[key] then
+        card = Card(area.T.x, area.T.y, G.CARD_W, G.CARD_H, G.P_CARDS[key], G.P_CENTERS.c_base, params)
+      else
+        card = Card(area.T.x, area.T.y, G.CARD_W, G.CARD_H, G.P_CARDS.empty, G.P_CENTERS[key], params)
+      end
       area:emplace(card)
       all[#all + 1] = card
     end
   end
   WW.apply_lab(all)
+  -- A line of the game's own font, to check the symbol fallback (src/font.lua).
+  local sample = "Worth {ω|2}  ±½  ⅜  ↑ ↓  ∞ ⊕ ⊗  −¼  " .. WW.pretty(WW.value_of(all[#all - 1]))
+  G.ww_font_check = UIBox {
+    definition = { n = G.UIT.ROOT, config = { colour = G.C.CLEAR }, nodes = {
+      { n = G.UIT.T, config = { text = sample, scale = 0.5, colour = G.C.WHITE, shadow = true } },
+    } },
+    config = { align = "bm", offset = { x = 0, y = -0.3 }, major = G.ROOM_ATTACH },
+  }
 end
 
 local phase, frames = "wait", 0

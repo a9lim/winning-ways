@@ -17,6 +17,10 @@ contain LocalThunk's pixels: see `assets/NOTICE.md`.
 | `ranks.png`, `ranks_hc.png` | 213x380 (3x4 cells of 71x95) | `fronts.py` | yes |
 | `mods.png`, `mods_hc.png` | 142x95 (2 cells of 71x95) | `mods.py` | no |
 | `glyphs.png` | 266x9 (38 cells of 7x9) | `glyphs.py` | no |
+| `moves.png` | 639x95 (9 cells of 71x95) | `moves.py` | no (frame geometry only) |
+| `omega.png` | 71x95 | `moves.py` | yes |
+| `packs.png` | 284x95 (4 cells of 71x95) | `packs.py` | yes |
+| `fonts/ww_symbols.ttf` | 14 glyphs | `font.py` | no |
 
 ## Rank fronts (`fronts.py`)
 
@@ -120,14 +124,89 @@ geometry and colours, written to `art/layout.lua`.
 - **0 nimbus** (the `*`): a 9x3 halo over the index (x 5..13, y 3..5), in
   `4584fa` with a `2f62c9` lower arc, and again turned bottom right. The
   round-1 glint is gone: labels start where it sat.
-- **1 wild**: the wild rank's index. A **W**, a rank letter in vanilla's
-  hand (8x8, two-pixel strokes), in `c8900f` on a card-white tile with an
-  `eac058` rim, covering x 5..14, y 6..15 in the top-left corner
+- **1 wild**: the wild rank's index, a **stamp**: a white ± (8x8,
+  two-pixel strokes) on mult red `fe5f55`, rimmed `cc4846` (the red stake
+  chip's shade), covering x 5..14, y 6..15 in the top-left corner
   (`wild_box`) and the same turned bottom right. Every vanilla index glyph
-  lies inside x 6..13, y 7..14, so the tile hides any rank, on any card
-  body; the suit pip (from y 16) is untouched. Considered: a four-point
-  star (too near `*`), a gold-filled tile with a dark or white W (reads as
-  a sticker, not an index; white on gold does not read at all).
+  lies inside x 6..13, y 7..14, so it hides any rank on any card body; the
+  suit pip (from y 16) is untouched. Red, not gold: ± is the heat sign, and
+  white holds on red where it washes out on gold.
+
+## The Moves and Omega (`moves.py`)
+
+**The Moves' identity is the blackboard.** Every Move is a diagram chalked
+on green slate, the way *Winning Ways* draws its games. Set colours for the
+badge and UI: **primary `4d9f7c`, secondary `2f5a50`** (`moves.SET_COLOURS`).
+
+- Frame: vanilla's Tarot geometry, measured from the Fool, `Tarots.png`
+  (0, 0): its silhouette, three one-pixel rings (`3c7f66`, `7cc7a2`, the
+  outline `4f6367`), the picture window x 7..63, y 4..81 and the name strip
+  y 83..90. No Tarot pixel is copied. Where a Tarot has its name a Move has
+  the board's ledge, with four chalks on it (no lettering to localise).
+- Palette: slate `2f5a50` (`376a5c` dust, `274c44` edge), chalk `f3f6e8`
+  (`b9cdbd` rubbed thin), Left blue `52b6ff`, Right red `fe6f66`, yellow
+  `f0cc6a` for the thing the card is about, ledge `a9dcc0`. Numerals on the
+  boards are `glyphs.png`'s.
+
+| cell | picture |
+|---|---|
+| `cut` | `{ 0 \| 1 }` as two cards in braces with a bar between; an arrow; one card, ½ |
+| `sum` | a 2 and a 3 with a plus, a rule under them, a 5 |
+| `heat` | a thermograph (tent on the number line, mast above) in red, wide, arrows up |
+| `cool` | the same in blue, sunk small inside its old dotted outline, arrows down, a snowflake |
+| `frobenius` | three cards on a ring of arrows, a `*` with a small 2 in the middle |
+| `tweedledum` | the twins arm in arm (after Tenniel), one capped blue and one red: G + (-G), with a + over them and a 0 under |
+| `repaint` | two Hackenbush stalks on the dotted ground, the second the first with blue and red exchanged; swap arrows |
+| `nimbus` | a card under a halo, a blue `*` on it |
+| `mex` | cards 0 1 2 4 struck through, the 3 a dotted yellow gap with an arrow at it |
+
+**Omega** (`omega.png`, a Spectral) is vanilla's Trance, `Tarots.png`
+(3, 5): frame, plate and vortex, the vortex mirrored so it winds in from the
+left. The plate is re-lettered OMEGA in the plate's own letterforms (typed
+out in `moves.PLATE` after ECTOPLASM, GRIM and TRANCE), a white ω sits in
+the eye, and two cards are going in from the left: infinity eats what is to
+its left.
+
+## Game Packs (`packs.py`)
+
+`normal_1`, `normal_2`, `jumbo`, `mega`. Each is a vanilla Celestial pack,
+`boosters.png` cells (0, 1), (1, 1), (0, 3), (2, 3): the wrapper, crimps,
+foil and the JUMBO / MEGA lettering are vanilla's, the body's hue turned to
+green (0.38..0.47; light and dark kept). The planet is covered by a slate
+with one of the set's signs (`{ card | card }`; two thermographs; stars).
+The name band is the normal pack's (rows 56..77), with CELESTIAL filled
+over in the band's own colour and re-lettered GAME in the band's letterforms
+(E, A as vanilla letters them; G, M drawn to match); PACK is vanilla's.
+
+## Symbol font (`font.py` -> `assets/fonts/ww_symbols.ttf`)
+
+A fallback for `m6x11plus.ttf`, which lacks every one of these. Wholly
+drawn here; only the metrics are read from the game's font (and checked by
+build.py):
+
+- em 1024, pixel 64 units (16 px to the em), hhea/typo ascent 768, descent
+  -256, line gap 0
+- letters stand at y = -128 (two pixels under the baseline, as m6x11plus's
+  do) and caps reach y = 576: eleven rows. x-height is eight rows.
+- glyphs start at x = 0; advance = inked width + 1 px (m6x11plus's digits:
+  6 + 1 = 448)
+- two-pixel strokes, square-pixel outlines traced from the masks
+
+| glyph | px wide | rows |
+|---|---|---|
+| ω | 8 | x-height (8) |
+| ∞ | 10 | 6, centred like + |
+| ↑ ↓ | 6 | 10 |
+| ⊕ ⊗ | 10 | 10 |
+| − (U+2212) | 6 | 2 |
+| ½ ¼ ¾ ⅛ ⅜ ⅝ ⅞ | 9 | 11 |
+
+The fractions are the card labels' small digits (3x5, one-pixel strokes)
+either side of a slash: two-pixel strokes do not fit a numerator and a
+denominator into eleven rows, so they are lighter than the text round them.
+`look.py font` renders `preview/font_check.png`: "Worth ω+14, ±½, ↑ ↓ ∞ ⊕ ⊗
+−¼ ¾ ⅛ ⅜ ⅝ ⅞ x2" at 16 and 32 px, the game's font in white and ours in gold,
+falling back glyph by glyph.
 
 ## Glyphs (`glyphs.py`)
 
@@ -169,4 +248,6 @@ denominator. `glyphs.layout()` is the reference implementation. Widths:
 - In the high-contrast deck clubs are chips blue and hearts are close to
   mult red, so an offset on a club or a heat on a heart shares its index's
   colour. It still reads (thin strokes vs the index's heavy ones).
-- Wild index: W vs another sign.
+- Moves have no name on the card (a ledge instead); vanilla consumables do.
+- Font fractions are one-pixel strokes; text like "1/2" in the game font
+  is the heavier alternative.

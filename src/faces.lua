@@ -239,15 +239,20 @@ SMODS.DrawStep {
 
 -- tooltip -----------------------------------------------------------------------------------------------
 
--- Text for the tooltip: numbers as mixed fractions, games in {L|R} notation. Balatro's pixel font (m6x11plus) has
--- ± but no ω, ½ or arrows, so ω is written w and fractions as p/q.
+-- Text for the tooltip: numbers as mixed fractions, games in {L|R} notation. Balatro's pixel font lacks ω, ½ and
+-- the like; with Fable's symbol font attached (src/font.lua) they show, and without it ω is written w and
+-- fractions as p/q.
+local SYMBOL_FRACTIONS = { [0.5] = "½", [0.25] = "¼", [0.75] = "¾", [0.125] = "⅛", [0.375] = "⅜", [0.625] = "⅝", [0.875] = "⅞" }
 local function pretty(v, signed)
+  local symbols = WW.symbols
   if N.is(v) then
     local function dy(x)
-      local sign = x < 0 and "-" or ""
+      local sign = x < 0 and (symbols and "−" or "-") or ""
       local a = math.abs(x)
       local whole, frac = math.floor(a), a - math.floor(a)
       if frac == 0 then return sign .. ("%.0f"):format(whole) end
+      local f = symbols and SYMBOL_FRACTIONS[frac]
+      if f then return sign .. (whole > 0 and ("%.0f"):format(whole) or "") .. f end
       if whole == 0 then return sign .. N.dyadic_str(frac) end
       return sign .. ("%.0f"):format(whole) .. " " .. N.dyadic_str(frac)
     end
@@ -255,11 +260,21 @@ local function pretty(v, signed)
     if v.k == 0 then
       s = dy(v.x)
     else
-      s = (v.k == 1 and "" or (v.k == -1 and "-" or dy(v.k))) .. "w"
+      local omega = symbols and "ω" or "w"
+      s = (v.k == 1 and "" or (v.k == -1 and (symbols and "−" or "-") or dy(v.k))) .. omega
       if v.x > 0 then s = s .. "+" .. dy(v.x) elseif v.x < 0 then s = s .. dy(v.x) end
     end
-    if signed and not s:match("^%-") then s = "+" .. s end
+    if signed and not (s:sub(1, 1) == "-" or s:sub(1, 3) == "−") then s = "+" .. s end
     return s
+  end
+  -- Games with a familiar shape read the way the badges do: x* for {x|x}, m±t for a finite switch.
+  if #v.L == 1 and #v.R == 1 and N.is(v.L[1]) and N.is(v.R[1]) then
+    local a, b = v.L[1], v.R[1]
+    if N.eq(a, b) then return pretty(a, signed) .. "*" end
+    if N.is_finite(a) and N.is_finite(b) then
+      local m, t = N.half(N.add(a, b)), N.half(N.sub(a, b))
+      return (N.eq(m, N.zero) and "" or pretty(m, signed)) .. "±" .. pretty(t)
+    end
   end
   local parts = {}
   for _, side in ipairs({ v.L, v.R }) do

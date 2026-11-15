@@ -14,8 +14,8 @@ SMODS.Atlas { key = "packs", path = "packs.png", px = 71, py = 95 }
 
 SMODS.ConsumableType {
   key = "Move",
-  primary_colour = HEX("4f6f9f"),
-  secondary_colour = HEX("6d8fc4"),
+  primary_colour = HEX("4d9f7c"), -- Fable's blackboard green
+  secondary_colour = HEX("2f5a50"),
   collection_rows = { 5, 4 },
   shop_rate = 2,
   default = "c_ww_cut",

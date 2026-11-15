@@ -5,11 +5,10 @@ overlays drawn over a card front.
 
   0  nimbus   the halo for the * modifier: a small ring over each corner
               index, in Spectral blue.
-  1  wild     the wild rank's index: a W, a rank letter in vanilla's hand,
-              in gold on a card-white tile with a thin gold rim, pasted
-              over the rank glyph in both corners. The tile is solid, so it
-              covers whatever rank is underneath (the 10 is widest) on any
-              card body, and it leaves the suit pip alone.
+  1  wild     the wild rank's index: a stamp, a white ± on mult red, pasted
+              over the rank glyph in both corners. It is solid, so it covers
+              whatever rank is underneath (the 10 is widest) on any card
+              body, and it leaves the suit pip alone.
 
 Modifier *labels* are not in this sheet. They are coloured text, composed
 by the Lua side out of glyphs.png and drawn straight onto the card beside
@@ -39,7 +38,7 @@ RIGHT_LIMIT = 66               # keep clear of the card's right edge
 
 PAL = Palette(
     spectral="#4584fa", spectral_d="#2f62c9",
-    gold="#eac058", gold_ink="#c8900f", white="#ffffff",
+    red="#fe5f55", red_d="#cc4846", white="#ffffff",
 )
 # Label colours by role: chosen to read as bare text on the card's white.
 COLOURS = dict(
@@ -75,19 +74,20 @@ def nimbus():
 
 
 # ---------------------------------------------------------------- wild ----
-# The tile covers x 5..14, y 6..15: every vanilla index glyph (x 6..13,
-# y 7..14) and a pixel round it. The W is a rank letter in vanilla's hand:
-# two-pixel strokes, eight tall.
+# The stamp covers x 5..14, y 6..15: every vanilla index glyph (x 6..13,
+# y 7..14) and a pixel round it. White on mult red, rimmed in the red stake
+# chip's shade: ± is the heat sign, and white holds on red where it washes
+# out on gold.
 TILE = """
 .dddddddd.
-dWWggggWWd
-dWWggggWWd
-dWWggggWWd
-dWWgWWgWWd
-dWWgWWgWWd
-dWWWWWWWWd
-dgWWggWWgd
-dgWWggWWgd
+drrrWWrrrd
+drrrWWrrrd
+drWWWWWWrd
+drWWWWWWrd
+drrrWWrrrd
+drrrWWrrrd
+drrrrrrrrd
+drWWWWWWrd
 .dddddddd.
 """
 WILD_BOX = dict(x=5, y=6, w=10, h=10)
@@ -95,7 +95,7 @@ WILD_BOX = dict(x=5, y=6, w=10, h=10)
 
 def wild():
     t = Canvas(W, H, PAL)
-    t.stamp(TILE, WILD_BOX["x"], WILD_BOX["y"], {"d": "gold", "g": "white", "W": "gold_ink"})
+    t.stamp(TILE, WILD_BOX["x"], WILD_BOX["y"], {"d": "red_d", "r": "red", "W": "white"})
     return corners(t)
 
 
