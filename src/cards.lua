@@ -44,6 +44,20 @@ end
 --- The ranks (0–15) a value can play as, as a sorted list of integers (cached; don't modify it).
 WW.ranks_of_value = ranks_of_value
 
+--- A rank list widened by more ranks (Conway's), sorted; the list itself when nothing is added.
+function WW.widen(ranks, more)
+  if not more then return ranks end
+  local union, seen = {}, {}
+  for _, list in ipairs({ ranks, more }) do
+    for _, r in ipairs(list) do
+      if not seen[r] then seen[r] = true; union[#union + 1] = r end
+    end
+  end
+  if #union == #ranks then return ranks end
+  table.sort(union)
+  return union
+end
+
 local base_has_no_rank = SMODS.has_no_rank
 
 function WW.has_mod(card) return card.ability ~= nil and card.ability.ww_mod ~= nil end
@@ -229,39 +243,43 @@ function evaluate_poker_hand(hand)
   end
   -- Jokers can give cards more ranks to play as while they're in the hand (Conway: src/jokers.lua).
   local extra = main and WW.extra_ranks and WW.extra_ranks(hand)
-  local cards, any = {}, false
+  local own, wide, any, widened = {}, {}, false, false
   for i, c in ipairs(hand) do
     active[c], ties[c] = nil, nil
     local v = WW.value_of(c)
     local modded = v ~= nil and WW.has_mod(c)
     if modded then any = true end
+    local key = modded and WW.tie_key(v) or ("#" .. i)
     local ranks = WW.ranks_of(c) or {}
-    if extra and extra[c] then
-      local union, seen = {}, {}
-      for _, list in ipairs({ ranks, extra[c] }) do
-        for _, r in ipairs(list) do
-          if not seen[r] then seen[r] = true; union[#union + 1] = r end
-        end
-      end
-      if #union > #ranks then
-        table.sort(union)
-        ranks, any = union, true
-      end
-    end
-    cards[i] = { ranks = ranks, key = modded and WW.tie_key(v) or ("#" .. i) }
+    own[i] = { ranks = ranks, key = key }
+    wide[i] = { ranks = WW.widen(ranks, extra and extra[c]), key = key }
+    if wide[i].ranks ~= ranks then widened = true end
   end
-  if not any then return evaluate(hand) end
+  if not any and not widened then return evaluate(hand) end
 
+  -- A card's assignment is recorded unless it's simply the card's own single rank.
   local function apply(a)
     for i, c in ipairs(hand) do
       local v = a[i]
       active[c], ties[c] = nil, nil
       if type(v) == "string" then ties[c] = v
-      elseif v and (#cards[i].ranks >= 2 or KEYS[v] ~= c.base.value) then active[c] = KEYS[v] end
+      elseif v then
+        local mine = own[i].ranks
+        if #wide[i].ranks >= 2 or KEYS[v] ~= c.base.value or not (#mine == 1 and mine[1] == v) then
+          active[c] = KEYS[v]
+        end
+      end
     end
   end
+  local opts = { straight = SMODS.four_fingers("straight"), skip = SMODS.shortcut() }
+  local candidates = H.candidates(wide, opts)
+  -- Widened cards may still want their own reading: two 3½s pair as equal values, which a card that Conway has
+  -- also given ranks no longer offers.
+  if widened then
+    for _, a in ipairs(H.candidates(own, opts)) do candidates[#candidates + 1] = a end
+  end
   local best, best_a, best_i, best_n
-  for _, a in ipairs(H.candidates(cards, { straight = SMODS.four_fingers("straight"), skip = SMODS.shortcut() })) do
+  for _, a in ipairs(candidates) do
     apply(a)
     local results = evaluate(hand)
     local i, name = top_of(results)

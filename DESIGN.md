@@ -246,8 +246,8 @@ Claude's calls where the sketch left room, waiting on a9's say-so:
 
 - **"Rank" means the rank a card plays as** in the hand being scored: a wild in a Pair of Kings is a King. Cards with
   no rank (Stone, 3½, ω) are invisible to nim-sums and the mex, as a 0 is. Cards infinity ate don't count.
-- **Bouton:** a flexible kicker (one that doesn't score) may play as any of its ranks, because you choose in a
-  confused position. So a wild kicker completes a Bouton whenever the other cards nim-sum to a rank it can play as
+- **Bouton:** a flexible kicker (one that doesn't score) may play as any of its ranks, Conway's included, because
+  you choose in a confused position. So a wild kicker completes a Bouton whenever the other cards nim-sum to a rank it can play as
   (K, Q and a wild: K ⊕ Q = 3). Scoring cards keep the rank the hand gave them.
 - **Generator** pays **+2 chips per place** on the Ace's cycle (A 2, 9 4, …, 1 30; 16 on average), from the card's own
   rank, then steps that rank. It acts on the rank under any modifier (K+ω becomes 6+ω), never on Stone cards, and
@@ -267,7 +267,8 @@ Claude's calls where the sketch left room, waiting on a9's say-so:
   before the hand scores), so the new ×mult applies to that same hand.
 - **Conway's end cards** have one side empty: {|R} is 0 and {L|} is L rounded up. So [2, 3, 4, 5, x] is a straight
   for any x, as x plays as {5|} = 6. Stone cards get no ranks and act as no neighbour. The extra ranks only widen
-  what cards play as; every card still scores its own value (K 5 K scores the 5's 5 chips).
+  what cards play as, and never take a reading away: two 3½s still pair as equal values, and 3 3½ 3 is Three of a
+  Kind (the 3½ is {3|3} = 3*). Every card still scores its own value (K 5 K scores the 5's 5 chips).
 - **Costs:** Bouton $8, Generator $7, Grundy $6, Hotstrat $5, Thermograph $8, Sprouts $8, Cantor $6, Cantor's
   Paradise $7, Conway $20.
 

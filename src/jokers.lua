@@ -38,33 +38,44 @@ end
 -- Bouton -------------------------------------------------------------------------------------------------
 
 --- Can the played cards nim-sum to 0 with at least three distinct ranks among them? Scoring cards count as the
---- rank they play as. A flexible kicker (one that doesn't score) can play as any of its ranks: you move first in
---- a confused position, so you choose. Cards with no rank, and cards infinity ate, don't count.
+--- rank they play as. A flexible kicker (one that doesn't score) can play as any of its ranks, Conway's included:
+--- you move first in a confused position, so you choose. Cards with no rank, and cards infinity ate, don't count.
 function WW.bouton(full_hand, scoring_hand)
   local scores = {}
   for _, c in ipairs(scoring_hand) do scores[c] = true end
-  local fixed, seen, distinct, free = 0, {}, 0, {}
+  local kept = {}
   for _, c in ipairs(full_hand) do
-    if not WW.is_eaten(c) then
-      local options = WW.ranks_of(c)
-      if not scores[c] and options and #options >= 2 then
-        free[#free + 1] = options
-      else
-        local r = WW.rank_now(c)
-        if r then
-          fixed = nim.add(fixed, r)
-          if not seen[r] then seen[r], distinct = true, distinct + 1 end
-        end
-      end
+    if not WW.is_eaten(c) then kept[#kept + 1] = c end
+  end
+  local extra = WW.extra_ranks(kept) or {}
+  local fixed, seen, distinct, free = 0, {}, 0, {}
+  for _, c in ipairs(kept) do
+    local own = WW.ranks_of(c)
+    local options = own and WW.widen(own, extra[c])
+    local r = WW.rank_now(c)
+    if not scores[c] and options and #options > 0 and not (#options == 1 and options[1] == r) then
+      -- A kicker with a choice. One whose own value has no rank (3½) may also stay rankless: false.
+      local choices = {}
+      for i, o in ipairs(options) do choices[i] = o end
+      if #own == 0 then choices[#choices + 1] = false end
+      free[#free + 1] = choices
+    elseif r then
+      fixed = nim.add(fixed, r)
+      if not seen[r] then seen[r], distinct = true, distinct + 1 end
     end
   end
   local function search(i, x, d)
     if i > #free then return x == 0 and d >= 3 end
     for _, r in ipairs(free[i]) do
-      local new = not seen[r]
-      if new then seen[r] = true end
-      local ok = search(i + 1, nim.add(x, r), d + (new and 1 or 0))
-      if new then seen[r] = nil end
+      local ok
+      if r == false then
+        ok = search(i + 1, x, d)
+      else
+        local new = not seen[r]
+        if new then seen[r] = true end
+        ok = search(i + 1, nim.add(x, r), d + (new and 1 or 0))
+        if new then seen[r] = nil end
+      end
       if ok then return true end
     end
     return false

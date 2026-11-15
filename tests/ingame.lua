@@ -297,6 +297,18 @@ local function jokers()
     expect("Conway: 3 4 K 6 7 is a Straight (the K is {4|6} = 5)", row({ "H_3", "S_4", "D_K", "C_6", "H_7" }), "Straight")
     expect("Conway: the right end is {L|}: 2 3 4 5 K is a Straight", row({ "H_2", "S_3", "D_4", "C_5", "H_K" }), "Straight")
     expect("Conway: Q 2 K gives the 2 13½, no rank", row({ "H_Q", "S_2", "D_K" }), "High Card")
+    -- Widening never takes a reading away (Codex's review).
+    local halves = row({ "H_3", "S_4" })
+    WW.add_mod(halves[1], n(1 / 2)); WW.add_mod(halves[2], n(-1 / 2))
+    expect("Conway: two 3½s still pair as equal values", halves, "Pair")
+    local threes = row({ "H_3", "S_3", "D_3" })
+    WW.add_mod(threes[2], n(1 / 2))
+    expect("Conway: 3 3½ 3 is Three of a Kind (the 3½ is {3|3} = 3*)", threes, "Three of a Kind")
+    local nim_row = row({ "H_0", "S_2", "D_4", "C_3" })
+    local results = evaluate_poker_hand(nim_row)
+    check("Conway: 0 2 4 3 reads the 3 as {4|} = 5", WW.rank_now(nim_row[4]) == 5, WW.rank_now(nim_row[4]))
+    check("Bouton with Conway: the 2 kicker can be {0|4} = 1, and 0 ⊕ 1 ⊕ 4 ⊕ 5 = 0",
+      WW.bouton(nim_row, results["High Card"][1]))
   end)
   WW.reading_main = nil
   SMODS.find_card = find
