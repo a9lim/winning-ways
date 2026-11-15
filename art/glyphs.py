@@ -9,7 +9,8 @@ Metrics (rows are 0..8 in the cell):
   baseline     row 7       the last inked row of anything that stands on it
   x-height     rows 3..7   ω, and the small digits
   maths axis   row 4       + and − are centred on it; * sits on it
-  full height  rows 0..8   | and the seven vulgar fractions
+  full height  rows 0..8   | and the seven vulgar fractions (small digits
+                           either side of the small slash)
   advance      inked width + 1
 
 One-pixel strokes with clipped corners, after the white ∞ on vanilla's
@@ -57,20 +58,9 @@ G = {
     "?": _g(".###.", "#...#", "....#", "...#.", "..#..", ".....", "..#.."),
 }
 
-# Vulgar fractions: numerator top left (3x4, rows 0..3), denominator bottom
-# right (3x5, rows 4..8), a slash between that touches neither.
-NUM = {
-    "1": [".#.", "##.", ".#.", ".#."],
-    "3": ["##.", ".##", "..#", "##."],
-    "5": ["###", "##.", "..#", "##."],
-    "7": ["###", "..#", ".#.", ".#."],
-}
-DEN = {
-    "2": ["##.", "..#", ".#.", "#..", "###"],
-    "4": ["#.#", "#.#", "###", "..#", "..#"],
-    "8": ["###", "#.#", "###", "#.#", "###"],
-}
-SLASH = [(6, 0), (5, 1), (4, 2), (3, 3), (2, 5), (1, 6), (0, 7)]
+# Vulgar fractions are the small digits composed the way layout() composes
+# any fraction: numerator rows 0..4 at x 0..2, slash, denominator rows 4..8
+# at x 4..6. They are in the sheet ready-made so the common ones cost one cell.
 FRACTIONS = {"½": "12", "¼": "14", "¾": "34", "⅛": "18", "⅜": "38", "⅝": "58", "⅞": "78"}
 
 # Small digits, 3x5 on the baseline (rows 3..7).
@@ -100,9 +90,9 @@ def glyph(name):
         c.stamp(G[name], 0, 0, {"#": "w"})
     elif name in FRACTIONS:
         n, d = FRACTIONS[name]
-        c.stamp(NUM[n], 0, 0, {"#": "w"})
-        c.stamp(DEN[d], 4, 4, {"#": "w"})
-        c.pxs(SLASH, "w")
+        c.stamp(SMALL[n], 0, 3 + NUM_DY, {"#": "w"})
+        c.stamp(SMALL_SLASH, 2, 0, {"#": "w"})
+        c.stamp(SMALL[d], 4, 3 + DEN_DY, {"#": "w"})
     elif name == "s/":
         c.stamp(SMALL_SLASH, 0, 0, {"#": "w"})
     else:

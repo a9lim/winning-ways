@@ -19,7 +19,8 @@ code:
 - `1x/mods.png`, `2x/mods.png`, `1x/mods_hc.png`, `2x/mods_hc.png`
 - `1x/glyphs.png`, `2x/glyphs.png`
 
-They do use Balatro's interface colours.
+They do use Balatro's interface colours, and the label anchors in
+`art/layout.lua` are measured from its card fronts.
 
 The 0 as a hollow pip and the 1 as a single small pip are solutions shared
 with UnStable (kirbio, MIT); no UnStable pixels are used.

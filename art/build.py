@@ -33,7 +33,7 @@ ASSETS = HERE.parent / "assets"
 
 EXPECT = {
     "ranks.png": (213, 380), "ranks_hc.png": (213, 380),      # 3 x 4 cells of 71x95
-    "mods.png": (355, 95), "mods_hc.png": (355, 95),          # 5 cells of 71x95
+    "mods.png": (142, 95), "mods_hc.png": (142, 95),          # 2 cells of 71x95
     "glyphs.png": (266, 9),                                   # 38 cells of 7x9
 }
 

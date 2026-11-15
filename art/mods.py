@@ -1,25 +1,26 @@
-"""mods.py — the modifier overlays: four badge frames and the nimbus.
+"""mods.py — the modifier overlays, and where modifier labels go.
 
-mods.png (and mods_hc.png, the same pixels): one row of 71x95 cells, each a
-full-card overlay drawn over a card front.
+mods.png (and mods_hc.png, the same pixels): one row of 71x95 full-card
+overlays drawn over a card front.
 
-  0  number    chips blue     a plain plate                (+½, −¼, +1)
-  1  hot       mult red       the same plate, on fire       (±t)
-  2  infinite  slate + gold   a dark plate with a gilt rim  (ω)
-  3  game      purple         a plate with pointed ends     (anything else)
-  4  nimbus    Spectral blue  a halo over each index, and a glint (*)
+  0  nimbus   the halo for the * modifier: a small ring over each corner
+              index, in Spectral blue.
+  1  wild     the wild rank's index: a W, a rank letter in vanilla's hand,
+              in gold on a card-white tile with a thin gold rim, pasted
+              over the rank glyph in both corners. The tile is solid, so it
+              covers whatever rank is underneath (the 10 is widest) on any
+              card body, and it leaves the suit pip alone.
 
-The badges sit top right, level with the rank index top left: the one
-corner vanilla's fronts leave free (number cards' right pip column starts
-below and to the left; courts only put the head of a sceptre there). All
-four share one text box, TEXT, which is exactly the plate's fill: the Lua
-side draws glyphs.png cells into it. The nimbus lives in the index corners
-instead, so it combines with any badge.
+Modifier *labels* are not in this sheet. They are coloured text, composed
+by the Lua side out of glyphs.png and drawn straight onto the card beside
+the corner index, so the corner reads as the value: 3+½, 7±2, K+ω. This
+file owns their geometry and colours (ANCHORS, COLOURS -> art/layout.lua):
+for each rank, where the first glyph cell goes so the text stands on the
+index's baseline one pixel clear of it, and how far it can run before it
+meets that rank's pips or portrait.
 
-Built the way vanilla builds its stickers (the Eternal sticker, the stake
-chips): a `bfc7d5` outer ring, a ring of the colour's shade, a flat fill,
-lettering in near-white. Drawn here; the colours are vanilla's, the pixels
-are not.
+Drawn here; the colours are vanilla's families, the pixels are not. (The
+anchors are measured from vanilla's fronts at build time.)
 
 fable, 2026-11-14 (claude-fable-5-2)
 """
@@ -27,121 +28,79 @@ from __future__ import annotations
 
 import numpy as np
 
-from pixel import Canvas, Palette, dilate, erode
+from pixel import Canvas, Palette, dilate
 
 W, H = 71, 95
-TEXT = dict(x=48, y=7, w=17, h=9)                 # the shared text box, 1x
-KINDS = ["number", "hot", "infinite", "game", "nimbus"]
+KINDS = ["nimbus", "wild"]
+INDEX_Y = 7                    # vanilla index glyphs: rows 7..14
+LABEL_Y = INDEX_Y              # a glyph cell here stands on the index baseline
+LABEL_ROWS = (7, 15)           # rows a label's cells cover
+RIGHT_LIMIT = 66               # keep clear of the card's right edge
 
 PAL = Palette(
-    ring="#bfc7d5",                               # every vanilla sticker's rim
-    blue="#009dff", blue_d="#1685cb",             # chips; the blue stake chip's shade
-    red="#fe5f55", red_d="#cc4846",               # mult; the red stake chip's shade
-    gold="#eac058", gold_d="#c09533",             # gold; the gold stake chip's shade
-    slate="#4f6367", slate_d="#445457",           # the black stake chip
-    purple="#8867a5", purple_d="#6a4f85",
     spectral="#4584fa", spectral_d="#2f62c9",
-    white="#fdfdfd",
+    gold="#eac058", gold_ink="#c8900f", white="#ffffff",
 )
-# What the Lua side should tint the glyphs for each plate.
-TEXT_COLOUR = dict(number="#fdfdfd", hot="#fdfdfd", infinite="#eac058", game="#fdfdfd")
+# Label colours by role: chosen to read as bare text on the card's white.
+COLOURS = dict(
+    offset="#009dff",          # surreal offset: chips blue
+    heat="#fe5f55",            # ±t: mult red
+    infinite="#c8900f",        # ω: gold, deepened until it holds on white
+    infinitesimal="#4584fa",   # ↑ ↓: Spectral blue, the halo's
+    knockout="#ffffff",        # the card-white edge under a label (see NOTES)
+)
+RANKS = [str(n) for n in range(2, 11)] + ["Jack", "Queen", "King", "Ace", "ww_0", "ww_1", "ww_C"]
 
 
-def plate(c):
-    """The plate's body: the text box plus a one-pixel rim, corners clipped."""
-    x0, y0 = TEXT["x"] - 1, TEXT["y"] - 1
-    x1, y1 = TEXT["x"] + TEXT["w"], TEXT["y"] + TEXT["h"]
-    m = c.blank()
-    m[y0:y1 + 1, x0:x1 + 1] = True
-    for x, y in ((x0, y0), (x1, y0), (x0, y1), (x1, y1)):
-        m[y, x] = False
-    return m
-
-
-def badge(fill, shade, extra=None, rim=None):
-    """A sticker-style plate. `extra(c, body)` returns more body (flames,
-    points) that takes the fill; the rim follows the whole outline."""
-    c = Canvas(W, H, PAL)
-    body = plate(c)
-    whole = body | extra(c, body) if extra else body
-    c.fill(dilate(whole) & ~whole, "ring")
-    c.fill(whole, fill)
-    c.fill(whole & ~erode(whole), shade)
-    if rim:
-        rim(c, body)
-    return c
-
-
-def flames(c, body):
-    """Three tongues off the top edge."""
-    m = c.blank()
-    top = TEXT["y"] - 2                           # first row above the plate
-    for x, h in ((51, 2), (52, 3), (53, 1), (56, 2), (57, 4), (58, 3), (59, 1),
-                 (62, 1), (63, 3), (64, 2)):
-        m[top - h + 1:top + 1, x] = True
-    return m
-
-
-def embers(c, body):
-    """The flames' hearts, and the plate's top rim gone to fill where they
-    join it."""
-    top = TEXT["y"] - 1
-    for x in (51, 52, 56, 57, 58, 63, 64):
-        c.px(x, top, "red")
-    for x, y in ((52, top - 1), (57, top - 1), (57, top - 2), (58, top - 1), (63, top - 1)):
-        c.px(x, y, "gold")
-
-
-def points(c, body):
-    """Pointed ends, like the brackets of {L | R}."""
-    m = c.blank()
-    mid = TEXT["y"] + TEXT["h"] // 2
-    for x in (TEXT["x"] - 2, TEXT["x"] + TEXT["w"] + 1):
-        m[mid - 1:mid + 2, x] = True
-    return m
-
-
-def gilt(c, body):
-    """Four sparks off the corners of the infinite plate."""
-    x0, y0 = TEXT["x"] - 3, TEXT["y"] - 3
-    x1, y1 = TEXT["x"] + TEXT["w"] + 2, TEXT["y"] + TEXT["h"] + 2
-    for x, y in ((x0, y0), (x1, y0), (x0, y1), (x1, y1)):
-        c.px(x, y, "gold")
-
-
+# -------------------------------------------------------------- nimbus ----
 HALO = """
 .sssssss.
 s.......s
 .ddddddd.
 """
-GLINT = """
-.s.
-sss
-.s.
-"""
 
 
-def nimbus():
-    """A halo over the index (x 5..13, y 3..5) and a glint beside it; the
-    same turned, bottom right, like everything else in a card's corners."""
-    t = Canvas(W, H, PAL)
-    key = {"s": "spectral", "d": "spectral_d"}
-    t.stamp(HALO, 5, 3, key)
-    t.stamp(GLINT, 15, 6, key)
+def corners(t):
     c = Canvas(W, H, PAL)
     c.blit(t)
     c.blit(t.rot180())
     return c
 
 
+def nimbus():
+    """A halo over the index: x 5..13, y 3..5; and again, turned."""
+    t = Canvas(W, H, PAL)
+    t.stamp(HALO, 5, 3, {"s": "spectral", "d": "spectral_d"})
+    return corners(t)
+
+
+# ---------------------------------------------------------------- wild ----
+# The tile covers x 5..14, y 6..15: every vanilla index glyph (x 6..13,
+# y 7..14) and a pixel round it. The W is a rank letter in vanilla's hand:
+# two-pixel strokes, eight tall.
+TILE = """
+.dddddddd.
+dWWggggWWd
+dWWggggWWd
+dWWggggWWd
+dWWgWWgWWd
+dWWgWWgWWd
+dWWWWWWWWd
+dgWWggWWgd
+dgWWggWWgd
+.dddddddd.
+"""
+WILD_BOX = dict(x=5, y=6, w=10, h=10)
+
+
+def wild():
+    t = Canvas(W, H, PAL)
+    t.stamp(TILE, WILD_BOX["x"], WILD_BOX["y"], {"d": "gold", "g": "white", "W": "gold_ink"})
+    return corners(t)
+
+
 def cells():
-    return [
-        badge("blue", "blue_d"),
-        badge("red", "red_d", extra=flames, rim=embers),
-        badge("slate", "gold", rim=gilt),
-        badge("purple", "purple_d", extra=points),
-        nimbus(),
-    ]
+    return [nimbus(), wild()]
 
 
 def sheet_canvas():
@@ -151,19 +110,58 @@ def sheet_canvas():
     return out
 
 
+# ------------------------------------------------------- label anchors ----
+def rank_masks(key):
+    """The four suits' ink masks for a rank, normal contrast."""
+    import fronts
+    import vanilla as V
+    if key.startswith("ww_"):
+        f = {"ww_0": fronts.zero, "ww_1": fronts.one, "ww_C": fronts.cavalier}[key]
+        return [f(s)[..., 3] > 0 for s in fronts.SUITS]
+    col = RANKS.index(key)
+    return [V.cell("8BitDeck", col, r)[..., 3] > 0 for r in range(4)]
+
+
+def anchors():
+    """{rank: (x, y, free, max)}. x, y: top-left of the label's first glyph
+    cell (one clear column after the index, standing on its baseline).
+    free: columns before the label would touch that rank's own art, the
+    tightest of the four suits. max: columns to the right limit."""
+    out = {}
+    for key in RANKS:
+        ms = rank_masks(key)
+        right = max(int(np.nonzero(m[INDEX_Y:INDEX_Y + 8, 3:16].any(0))[0].max()) + 3 for m in ms)
+        x = right + 2
+        free = RIGHT_LIMIT - x
+        for m in ms:
+            cols = np.nonzero(m[LABEL_ROWS[0]:LABEL_ROWS[1] + 1, x:RIGHT_LIMIT].any(0))[0]
+            if len(cols):
+                free = min(free, int(cols[0]))
+        out[key] = (x, LABEL_Y, free, RIGHT_LIMIT - x)
+    return out
+
+
 def lua():
-    t = TEXT
-    cols = ", ".join(f'{k} = "{v}"' for k, v in TEXT_COLOUR.items())
-    order = ", ".join(f'"{k}"' for k in KINDS)
+    a = anchors()
+    rows = "\n".join(
+        f'    ["{k}"] = {{ x = {x}, y = {y}, free = {f}, max = {m} }},' for k, (x, y, f, m) in a.items())
+    cols = "\n".join(f'    {k} = "{v}",' for k, v in COLOURS.items())
+    b = WILD_BOX
     return (
-        "-- Generated by art/build.py from art/mods.py; do not edit.\n"
-        "-- assets/{1x,2x}/mods.png: one row of 71x95 overlays, in `cells` order.\n"
-        "-- text: the box (1x px, from the cell's top-left) the badge frames leave for glyphs.\n"
-        "-- text_colour: the tint each frame's lettering is drawn for.\n"
+        "-- Generated by art/build.py from art/mods.py; do not edit. All px at 1x, from the cell's top-left.\n"
+        "-- cells: assets/{1x,2x}/mods.png, one row of 71x95 overlays, in this order.\n"
+        "-- label[rank]: x, y = top-left of the label's first glyph cell (glyphs.png cells), one clear\n"
+        "--   column after that rank's index and on its baseline. free = columns before the label touches\n"
+        "--   that rank's own pips/portrait; max = columns to the right limit. Past `free`, draw the\n"
+        "--   knockout first (the label in colours.knockout at the 8 one-pixel offsets), then the label.\n"
+        "-- The second copy is the composed label (knockout included) turned 180 degrees about `turn`.\n"
+        "-- wild_box: what the wild tile covers in the top-left corner (the index, not the suit pip).\n"
         "return {\n"
-        f"  text = {{ x = {t['x']}, y = {t['y']}, w = {t['w']}, h = {t['h']} }},\n"
-        f"  cells = {{ {order} }},\n"
-        f"  text_colour = {{ {cols} }},\n"
+        f'  cells = {{ {", ".join(chr(34) + k + chr(34) for k in KINDS)} }},\n'
+        "  label = {\n" + rows + "\n  },\n"
+        "  colours = {\n" + cols + "\n  },\n"
+        "  turn = { x = 35.5, y = 47.5 },\n"
+        f"  wild_box = {{ x = {b['x']}, y = {b['y']}, w = {b['w']}, h = {b['h']} }},\n"
         "}\n")
 
 
@@ -173,23 +171,44 @@ def outputs():
 
 
 # ------------------------------------------------------------- preview ----
-def lettered(i, names):
-    """Cell i with a string of glyph names centred in the text box."""
+def label(parts, key, knockout=True):
+    """A 71x95 RGBA overlay: a label (list of (glyph names, role)) at a
+    rank's anchor, with its turned copy. The reference for the Lua side."""
     import glyphs
-    c = cells()[i]
-    wd = glyphs.layout(names)[1]
-    x = TEXT["x"] + (TEXT["w"] - wd) // 2
-    glyphs.text(c, names, x, TEXT["y"], TEXT_COLOUR[KINDS[i]])
-    return c
+    names = [n for ns, _ in parts for n in ns]
+    roles = [r for ns, r in parts for _ in ns]
+    placed, _ = glyphs.layout(names)
+    x0, y0, _, _ = anchors()[key]
+    pal = Palette(**COLOURS)
+    c = Canvas(W, H, pal)
+    ink = c.blank()
+    for (n, gx, dy), role in zip(placed, roles):
+        m = glyphs.glyph(n).mask()
+        for j, i in zip(*np.nonzero(m)):
+            c.px(x0 + gx + i, y0 + dy + j, role)
+            ink[y0 + dy + j, x0 + gx + i] = True
+    if knockout:
+        c.fill(dilate(ink, diag=True) & ~ink, "knockout")
+    out = Canvas(W, H, pal)
+    out.blit(c)
+    out.blit(c.rot180())
+    return out
 
 
 def preview(save, on_cards, k):
+    import fronts
     import vanilla as V
     from PIL import Image
 
-    def over(col, row, layers, hc=False):
-        im = on_cards(V.cell("8BitDeck_opt2" if hc else "8BitDeck", col, row))
+    def over(key, row, layers, hc=False, knockout=True):
+        if key.startswith("ww_"):
+            a = {"ww_0": fronts.zero, "ww_1": fronts.one, "ww_C": fronts.cavalier}[key](fronts.SUITS[row])
+            a = fronts.hc(a, fronts.SUITS[row], key == "ww_C") if hc else a
+        else:
+            a = V.cell("8BitDeck_opt2" if hc else "8BitDeck", RANKS.index(key), row)
+        im = on_cards(a)
         for c in layers:
+            c = label(c, key, knockout) if isinstance(c, list) else c
             im.alpha_composite(c.image())
         return im
 
@@ -199,19 +218,19 @@ def preview(save, on_cards, k):
             out.alpha_composite(im, (i * W, 0))
         return out
 
-    nb = cells()[4]
+    nb, wd = cells()
+    half, heat2 = [(["+", "½"], "offset")], [(["±", "2"], "heat")]
+    om, up = [(["+", "ω"], "infinite")], [(["↑"], "infinitesimal")]
+    mixed = [(["+", "½"], "offset"), (["±", "½"], "heat")]
+    for nm, ko in (("a", True), ("a_bare", False)):
+        save(strip([
+            over("3", 0, [half], knockout=ko), over("7", 3, [heat2], knockout=ko),
+            over("King", 1, [om], knockout=ko), over("5", 2, [up, nb], knockout=ko),
+            over("10", 0, [mixed], knockout=ko), over("ww_C", 3, [heat2], knockout=ko),
+        ]), f"mods_{nm}.png", k)
     save(strip([
-        over(1, 0, [lettered(0, ["+", "½"])]),
-        over(5, 3, [lettered(1, ["±", "2"])]),
-        over(8, 2, [lettered(2, ["+", "ω"])]),
-        over(3, 1, [lettered(3, ["↑"]), nb]),
-        over(6, 0, [nb]),
-    ]), "mods_a.png", k)
-    save(strip([
-        over(9, 0, [lettered(0, ["−", "¼"])]),
-        over(11, 1, [lettered(1, ["±", "1", "0"]), nb]),
-        over(10, 2, [lettered(2, ["ω"])]),
-        over(11, 3, [lettered(3, ["+", "s5", "s/", "s1", "s6"])], hc=True),
-        over(12, 3, [lettered(0, ["+", "1", "⅞"]), nb], hc=True),
+        over("Ace", 3, [[(["−", "s5", "s/", "s1", "s6"], "offset")]]), over("ww_0", 0, [om, nb]),
+        over("Queen", 2, [half], hc=True), over("9", 1, [heat2], hc=True),
+        over("10", 3, [wd]), over("King", 0, [wd, nb]), over("4", 2, [wd], hc=True),
     ]), "mods_b.png", k)
     save(sheet_canvas().image(), "mods_sheet.png", k, bg="#ffffff")

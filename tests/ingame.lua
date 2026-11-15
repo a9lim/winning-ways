@@ -135,22 +135,23 @@ local function faces()
   end
   WW.apply_lab(cards)
   local want = {
-    { "number", "+ ½" }, { "number", "− ¼" }, { "number", "+ ⅜" }, { "hot", "± 2" }, { "hot", "± 1" }, { "hot", "± 1" },
-    { "number", "", true }, { "number", "", true }, { "infinite", "ω | 2" }, { "game", "5 | 3" }, { "infinite", "+ ω" },
+    "offset:+ offset:½", "offset:− offset:¼", "offset:+ offset:⅜", "heat:± heat:2", "heat:± heat:1",
+    "heat:± heat:1", " *", " *", "wild", "heat:5 heat:| heat:3", "infinite:+ infinite:ω",
   }
   for i, c in ipairs(cards) do
-    local b = WW.badge_of(c)
-    local got = b and (b.kind .. " " .. table.concat(b.glyphs, " ") .. (b.nimbus and " *" or "")) or "none"
-    local w = want[i][1] .. " " .. want[i][2] .. (want[i][3] and " *" or "")
-    check("badge for lab card " .. i, got == w, ("got %s, want %s"):format(got, w))
+    local got = WW.look_text(WW.badge_of(c))
+    check("look of lab card " .. i, got == want[i], ("got %s, want %s"):format(got, want[i]))
   end
   local ui = cards[1]:generate_UIBox_ability_table()
   local last = ui.info and ui.info[#ui.info]
   check("the tooltip has a Modifier box", last and last.name == "Modifier", last and last.name)
   local sixteenth = card("H_5")
   WW.add_mod(sixteenth, n(5 / 16))
-  local b = WW.badge_of(sixteenth)
-  check("other fractions use small digits", b and table.concat(b.glyphs, " ") == "+ s5 s/ s1 s6", b and table.concat(b.glyphs, " "))
+  local got = WW.look_text(WW.badge_of(sixteenth))
+  check("other fractions use small digits", got == "offset:+ offset:s5 offset:s/ offset:s1 offset:s6", got)
+  local up = card("H_6")
+  WW.add_mod(up, Gm.of({ N.zero }, { Gm.of({ N.zero }, { N.zero }) }))
+  check("↑ shows as an arrow", WW.look_text(WW.badge_of(up)) == "infinitesimal:↑", WW.look_text(WW.badge_of(up)))
 end
 
 local function speed()

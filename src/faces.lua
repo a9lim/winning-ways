@@ -1,9 +1,15 @@
--- How a modifier shows on a card: a badge over the normal rank front, a nimbus halo for *, and a tooltip.
+-- How a modifier shows on a card. The corner reads as the value: the modifier is written in colour right after
+-- the rank's index, top-left and again rotated 180° at bottom-right, like vanilla's index. So a 3 with +½ reads
+-- "3+½", a 7 with ±2 reads "7±2" and a King with +ω reads "K+ω".
 --
--- The badge frames and the glyphs are Fable's art (art/, assets/*/mods*.png and glyphs.png). The text is composed
--- at runtime: for each distinct label, the glyphs are drawn once onto a card-sized canvas, which is then drawn
--- like a seal, with the card's dissolve shader. art/layout.lua gives the text box; art/glyphs.lua the glyph
--- order and widths.
+-- Colours by role (art/layout.lua): number offsets in the chips family, heat (±t) in the mult family, ω in gold,
+-- infinitesimals (↑ ↓) in the halo's blue. A * is the nimbus halo. The wild ({ω|2}, which plays as every rank) has
+-- both corner indices pasted over with a wild symbol instead. Every modifier fits these: a number offset (finite or
+-- not), a nimber halo, a switch ±t, ↑ or ↓, or, for the few general games (sums of hot cards, Cuts of hot cards), the
+-- value's stops L|R in the heat colour. The tooltip gives the exact value.
+--
+-- Labels are composed at runtime: each distinct one is drawn once onto a card-sized canvas, which is then drawn like
+-- a seal, with the card's dissolve shader. The glyphs, overlays and layout are Fable's (art/, assets/).
 
 local WW = WinningWays
 local E = WW.engine
@@ -15,121 +21,146 @@ SMODS.Atlas { key = "glyphs", path = "glyphs.png", px = 7, py = 9 }
 
 local GLYPHS = assert(SMODS.load_file("art/glyphs.lua"))()
 local LAYOUT = assert(SMODS.load_file("art/layout.lua"))()
-local CELL = { number = 0, hot = 1, infinite = 2, game = 3, nimbus = 4 }
+local CELL = {}
+for i, name in ipairs(LAYOUT.cells) do CELL[name] = i - 1 end
 local index = {}
 for i, name in ipairs(GLYPHS.order) do index[name] = i - 1 end
 
 -- labels ------------------------------------------------------------------------------------------------
+-- A label is a list of {glyph, role}.
 
-local FRACTIONS = { [0.5] = "½", [0.25] = "¼", [0.75] = "¾", [0.125] = "⅛", [0.375] = "⅜", [0.625] = "⅝", [0.875] = "⅞" }
-
-local function digits(n, small, out)
-  for d in ("%.0f"):format(n):gmatch("%d") do out[#out + 1] = small and ("s" .. d) or d end
+local FRACTIONS = {}
+for frac, g in pairs({ [0.5] = "½", [0.25] = "¼", [0.75] = "¾", [0.125] = "⅛", [0.375] = "⅜", [0.625] = "⅝", [0.875] = "⅞" }) do
+  if index[g] then FRACTIONS[frac] = g end
 end
 
--- Glyph names for a dyadic: an optional sign, the whole part, and the fraction as one glyph (½) or small
--- numerator / denominator.
-local function dyadic(x, signed, out)
-  out = out or {}
-  if x < 0 then out[#out + 1] = "−" elseif signed then out[#out + 1] = "+" end
+local function digits(n, small, role, out)
+  for d in ("%.0f"):format(n):gmatch("%d") do out[#out + 1] = { small and ("s" .. d) or d, role } end
+end
+
+-- A dyadic: an optional sign, the whole part, and the fraction as one glyph (½) or small numerator / denominator.
+local function dyadic(x, signed, role, out)
+  if x < 0 then out[#out + 1] = { "−", role } elseif signed then out[#out + 1] = { "+", role } end
   local a = math.abs(x)
   local whole, frac = math.floor(a), a - math.floor(a)
-  if whole > 0 or frac == 0 then digits(whole, false, out) end
+  if whole > 0 or frac == 0 then digits(whole, false, role, out) end
   if frac > 0 then
-    if FRACTIONS[frac] then out[#out + 1] = FRACTIONS[frac]
+    if FRACTIONS[frac] then out[#out + 1] = { FRACTIONS[frac], role }
     else
       local q = 1
       while frac * q ~= math.floor(frac * q) do q = q * 2 end
-      digits(frac * q, true, out)
-      out[#out + 1] = "s/"
-      digits(q, true, out)
+      digits(frac * q, true, role, out)
+      out[#out + 1] = { "s/", role }
+      digits(q, true, role, out)
     end
   end
   return out
 end
 
--- k·ω + x, signed or not.
-local function number(v, signed, out)
+-- k·ω + x: the ω part in gold, the finite part in `role` (an offset unless said otherwise).
+local function number(v, signed, role, out)
   out = out or {}
-  if v.k == 0 then return dyadic(v.x, signed, out) end
-  if v.k < 0 then out[#out + 1] = "−" elseif signed then out[#out + 1] = "+" end
-  if math.abs(v.k) ~= 1 then dyadic(math.abs(v.k), false, out) end
-  out[#out + 1] = "ω"
-  if v.x ~= 0 then dyadic(v.x, true, out) end
+  role = role or "offset"
+  if v.k == 0 then return dyadic(v.x, signed, role, out) end
+  if v.k < 0 then out[#out + 1] = { "−", "infinite" } elseif signed then out[#out + 1] = { "+", "infinite" } end
+  if math.abs(v.k) ~= 1 then dyadic(math.abs(v.k), false, "infinite", out) end
+  out[#out + 1] = { "ω", "infinite" }
+  if v.x ~= 0 then dyadic(v.x, true, role, out) end
   return out
 end
 
 local STAR = Gm.of({ N.zero }, { N.zero })
+local UP = Gm.of({ N.zero }, { STAR })
+local DOWN = Gm.neg(UP)
 
--- A modifier's badge: {kind, glyphs, nimbus}, or nil when it shows nothing.
-local function classify(rank, mod)
-  if N.is(mod) then
-    if N.eq(mod, N.zero) then return nil end
-    return { kind = N.is_finite(mod) and "number" or "infinite", glyphs = number(mod, true) }
-  end
-  local mean = Gm.mean(mod)
-  local rest = N.is_finite(mean) and Gm.sub(mod, mean) or mod
-  if Gm.eq(rest, STAR) then
-    return { kind = "number", glyphs = N.eq(mean, N.zero) and {} or number(mean, true), nimbus = true }
-  end
-  -- A switch: rest = ±t.
-  if Gm.is_game(rest) and #rest.L == 1 and #rest.R == 1 and N.is(rest.L[1]) and N.is(rest.R[1])
-      and N.eq(rest.L[1], N.neg(rest.R[1])) and N.is_finite(rest.L[1]) then
-    local out = N.eq(mean, N.zero) and {} or number(mean, true)
-    out[#out + 1] = "±"
-    return { kind = "hot", glyphs = number(rest.L[1], false, out) }
-  end
-  -- Anything else shows the value's stops, L|R.
-  local value = Gm.add(N.new(rank), mod)
-  local ls, rs = Gm.left_stop(value), Gm.right_stop(value)
-  local out = number(ls, false)
-  out[#out + 1] = "|"
-  number(rs, false, out)
-  return { kind = (N.is_finite(ls) and N.is_finite(rs)) and "game" or "infinite", glyphs = out }
+local function is_switch(g)
+  return Gm.is_game(g) and #g.L == 1 and #g.R == 1 and N.is(g.L[1]) and N.is(g.R[1])
+    and N.eq(g.L[1], N.neg(g.R[1]))
 end
 
-local badges = {}
+-- A modifier's look: {glyphs = label, nimbus = bool, wild = bool}, or nil when it shows nothing.
+local function classify(rank, mod)
+  local value = Gm.add(N.new(rank), mod)
+  local every = 0
+  for _, r in ipairs(P.ranks(value)) do if r >= 2 and r <= 15 then every = every + 1 end end
+  if every == 14 then return { glyphs = {}, wild = true } end
+  if N.is(mod) then
+    if N.eq(mod, N.zero) then return nil end
+    return { glyphs = number(mod, true) }
+  end
+  local mean = Gm.mean(mod)
+  local rest = Gm.sub(mod, mean)
+  local out = N.eq(mean, N.zero) and {} or number(mean, true)
+  if Gm.eq(rest, STAR) then return { glyphs = out, nimbus = true } end
+  for _, tiny in ipairs({ { UP, "↑" }, { DOWN, "↓" } }) do
+    if Gm.eq(rest, tiny[1]) or Gm.eq(rest, Gm.add(tiny[1], STAR)) then
+      out[#out + 1] = { tiny[2], "infinitesimal" }
+      return { glyphs = out, nimbus = not Gm.eq(rest, tiny[1]) }
+    end
+  end
+  if is_switch(rest) then
+    out[#out + 1] = { "±", "heat" }
+    return { glyphs = number(rest.L[1], false, "heat", out) }
+  end
+  -- A general game: its stops, L|R.
+  local glyphs = number(Gm.left_stop(value), false, "heat")
+  glyphs[#glyphs + 1] = { "|", "heat" }
+  number(Gm.right_stop(value), false, "heat", glyphs)
+  return { glyphs = glyphs }
+end
+
+local looks = {}
 function WW.badge_of(card)
   if not WW.has_mod(card) then return nil end
   local rank = WW.rank_int(card.base.value)
   if not rank then return nil end
   local key = rank .. "|" .. card.ability.ww_mod
-  if badges[key] == nil then badges[key] = classify(rank, WW.mod_of(card)) or false end
-  return badges[key] or nil
+  if looks[key] == nil then looks[key] = classify(rank, WW.mod_of(card)) or false end
+  return looks[key] or nil
+end
+
+--- A look as text, for tests: "role:glyph ..." plus " *" for the halo and "wild".
+function WW.look_text(b)
+  if not b then return "none" end
+  if b.wild then return "wild" end
+  local parts = {}
+  for i, g in ipairs(b.glyphs) do parts[i] = g[2] .. ":" .. g[1] end
+  return table.concat(parts, " ") .. (b.nimbus and " *" or "")
 end
 
 -- drawing -----------------------------------------------------------------------------------------------
 
-local frames, labels, n_labels = {}, {}, 0
+local overlays, labels, n_labels = {}, {}, 0
 
-local function frame(cell)
+local function overlay(cell)
   local atlas = G.SETTINGS.colourblind_option and "ww_mods_hc" or "ww_mods"
   local key = atlas .. cell
-  if not frames[key] then
-    frames[key] = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, atlas, { x = CELL[cell], y = 0 })
+  if not overlays[key] then
+    overlays[key] = SMODS.create_sprite(0, 0, G.CARD_W, G.CARD_H, atlas, { x = CELL[cell], y = 0 })
   end
-  return frames[key]
+  return overlays[key]
 end
 
 -- Where each glyph goes, following art/glyphs.py's layout(): glyphs advance by inked width + spacing; a run of
 -- small digits before "s/" is a numerator (raised), the run after it a denominator (dropped), and the slash
--- tucks in by slash_gap on both sides. Returns {name, x, dy} and the inked width.
+-- tucks in by slash_gap on both sides. Returns {name, x, dy, role} and the inked width.
 local function place(glyphs)
   local out, x = {}, 0
-  local function small(n) return n and n:sub(1, 1) == "s" and n ~= "s/" end
-  for i, n in ipairs(glyphs) do
-    local dy = 0
-    if small(n) then
+  local function small(g) return g and g[1]:sub(1, 1) == "s" and g[1] ~= "s/" end
+  for i, g in ipairs(glyphs) do
+    local n, dy = g[1], 0
+    if small(g) then
       local j = i
       while small(glyphs[j]) do j = j + 1 end
       local k = i
       while small(glyphs[k]) do k = k - 1 end
-      if glyphs[j] == "s/" then dy = GLYPHS.small.num_dy elseif glyphs[k] == "s/" then dy = GLYPHS.small.den_dy end
+      if glyphs[j] and glyphs[j][1] == "s/" then dy = GLYPHS.small.num_dy
+      elseif glyphs[k] and glyphs[k][1] == "s/" then dy = GLYPHS.small.den_dy end
     end
     if i > 1 then
-      x = x + ((n == "s/" or glyphs[i - 1] == "s/") and GLYPHS.small.slash_gap or GLYPHS.spacing)
+      x = x + ((n == "s/" or glyphs[i - 1][1] == "s/") and GLYPHS.small.slash_gap or GLYPHS.spacing)
     end
-    out[#out + 1] = { n, x, dy }
+    out[#out + 1] = { n, x, dy, g[2] }
     x = x + (GLYPHS.widths[n] or GLYPHS.cell.w)
   end
   return out, x
@@ -139,28 +170,46 @@ local function rgb(hex)
   return tonumber(hex:sub(2, 3), 16) / 255, tonumber(hex:sub(4, 5), 16) / 255, tonumber(hex:sub(6, 7), 16) / 255
 end
 
--- The label's glyphs drawn onto a transparent card-sized canvas, centred in the text box, in the frame's tint.
-local function label(glyphs, kind)
+-- The label drawn onto a transparent card-sized canvas after the rank's index, then again rotated 180° about the
+-- card's centre for the bottom-right corner.
+local function label(glyphs, rank_key)
   local scale = G.SETTINGS.GRAPHICS.texture_scaling
-  local key = scale .. ":" .. kind .. ":" .. table.concat(glyphs, " ")
+  local parts = {}
+  for i, g in ipairs(glyphs) do parts[i] = g[2] .. ":" .. g[1] end
+  local key = scale .. ":" .. rank_key .. ":" .. table.concat(parts, " ")
   if labels[key] then return labels[key] end
   local sheet = G.ASSET_ATLAS.ww_glyphs
-  local placed, width = place(glyphs)
-  local box = LAYOUT.text
-  local x0 = box.x + math.floor((box.w - width) / 2)
+  local placed = place(glyphs)
+  local anchor = LAYOUT.label[rank_key]
   local canvas = love.graphics.newCanvas(71, 95, { dpiscale = scale })
   canvas:setFilter("nearest", "nearest")
   love.graphics.push("all")
   love.graphics.setCanvas(canvas)
   love.graphics.clear(0, 0, 0, 0)
-  love.graphics.origin()
-  love.graphics.setColor(rgb(LAYOUT.text_colour[kind] or "#fdfdfd"))
-  for _, p in ipairs(placed) do
-    local i = index[p[1]]
-    if i then
-      local quad = love.graphics.newQuad(i * GLYPHS.cell.w, 0, GLYPHS.cell.w, GLYPHS.cell.h, sheet.image:getDimensions())
-      love.graphics.draw(sheet.image, quad, x0 + p[2], box.y + p[3])
+  local function glyphs_at(dx, dy, colour)
+    for _, p in ipairs(placed) do
+      local i = index[p[1]]
+      if i then
+        love.graphics.setColor(rgb(colour or LAYOUT.colours[p[4]] or "#000000"))
+        local quad = love.graphics.newQuad(i * GLYPHS.cell.w, 0, GLYPHS.cell.w, GLYPHS.cell.h, sheet.image:getDimensions())
+        love.graphics.draw(sheet.image, quad, anchor.x + p[2] + dx, anchor.y + p[3] + dy)
+      end
     end
+  end
+  for pass = 1, 2 do
+    love.graphics.origin()
+    if pass == 2 then
+      -- 180° about LAYOUT.turn: pixel (x, y) goes to (70 − x, 94 − y).
+      love.graphics.translate(2 * LAYOUT.turn.x, 2 * LAYOUT.turn.y)
+      love.graphics.rotate(math.pi)
+    end
+    -- A one-pixel card-white knockout first, so the label stays legible where it runs over pips or portraits.
+    for dx = -1, 1 do
+      for dy = -1, 1 do
+        if dx ~= 0 or dy ~= 0 then glyphs_at(dx, dy, LAYOUT.colours.knockout) end
+      end
+    end
+    glyphs_at(0, 0)
   end
   love.graphics.pop()
   n_labels = n_labels + 1
@@ -181,33 +230,35 @@ SMODS.DrawStep {
   func = function(card, layer)
     local b = WW.badge_of(card)
     if not b then return end
-    if #b.glyphs > 0 then
-      draw(frame(b.kind), card)
-      draw(label(b.glyphs, b.kind), card)
-    end
-    if b.nimbus then draw(frame("nimbus"), card) end
+    if b.wild then draw(overlay("wild"), card) end
+    if #b.glyphs > 0 and LAYOUT.label[card.base.value] then draw(label(b.glyphs, card.base.value), card) end
+    if b.nimbus then draw(overlay("nimbus"), card) end
   end,
   conditions = { vortex = false, facing = "front" },
 }
 
 -- tooltip -----------------------------------------------------------------------------------------------
 
--- Text for the tooltip: numbers as mixed fractions, games in {L|R} notation.
-local TEXT_FRACTIONS = { [0.5] = "½", [0.25] = "¼", [0.75] = "¾" }
-local function pretty(v)
+-- Text for the tooltip: numbers as mixed fractions, games in {L|R} notation. Balatro's pixel font (m6x11plus) has
+-- ± but no ω, ½ or arrows, so ω is written w and fractions as p/q.
+local function pretty(v, signed)
   if N.is(v) then
     local function dy(x)
       local sign = x < 0 and "-" or ""
       local a = math.abs(x)
       local whole, frac = math.floor(a), a - math.floor(a)
       if frac == 0 then return sign .. ("%.0f"):format(whole) end
-      local f = TEXT_FRACTIONS[frac] or N.dyadic_str(frac)
-      if whole == 0 then return sign .. f end
-      return sign .. ("%.0f"):format(whole) .. (TEXT_FRACTIONS[frac] and f or (" " .. f))
+      if whole == 0 then return sign .. N.dyadic_str(frac) end
+      return sign .. ("%.0f"):format(whole) .. " " .. N.dyadic_str(frac)
     end
-    if v.k == 0 then return dy(v.x) end
-    local s = (v.k == 1 and "" or (v.k == -1 and "-" or dy(v.k))) .. "ω"
-    if v.x > 0 then s = s .. "+" .. dy(v.x) elseif v.x < 0 then s = s .. dy(v.x) end
+    local s
+    if v.k == 0 then
+      s = dy(v.x)
+    else
+      s = (v.k == 1 and "" or (v.k == -1 and "-" or dy(v.k))) .. "w"
+      if v.x > 0 then s = s .. "+" .. dy(v.x) elseif v.x < 0 then s = s .. dy(v.x) end
+    end
+    if signed and not s:match("^%-") then s = "+" .. s end
     return s
   end
   local parts = {}
@@ -239,9 +290,9 @@ function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges_, 
   if not full_UI_table and card and WW.has_mod(card) then
     local value = WW.value_of(card)
     if value then
-      generate({ set = "Other", key = "ww_modifier", vars = {
-        pretty(WW.mod_of(card)), pretty(value), ranks_text(WW.ranks_of(card)),
-      } }, ui)
+      local look = WW.badge_of(card)
+      local mod = look and look.wild and localize("k_ww_wild_rank") or pretty(WW.mod_of(card), true)
+      generate({ set = "Other", key = "ww_modifier", vars = { mod, pretty(value), ranks_text(WW.ranks_of(card)) } }, ui)
     end
   end
   return ui

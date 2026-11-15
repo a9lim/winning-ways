@@ -15,7 +15,7 @@ contain LocalThunk's pixels: see `assets/NOTICE.md`.
 | sheet | 1x size | program | vanilla pixels |
 |---|---|---|---|
 | `ranks.png`, `ranks_hc.png` | 213x380 (3x4 cells of 71x95) | `fronts.py` | yes |
-| `mods.png`, `mods_hc.png` | 355x95 (5 cells of 71x95) | `mods.py` | no |
+| `mods.png`, `mods_hc.png` | 142x95 (2 cells of 71x95) | `mods.py` | no |
 | `glyphs.png` | 266x9 (38 cells of 7x9) | `glyphs.py` | no |
 
 ## Rank fronts (`fronts.py`)
@@ -73,39 +73,61 @@ is (normal colour, row) -> high-contrast colour from the three courts.
 Check: `hc()` applied to vanilla's own 2, 10, A, J, Q, K reproduces
 `8BitDeck_opt2` exactly, all four suits.
 
-## Modifier overlays (`mods.py`)
+## Modifiers (`mods.py`)
 
-One row of full-card overlays: `number`, `hot`, `infinite`, `game`,
-`nimbus`. `mods_hc.png` is identical (the badge colours are UI colours, not
-suit colours).
+Round 2: no plates. A modifier is **coloured text on the card's white,
+beside the corner index**, so the corner reads as the value (3+½, 7±2,
+K+ω). The Lua side composes it from `glyphs.png`; `mods.py` owns only its
+geometry and colours, written to `art/layout.lua`.
 
-- **Where.** Badges sit top right, level with the index top left. Outer
-  rim x 46..66, y 5..17 (game: x 45..67; hot: flames up to y 2). Number
-  cards' right pip column (x 41..51, from y 13) is overlapped by a corner of
-  the badge, as vanilla's seals and stickers overlap art; courts lose only
-  the head of a sceptre.
-- **Text box: x = 48, y = 7, w = 17, h = 9** (1x px from the cell's
-  top-left; also in `art/layout.lua`). It is exactly the plate's fill. A
-  glyph cell placed at y = 7 puts cap-height digits on y 8..14, bottoms
-  level with the rank index (y 7..14).
-- **Construction** follows vanilla's stickers (Eternal, the stake chips):
-  outer ring `bfc7d5`, a ring of the colour's shade, flat fill, lettering
-  `fdfdfd`.
+### Labels
 
-  | cell | fill | shade ring | text | shape |
-  |---|---|---|---|---|
-  | number | `009dff` chips blue | `1685cb` | `fdfdfd` | plain plate |
-  | hot | `fe5f55` mult red | `cc4846` | `fdfdfd` | plate with three flames, `eac058` hearts |
-  | infinite | `4f6367` slate | `eac058` gold | `eac058` | dark plate, gilt rim, four gold sparks |
-  | game | `8867a5` purple | `6a4f85` | `fdfdfd` | plate with pointed ends, after {L\|R} |
+- **Anchor** (`label[rank]`, keyed by Steamodded rank key): the top-left of
+  the label's first glyph cell. y = 7 for every rank: a 7x9 cell there puts
+  cap-height glyphs on y 8..14, bottoms level with the index (y 7..14).
+  x = the index's last inked column + 2 (one clear column): 14 for most,
+  15 for `10` and `King`, 13 for `ww_0`, 11 for `ww_1`. Measured from the
+  fronts at build time.
+- **free**: columns before the label meets that rank's own art (tightest
+  suit). Ace, `ww_0`, `ww_1`: 52+ (the whole top). 2, 3: 16. 4..9: 5; 10: 4
+  (the left pip column's lobes, rows 13..14). Courts and `ww_C`: 2..3 (the
+  frame). **max** (51..55) is the run to x = 66.
+- **Knockout.** Most labels are 11..17 px, so on 4..10 and the courts they
+  run over art. Bare colour on a pip or a court is not legible
+  (`look.py mods` writes `mods_a_bare.png` to show it); with a one-pixel
+  card-white edge it is. So: draw the label in `colours.knockout`
+  (`#ffffff`) at the eight one-pixel offsets, then the label itself. With
+  that, any overlap up to `max` is fine: it reads like a vanilla sticker
+  laid over the art. Within `free` the knockout is invisible, so it can
+  simply always be drawn. On enhanced bodies (Gold, Steel...) the knockout
+  shows as a thin white edge.
+- **Second copy:** the composed label, knockout included, turned 180
+  degrees about (35.5, 47.5), i.e. pixel (x, y) -> (70 - x, 94 - y). That
+  is exactly how vanilla's own corners relate; nothing else is needed.
+  `mods.label()` is the reference implementation.
+- **Colours** (`colours`), chosen to hold as bare text on white:
 
-  Infinite is gold-on-slate rather than a gold plate because white
-  lettering on `eac058` is hard to read; the slate is the black stake
-  chip's.
-- **Nimbus** (the `*`): a 9x3 halo over the index (x 5..13, y 3..5) and a
-  3x3 glint beside it (x 15..17, y 6..8), in Spectral blue `4584fa` (shade
-  `2f62c9`), repeated turned in the bottom-right corner. It touches neither
-  the index nor any badge.
+  | role | hex | |
+  |---|---|---|
+  | offset | `009dff` | chips blue |
+  | heat | `fe5f55` | mult red |
+  | infinite | `c8900f` | gold, deepened: `eac058` washes out on white |
+  | infinitesimal | `4584fa` | Spectral blue, the halo's |
+  | knockout | `ffffff` | vanilla's card white |
+
+### Overlay cells (`mods.png`; `mods_hc.png` is identical)
+
+- **0 nimbus** (the `*`): a 9x3 halo over the index (x 5..13, y 3..5), in
+  `4584fa` with a `2f62c9` lower arc, and again turned bottom right. The
+  round-1 glint is gone: labels start where it sat.
+- **1 wild**: the wild rank's index. A **W**, a rank letter in vanilla's
+  hand (8x8, two-pixel strokes), in `c8900f` on a card-white tile with an
+  `eac058` rim, covering x 5..14, y 6..15 in the top-left corner
+  (`wild_box`) and the same turned bottom right. Every vanilla index glyph
+  lies inside x 6..13, y 7..14, so the tile hides any rank, on any card
+  body; the suit pip (from y 16) is untouched. Considered: a four-point
+  star (too near `*`), a gold-filled tile with a dark or white W (reads as
+  a sticker, not an index; white on gold does not read at all).
 
 ## Glyphs (`glyphs.py`)
 
@@ -125,8 +147,10 @@ Rows of the cell, 0..8:
   rows 3..7
 - `+` and `*` are 5x5 on rows 2..6, `−` is row 4, `±` is rows 1..5 with its
   bar on row 7
-- `|` (1 wide) and the vulgar fractions (7 wide) use all of rows 0..8: a
-  3x4 numerator top left, a 3x5 denominator bottom right, a slash between
+- `|` (1 wide) and the vulgar fractions (7 wide) use all of rows 0..8. The
+  fractions are the small digits composed exactly as below (round 2: the
+  round-1 hand-drawn 3x4 numerators were too tight in eighths), so `⅜` in
+  one cell and `s3 s/ s8` composed are pixel-identical
 - advance = inked width + 1 (`spacing = 1`)
 
 **Arbitrary fractions** (⁵⁄₁₆): numerator in small digits raised 3 px
@@ -134,13 +158,15 @@ Rows of the cell, 0..8:
 dropped 1 px (`den_dy = 1`, rows 4..8). Around the slash the gap is -1
 (`slash_gap`): it tucks one pixel under the numerator and over the
 denominator. `glyphs.layout()` is the reference implementation. Widths:
-`+½` 13, `±2` 11, `±10` 15, `+ω` 13, `+1⅞` 17, `+⁵⁄₁₆` 17: all inside the
-17 px box. `−¹⁵⁄₁₆` is 21 and would overflow.
+`+½` 13, `±2` 11, `±10` 15, `+ω` 13, `+1⅞` 17, `+⁵⁄₁₆` 17, `+½±½` 27.
 
 ## Open
 
-- Badge position: top right overlaps the top-right pip of 4..10. The other
-  free spot is nowhere; a narrower box (13 px) would clear the pip but not
-  fit `±10` or sixteenths.
-- `infinite` as slate + gold vs a solid gold plate.
-- Nimbus in Spectral blue vs gold.
+- Labels on 4..10 and the courts overlap art (see knockout). The other
+  place with room on every rank is the strip above the pips (cell y = 2,
+  glyphs on y 3..9: a superscript, 51 px free on number cards, 7..12 on
+  courts).
+- In the high-contrast deck clubs are chips blue and hearts are close to
+  mult red, so an offset on a club or a heat on a heart shares its index's
+  colour. It still reads (thin strokes vs the index's heavy ones).
+- Wild index: W vs another sign.

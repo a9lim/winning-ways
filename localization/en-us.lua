@@ -30,6 +30,7 @@ return {
     },
     dictionary = {
       k_ww_no_rank = "no rank",
+      k_ww_wild_rank = "Wild rank",
     },
   },
 }
