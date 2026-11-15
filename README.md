@@ -1,5 +1,8 @@
 # Winning Ways
 
+[![CI](https://github.com/a9lim/winning-ways/actions/workflows/ci.yml/badge.svg)](https://github.com/a9lim/winning-ways/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A Balatro mod about Conway's numbers and games, named for Berlekamp, Conway and Guy's *Winning Ways for your
 Mathematical Plays*. Cards become surreal numbers, hot games, nimbers and ω: Cut two cards into {L | R}, Sum them,
 heat and cool them, and let the Blind take its share of the hot ones. The maths is exact: every value a card can hold
@@ -9,7 +12,13 @@ is a real surreal number or combinatorial game, and every rule is a theorem or a
 
 ## Install
 
-Needs [Steamodded](https://github.com/Steamodded/smods). Put this folder in Balatro's `Mods` folder.
+With [balala](https://github.com/a9lim/balala):
+
+```sh
+balala install a9lim/winning-ways
+```
+
+Or by hand: install [Steamodded](https://github.com/Steamodded/smods), then put this repo in your `Mods` folder.
 
 ## Values
 

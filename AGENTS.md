@@ -77,8 +77,8 @@ alone. `balala` launches the game, and `balala logs -f` follows its log.
 
 ## Release
 
-Bump `version` in `WinningWays.json`, add a `CHANGELOG.md` entry, run the tests, then tag `vX.Y.Z`. The repo has no
-GitHub remote yet; publishing one (and a GitHub release) waits for a9.
+Bump `version` in `WinningWays.json`, add a `CHANGELOG.md` entry, run the tests, then tag `vX.Y.Z` and publish a
+GitHub release (`a9lim/winning-ways`). CI runs the unit tests on every push.
 
 ## Art
 
