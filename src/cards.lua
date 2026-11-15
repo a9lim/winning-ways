@@ -41,6 +41,8 @@ local function ranks_of_value(v)
   if not r then r = P.ranks(v); rank_sets[k] = r end
   return r
 end
+--- The ranks (0–15) a value can play as, as a sorted list of integers (cached; don't modify it).
+WW.ranks_of_value = ranks_of_value
 
 local base_has_no_rank = SMODS.has_no_rank
 
@@ -66,6 +68,11 @@ function WW.ranks_of(card)
   if not v then return nil end
   if not WW.has_mod(card) then return { v.x } end
   return ranks_of_value(v)
+end
+
+--- Is a value hot: a game whose temperature is above 0 (7±2, the wild)? Numbers, *, ↑ and ↓ are not.
+function WW.is_hot(v)
+  return v ~= nil and Gm.is_game(v) and N.lt(N.zero, Gm.temperature(v))
 end
 
 --- The rank a card made with value v sits on: the rank nearest v's mean among those it plays as (the lower on
@@ -120,6 +127,7 @@ end
 
 function SMODS.has_no_rank(card)
   if base_has_no_rank(card) then return true end
+  if active[card] then return false end -- assigned a rank in the hand being read (Conway can give 3½ one)
   if WW.has_mod(card) then
     local v = WW.value_of(card)
     if v and #ranks_of_value(v) == 0 then return true end
@@ -145,6 +153,15 @@ local function as_assigned(card, f, ...)
   b.value, b.nominal, b.face_nominal = value, nominal, face_nominal
   return r
 end
+--- The rank a card plays as right now, as an integer 0–15: the rank it was assigned in the hand last read, or
+--- its own. nil when it has no rank (Stone, 3½, ω, another mod's rank).
+function WW.rank_now(card)
+  local key = active[card]
+  if key then return INTS[key] end
+  if SMODS.has_no_rank(card) then return nil end
+  return INTS[card.base.value]
+end
+
 local get_nominal, is_face = Card.get_nominal, Card.is_face
 function Card:get_nominal(mod) return as_assigned(self, get_nominal, mod) end
 function Card:is_face(from_boss) return as_assigned(self, is_face, from_boss) end
@@ -210,13 +227,28 @@ function evaluate_poker_hand(hand)
     for c in pairs(active) do if not inside[c] then active[c] = nil end end
     for c in pairs(ties) do if not inside[c] then ties[c] = nil end end
   end
+  -- Jokers can give cards more ranks to play as while they're in the hand (Conway: src/jokers.lua).
+  local extra = main and WW.extra_ranks and WW.extra_ranks(hand)
   local cards, any = {}, false
   for i, c in ipairs(hand) do
     active[c], ties[c] = nil, nil
     local v = WW.value_of(c)
     local modded = v ~= nil and WW.has_mod(c)
     if modded then any = true end
-    cards[i] = { ranks = WW.ranks_of(c) or {}, key = modded and WW.tie_key(v) or ("#" .. i) }
+    local ranks = WW.ranks_of(c) or {}
+    if extra and extra[c] then
+      local union, seen = {}, {}
+      for _, list in ipairs({ ranks, extra[c] }) do
+        for _, r in ipairs(list) do
+          if not seen[r] then seen[r] = true; union[#union + 1] = r end
+        end
+      end
+      if #union > #ranks then
+        table.sort(union)
+        ranks, any = union, true
+      end
+    end
+    cards[i] = { ranks = ranks, key = modded and WW.tie_key(v) or ("#" .. i) }
   end
   if not any then return evaluate(hand) end
 
@@ -225,7 +257,7 @@ function evaluate_poker_hand(hand)
       local v = a[i]
       active[c], ties[c] = nil, nil
       if type(v) == "string" then ties[c] = v
-      elseif v and #cards[i].ranks >= 2 then active[c] = KEYS[v] end
+      elseif v and (#cards[i].ranks >= 2 or KEYS[v] ~= c.base.value) then active[c] = KEYS[v] end
     end
   end
   local best, best_a, best_i, best_n
@@ -252,12 +284,15 @@ function WW.chips_of(x)
 end
 
 --- Play out the scoring cards' values: {total, finals, moves, cards}, or nil when none of them has a
---- modifier (then everything scores exactly as vanilla). Debuffed cards don't take part.
+--- modifier (then everything scores exactly as vanilla). Debuffed cards don't take part. With Thermograph,
+--- hot cards with a finite temperature play as their mean, a number, so nobody moves in them.
 function WW.resolve(scoring_hand)
   local cards, values, any = {}, {}, false
+  local frozen = WW.thermograph_held and WW.thermograph_held()
   for _, c in ipairs(scoring_hand) do
     if not c.debuff then
       local v = WW.value_of(c)
+      if v and frozen and WW.is_hot(v) and N.is_finite(Gm.temperature(v)) then v = Gm.mean(v) end
       if v then
         cards[#cards + 1], values[#values + 1] = c, v
         if WW.has_mod(c) then any = true end

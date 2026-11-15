@@ -1,7 +1,7 @@
 # AGENTS.md — Winning Ways editing contract
 
-Winning Ways is a Balatro mod on Steamodded. Card values are Conway's numbers and games. At this stage the repo
-holds a plan and a test harness, and nothing else. `DESIGN.md` is the source of truth for the rules: its
+Winning Ways is a Balatro mod on Steamodded. Card values are Conway's numbers and games. The engine, values, Moves, ω eating,
+the jokers, The Heap and the Field Deck are built. `DESIGN.md` is the source of truth for the rules: its
 **Decided** sections are agreed, and its **Candidates** wait on a9. Git history records what changed.
 
 ## Stance
@@ -30,6 +30,9 @@ holds a plan and a test harness, and nothing else. `DESIGN.md` is the source of 
 | `src/faces.lua` | how modifiers show: badge frames, runtime-composed labels, the nimbus halo, the tooltip |
 | `src/omega.lua` | infinity eating: who eats whom in the played row, growth, destruction, always-scores |
 | `src/moves.lua` | the Move consumables, the Omega Spectral and the Game Packs; each effect is `WW.MOVES[key].apply` |
+| `src/jokers.lua` | the jokers; their rules are plain functions (`WW.bouton`, `WW.mex_of`, `WW.missing_pairs`, `WW.extra_ranks`) |
+| `src/blinds.lua` | The Heap, a Boss Blind |
+| `src/decks.lua` | the Field Deck |
 | `src/font.lua` | attaches Fable's symbol font (ω ½ ↑ …) as a fallback to Balatro's pixel font |
 | `src/lab.lua` | the Laboratory Deck, a development deck with a sample of every modifier (remove before release) |
 | `localization/en-us.lua` | all text |
@@ -50,8 +53,8 @@ format.
 - `scripts/test` runs the unit tests on LuaJIT. It uses `luajit` from PATH, or borrows an unfused copy of the LÖVE
   runtime from the local Balatro install. Nothing gets installed on the Mac, which is deliberately Homebrew-free.
 - `tests/main.lua` lists the suites; each suite file returns a function that takes `test(name, body)`.
-- `scripts/runtest` plays a real run through the game's own code: it picks the Small Blind, plays scripted hands
-  and uses a Move, then checks the score to the chip. `G.F_NO_SAVING` is set, and the script also backs up and
+- `scripts/runtest` plays a real run on the Field Deck through the game's own code: it picks the Small Blind, plays
+  scripted hands, uses a Move, tries each joker and The Heap, and checks every score to the chip. `G.F_NO_SAVING` is set, and the script also backs up and
   restores the save files. It is the only test of the scoring path as the game runs it, so run it after any change
   to scoring, eating or the Moves. If the game crashes, close it (`pkill -f Balatro.app/Contents/MacOS`) before the
   next run.

@@ -236,6 +236,90 @@ local function eating()
   check("an ω card always scores", SMODS.always_scores(w4) == true)
 end
 
+local function jokers()
+  for _, k in ipairs({ "bouton", "generator", "grundy", "hotstrat", "thermograph", "sprouts", "cantor", "paradise",
+    "conway" }) do
+    check("j_ww_" .. k .. " exists", G.P_CENTERS["j_ww_" .. k] ~= nil)
+  end
+  check("The Heap exists", G.P_BLINDS.bl_ww_heap ~= nil)
+  check("the Field Deck exists", G.P_CENTERS.b_ww_field ~= nil)
+
+  -- Bouton and The Heap read nim-sums of the ranks cards play as.
+  local one, two, three = card("H_1"), card("S_2"), card("D_3")
+  check("1 ⊕ 2 ⊕ 3 = 0", WW.nim_sum({ one, two, three }) == 0)
+  check("Bouton: 1 2 3", WW.bouton({ one, two, three }, { three }))
+  local k1, k2, z, f1, f2 = card("H_K"), card("S_K"), card("D_0"), card("C_5"), card("H_5")
+  check("a Pair nim-sums to 0 (The Heap)", WW.nim_sum({ k1, k2 }) == 0)
+  check("Bouton: K K 5 5 with a 0 kicker has three ranks", WW.bouton({ k1, k2, z, f1, f2 }, { k1, k2, f1, f2 }))
+  check("but K K 5 5 alone has two", not WW.bouton({ k1, k2, f1, f2 }, { k1, k2, f1, f2 }))
+  local q, w, four = card("S_Q"), card("C_A", cut(N.omega, n(2))), card("C_4")
+  check("Bouton: a wild kicker plays as K ⊕ Q = 3", WW.bouton({ k1, q, w }, { k1 }))
+  check("Bouton: a 4 kicker can't", not WW.bouton({ k1, q, four }, { k1 }))
+  check("Bouton: a scoring wild plays as its assigned rank, not any", not WW.bouton({ k1, q, w }, { k1, w }))
+
+  -- Grundy's mex.
+  check("mex of 0 1 2 4 is 3", WW.mex_of({ card("H_0"), card("S_1"), card("D_2"), card("C_4") }) == 3)
+  check("mex without a 0 is 0", WW.mex_of({ card("H_9"), card("S_1") }) == 0)
+
+  -- Hot cards (Hotstrat, Thermograph).
+  local hot, star, up = card("H_7", cut(n(9), n(5))), card("S_5", cut(N.zero, N.zero)), card("D_6")
+  WW.add_mod(up, Gm.of({ N.zero }, { Gm.of({ N.zero }, { N.zero }) }))
+  check("7±2 is hot", WW.is_hot(WW.value_of(hot)))
+  check("5* and 6↑ are not", not WW.is_hot(WW.value_of(star)) and not WW.is_hot(WW.value_of(up)))
+  check("7±2's temperature is 2", WW.finite_temperature(hot) == 2, WW.finite_temperature(hot))
+  check("the wild's never freezes", WW.finite_temperature(w) == nil)
+  local held = WW.thermograph_held
+  WW.thermograph_held = function() return true end
+  local ok, r = pcall(WW.resolve, { hot, card("S_7") })
+  WW.thermograph_held = held
+  check("Thermograph: 7±2 scores its mean, 7", ok and N.encode(r.finals[1]) == "7", ok and N.encode(r.finals[1]) or r)
+
+  -- Generator's cycle.
+  check("the Ace steps to a 9 and pays 1", E.nim.step(15) == 9 and E.nim.log15(15) == 1)
+  check("the 1 steps to the Ace and pays 15", E.nim.step(1) == 15 and E.nim.log15(1) == 15)
+
+  -- Conway: each card can also play as {left | right}.
+  local find = SMODS.find_card
+  SMODS.find_card = function(key, ...)
+    if key == "j_ww_conway" then return { {} } end
+    return find(key, ...)
+  end
+  WW.reading_main = true
+  local function row(codes)
+    local cards = {}
+    for i, code in ipairs(codes) do cards[i] = card(code); cards[i].T.x = i end
+    return cards
+  end
+  local ok2, err = pcall(function()
+    local kxk = row({ "H_K", "S_5", "D_K" })
+    expect("Conway: K 5 K is Three of a Kind", kxk, "Three of a Kind")
+    check("the 5 plays as {K|K} = K*, a King", WW.playing_as(kxk[2]) == "King", WW.playing_as(kxk[2]))
+    expect("Conway: 3 4 K 6 7 is a Straight (the K is {4|6} = 5)", row({ "H_3", "S_4", "D_K", "C_6", "H_7" }), "Straight")
+    expect("Conway: the right end is {L|}: 2 3 4 5 K is a Straight", row({ "H_2", "S_3", "D_4", "C_5", "H_K" }), "Straight")
+    expect("Conway: Q 2 K gives the 2 13½, no rank", row({ "H_Q", "S_2", "D_K" }), "High Card")
+  end)
+  WW.reading_main = nil
+  SMODS.find_card = find
+  check("Conway's checks ran", ok2, err)
+  WW.reading_main = true
+  expect("without Conway, K 5 K is a Pair", row({ "H_K", "S_5", "D_K" }), "Pair")
+  WW.reading_main = nil
+
+  -- Cantor's diagonal.
+  local deck = G.playing_cards
+  G.playing_cards = { card("H_A"), card("S_A"), card("D_A"), card("C_A") }
+  local missing = WW.missing_pairs()
+  check("Cantor: with only the Aces, 48 pairs are missing", #missing == 48, #missing)
+  local all = {}
+  for _, s in ipairs({ "H", "S", "D", "C" }) do
+    for _, r in ipairs({ "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A" }) do all[#all + 1] = card(s .. "_" .. r) end
+  end
+  G.playing_cards = all
+  missing = WW.missing_pairs()
+  check("with all 52, the born ranks are next: 12 pairs", #missing == 12 and missing[1].rank:sub(1, 3) == "ww_", #missing)
+  G.playing_cards = deck
+end
+
 local function speed()
   local wild = cut(N.omega, n(2))
   local hand = { card("H_K", wild), card("S_9"), card("D_A", wild), card("C_7"), card("H_8", cut(n(9), n(5))) }
@@ -253,6 +337,7 @@ local function run()
   faces()
   moves()
   eating()
+  jokers()
   speed()
 end
 

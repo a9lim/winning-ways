@@ -10,6 +10,95 @@ return {
           "and two {C:attention}Cavaliers{}",
         },
       },
+      b_ww_field = {
+        name = "Field Deck",
+        text = {
+          "Start with {C:attention}64{} cards: every",
+          "rank from {C:attention}0{} to {C:attention}Ace{}, the",
+          "{C:attention}Cavalier{} included, in every suit",
+        },
+      },
+    },
+    Blind = {
+      bl_ww_heap = {
+        name = "The Heap",
+        text = { "Hands that nim-sum", "to 0 score nothing" },
+      },
+    },
+    Joker = {
+      j_ww_bouton = {
+        name = "Bouton",
+        text = {
+          "{X:mult,C:white} X#1# {} Mult if the played",
+          "cards {C:attention}nim-sum{} to {C:attention}0{} with at",
+          "least {C:attention}3{} different ranks",
+        },
+      },
+      j_ww_generator = {
+        name = "Generator",
+        text = {
+          "Each scored card gives {C:chips}+#1#{} Chips",
+          "per place it holds on the",
+          "{C:attention}Ace's cycle{}, then moves",
+          "one place along it",
+        },
+      },
+      j_ww_grundy = {
+        name = "Grundy",
+        text = {
+          "Gains {C:mult}Mult{} equal to the",
+          "smallest rank, from {C:attention}0{} up,",
+          "missing from the scoring cards",
+          "{C:inactive}(Currently {C:mult}+#1#{C:inactive} Mult)",
+        },
+      },
+      j_ww_hotstrat = {
+        name = "Hotstrat",
+        text = { "Retrigger each", "played {C:mult}hot{} card" },
+      },
+      j_ww_thermograph = {
+        name = "Thermograph",
+        text = {
+          "{C:mult}Hot{} cards score their {C:attention}mean{}",
+          "and give their {C:attention}temperature{}",
+          "as {C:mult}Mult{}",
+        },
+      },
+      j_ww_sprouts = {
+        name = "Sprouts",
+        text = {
+          "If {C:attention}first hand{} of round",
+          "has exactly {C:attention}2{} cards, add",
+          "their {C:attention}Cut{} to deck and",
+          "draw it to {C:attention}hand",
+        },
+      },
+      j_ww_cantor = {
+        name = "Cantor",
+        text = {
+          "When {C:attention}Blind{} is selected,",
+          "add a card whose rank and",
+          "suit no card in your",
+          "deck has",
+        },
+      },
+      j_ww_paradise = {
+        name = "Cantor's Paradise",
+        text = {
+          "Gains {X:mult,C:white} X#1# {} Mult for",
+          "each card {C:attention}ω{} eats",
+          "{C:inactive}(Currently {X:mult,C:white} X#2# {C:inactive} Mult)",
+        },
+      },
+      j_ww_conway = {
+        name = "Conway",
+        text = {
+          "Each played card can",
+          "also play as the {C:attention}Cut{}",
+          "of its left and right",
+          "neighbours",
+        },
+      },
     },
     Move = {
       c_ww_cut = {
@@ -123,6 +212,24 @@ return {
         name = "Mega Game Pack",
         text = { "Choose {C:attention}#1#{} of up to", "{C:attention}#2#{} {C:attention}Move{} cards to", "be used immediately" },
       },
+      ww_ace_cycle = {
+        name = "The Ace's cycle",
+        text = {
+          "Nim-multiplying by {C:attention}15{} moves",
+          "a rank one place along:",
+          "{C:attention}A{} 9 Q C 3 10 7 J 8 2 5 K 6 4 {C:attention}1",
+          "{C:inactive}(the Ace is 1st, the 1 is 15th;",
+          "{C:inactive}then back to the Ace. 0 stays)",
+        },
+      },
+      ww_hot = {
+        name = "Hot",
+        text = {
+          "A card is {C:mult}hot{} when its",
+          "value is a hot game, like",
+          "{C:attention}7±2{}: it plays as {C:attention}5{} to {C:attention}9{}",
+        },
+      },
       ww_modifier = {
         name = "Modifier",
         text = {
@@ -143,6 +250,9 @@ return {
       k_ww_no_rank = "no rank",
       k_ww_wild_rank = "Wild rank",
       k_ww_game_pack = "Game Pack",
+      k_ww_generated = "Generated!",
+      k_ww_sprouted = "Sprouted!",
+      k_ww_diagonal = "Diagonal!",
       k_move = "Move",
       b_move_cards = "Moves",
     },

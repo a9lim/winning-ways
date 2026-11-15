@@ -31,13 +31,15 @@ local function is_game(card)
 end
 
 -- The newborn of a fusion keeps the left parent and takes what it lacks from the right: enhancement, edition, seal.
-local function inherit(left, right)
+-- (Sprouts uses it too.)
+function WW.inherit(left, right)
   if left.config.center == G.P_CENTERS.c_base and right.config.center ~= G.P_CENTERS.c_base then
     left:set_ability(right.config.center, nil, true)
   end
   if not left.edition and right.edition then left:set_edition(right.edition, true, true) end
   if not left.seal and right.seal then left:set_seal(right.seal, true, true) end
 end
+local inherit = WW.inherit
 
 -- Fuse two cards into one worth v: the left card becomes the newborn, and the right one is used up.
 local function fuse(left, right, v)

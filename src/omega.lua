@@ -105,6 +105,8 @@ local intro = evaluate_play_intro
 function evaluate_play_intro(...)
   local food, growth = WW.feed(in_row(G.play.cards))
   meal = #food > 0 and food or nil
+  -- Jokers hear about it (Cantor's Paradise): context.ww_eaten is the list of cards eaten this hand.
+  if meal then SMODS.calculate_context({ ww_eaten = food }) end
   for eater, chips in pairs(growth) do
     G.E_MANAGER:add_event(Event({ trigger = "after", delay = 0.2, func = function()
       eater:juice_up(0.7, 0.5)

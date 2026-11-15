@@ -1,7 +1,7 @@
 # Winning Ways — design sketch
 
-*Status: the value engine is being built (§ 11); none of the content exists yet. **Decided** sections record what a9
-and Claude have agreed. **Candidates** are proposals still waiting on a9's call. § 10 lists the facts the design
+*Status: the engine, values, Moves, ω eating, the decided jokers, The Heap and the Field Deck are built (§ 11).
+**Decided** sections record what a9 and Claude have agreed. **Candidates** are proposals still waiting on a9's call. § 10 lists the facts the design
 rests on, each one checked with ogdoad or marked standard.*
 
 Winning Ways is a Balatro mod about Conway's numbers and games. It's named for Berlekamp, Conway and Guy's book, and it
@@ -240,11 +240,46 @@ the time.
   - It turns three Kings and two junk cards into Five of a Kind ([K, x, K, y, K]), so it's probably the strongest
     card in the mod. That suits a legendary, but it needs watching in play.
 
+### 4.1 As built (`src/jokers.lua`)
+
+Claude's calls where the sketch left room, waiting on a9's say-so:
+
+- **"Rank" means the rank a card plays as** in the hand being scored: a wild in a Pair of Kings is a King. Cards with
+  no rank (Stone, 3½, ω) are invisible to nim-sums and the mex, as a 0 is. Cards infinity ate don't count.
+- **Bouton:** a flexible kicker (one that doesn't score) may play as any of its ranks, because you choose in a
+  confused position. So a wild kicker completes a Bouton whenever the other cards nim-sum to a rank it can play as
+  (K, Q and a wild: K ⊕ Q = 3). Scoring cards keep the rank the hand gave them.
+- **Generator** pays **+2 chips per place** on the Ace's cycle (A 2, 9 4, …, 1 30; 16 on average), from the card's own
+  rank, then steps that rank. It acts on the rank under any modifier (K+ω becomes 6+ω), never on Stone cards, and
+  the 0 neither pays nor moves. Blueprint copies the chips but not the step.
+- **Grundy** grows before the hand scores, so the mex counts the same hand. Only the scoring cards count, so a High
+  Card's kickers don't.
+- **Hotstrat** retriggers cards whose value has temperature above 0: 7±2 and the wild, not *, ↑ or ↓.
+- **Thermograph** leaves the wild alone: its temperature is infinite (ω/2 − 1), and an infinite +mult has no
+  meaning. Every other hot card plays as its mean in the hand's play-out, so nobody moves in it, and gives its
+  temperature (which can be fractional) as +mult. With Hotstrat both happen twice.
+- **Sprouts** makes the new card as Cut does: a copy of the left card, worth {left | right}, taking what it lacks
+  (enhancement, edition, seal) from the right one. Like DNA, the card goes into the hand.
+- **Cantor** picks a missing standard pair at random, then a missing born-rank pair (0, 1, C) once all 52 are there.
+  On a full Field Deck there is nothing to add, and it does nothing. A Stone card, or a 3 worth 3½, doesn't hold its
+  pair.
+- **Cantor's Paradise** hears about eating through a custom context (`context.ww_eaten`, sent by `src/omega.lua`
+  before the hand scores), so the new ×mult applies to that same hand.
+- **Conway's end cards** have one side empty: {|R} is 0 and {L|} is L rounded up. So [2, 3, 4, 5, x] is a straight
+  for any x, as x plays as {5|} = 6. Stone cards get no ranks and act as no neighbour. The extra ranks only widen
+  what cards play as; every card still scores its own value (K 5 K scores the 5's 5 chips).
+- **Costs:** Bouton $8, Generator $7, Grundy $6, Hotstrat $5, Thermograph $8, Sprouts $8, Cantor $6, Cantor's
+  Paradise $7, Conway $20.
+
 ## 5. Blinds and decks — Decided
 
 - **The Heap** (Boss): a hand whose scoring cards nim-sum to 0 scores nothing. Because a ⊕ a = 0, Pairs, Two Pairs
   and Four of a Kinds never score under it.
+  - **As built** (`src/blinds.lua`): it reads Steamodded's final scoring cards (Splash, Stone and ω cards
+    included) as the ranks they play as. It appears from Ante 2, pays $5 and has the usual ×2 target.
 - **Field Deck:** 64 cards, ranks 0 through A with the Cavalier (the field F₁₆) in every suit.
+  - **As built** (`src/decks.lua`): the born ranks join the deck through vanilla's `extra_cards` when it is built,
+    so they count toward the starting deck size (Erosion sees 64).
 
 ## 6. Left out
 
@@ -417,11 +452,16 @@ Built and tested (`src/engine/`, `tests/`); nothing in the game uses it yet.
   - **Scoring:** `SMODS.calculate_main_scoring` resolves the scoring cards' values, and `get_chip_bonus` pays each
     card the chips for the number it ends on.
   - **Speed:** reading a hand with two wilds and a hot card takes about 3 ms in the game.
-- **Exercised end to end:** `scripts/runtest` starts a real run with saving switched off and plays scripted hands
-  through the game's own code:
+- **Exercised end to end:** `scripts/runtest` starts a real run on the Field Deck with saving switched off and plays
+  scripted hands through the game's own code:
+  - the deck: 64 cards, 12 of them born ranks;
   - a hot card's bite: 7 7 7±2 scores exactly 159;
   - infinity eating: 7 7 K+ω 9 9 is a Pair worth 104, the 7s are destroyed, and the King keeps +14;
-  - Cut used through the game's own button.
+  - Cut used through the game's own button;
+  - each joker in turn: Bouton on 1 2 3 (24), Generator on an Ace (18, and it becomes a 9), Grundy on 0 1 2 3 4
+    (+5 mult), Hotstrat and Thermograph on a lone 7±2 (23 and 36), Sprouts on 3 7 (a new 4), Cantor at a Blind
+    (a missing pair), Cantor's Paradise on 7 7 K+ω 9 9 (×1.2, 124), Conway on K 5 K (Three of a Kind, 165);
+  - The Heap: a Pair scores 0, three 9s score 171.
 - **Still to build:**
   - **Card faces:** with modifiers, a card shows its normal rank front plus a modifier badge (+½, *, ±2, ω), with
     the exact value in the tooltip. That's far easier than procedural fronts, but it is still the next thing to

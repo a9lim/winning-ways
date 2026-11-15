@@ -15,6 +15,9 @@ if NFS.getInfo(WinningWays.path .. "art/glyphs.lua") then load("src/faces.lua") 
 if NFS.getInfo(WinningWays.path .. "assets/fonts/ww_symbols.ttf") then load("src/font.lua") end
 load("src/lab.lua")
 if NFS.getInfo(WinningWays.path .. "assets/1x/moves.png") then load("src/moves.lua") end
+load("src/jokers.lua")
+load("src/blinds.lua")
+load("src/decks.lua")
 
 if os.getenv("WINNINGWAYS_SELFTEST") then load("tests/ingame.lua") end
 if os.getenv("WINNINGWAYS_SHOWCASE") then load("tests/showcase.lua") end
