@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.1 (2026-11-15)
+
+- Every tooltip rewritten in vanilla's voice: shorter lines, vanilla's own phrasings ("Played cards give … when
+  scored", "Start run with …", "(Drag to rearrange)"), and The Fool's box on Tweedledum for the last Move used.
+- The terms of art get their own info boxes, as vanilla's enhancements do: hot, mex, nim-sum, ω and the Ace's cycle.
+- Move names in text are the Moves' bright green, readable on a tooltip.
+- The self-test renders every tooltip, and `WINNINGWAYS_SHOWCASE_SET=tooltips` screenshots each one.
+
 ## 1.0.0 (2026-11-14)
 
 First release.

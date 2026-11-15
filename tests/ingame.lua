@@ -368,6 +368,73 @@ local function quintessence()
   check("Repaint leaves a Wild card Wild", hot.base.suit == "quint_Wild", hot.base.suit)
 end
 
+-- Every string a UI definition shows: text nodes, and the strings of the DynaTexts in names.
+local function strings_of(node, out, seen)
+  out, seen = out or {}, seen or {}
+  if type(node) ~= "table" or seen[node] then return out end
+  seen[node] = true
+  local cfg = node.config
+  if type(cfg) == "table" then
+    if type(cfg.text) == "string" then out[#out + 1] = cfg.text end
+    local o = cfg.object
+    if type(o) == "table" and type(o.config) == "table" and type(o.config.string) == "table" then
+      for _, s in ipairs(o.config.string) do out[#out + 1] = type(s) == "table" and tostring(s.string) or tostring(s) end
+    end
+  end
+  for _, v in ipairs(node) do strings_of(v, out, seen) end
+  for _, k in ipairs({ "nodes", "main", "info", "name", "main_end" }) do strings_of(node[k], out, seen) end
+  return out
+end
+
+-- Every tooltip renders in full: no #1# left unfilled, no missing key, and each term of art brings its box.
+local function tooltips()
+  local want_info = {
+    j_ww_bouton = 1, j_ww_generator = 1, j_ww_grundy = 1, j_ww_hotstrat = 1, j_ww_thermograph = 1,
+    j_ww_sprouts = 2, j_ww_paradise = 1, j_ww_conway = 2, j_ww_berlekamp = 1, j_ww_cantor = 0, j_ww_birthday = 0,
+    j_ww_hilbert = 1, j_ww_guy = 0, c_ww_cut = 1, c_ww_heat = 1, c_ww_cool = 1, c_ww_mex = 1, c_ww_omega = 1,
+    c_ww_sum = 0, c_ww_frobenius = 0, c_ww_repaint = 0, c_ww_nimbus = 0, c_ww_tweedledum = 0,
+    p_ww_game_normal_1 = 0, p_ww_game_jumbo_1 = 0, p_ww_game_mega_1 = 0,
+  }
+  local params = { bypass_discovery_center = true, bypass_discovery_ui = true }
+  for key, n_info in pairs(want_info) do
+    local c = Card(0, 0, G.CARD_W, G.CARD_H, G.P_CARDS.empty, G.P_CENTERS[key], params)
+    made[#made + 1] = c
+    local ok, ui = pcall(c.generate_UIBox_ability_table, c)
+    if not ok then
+      check(key .. "'s tooltip renders", false, ui)
+    else
+      local text = table.concat(strings_of(ui), " / ")
+      check(key .. "'s tooltip fills every #n#", not text:find("#%d+#"), text)
+      check(key .. "'s tooltip has no missing text", not text:find("ERROR"), text)
+      local names = {}
+      for i, box in ipairs(ui.info or {}) do names[i] = tostring(box.name) end
+      check(key .. " shows " .. n_info .. " info box(es)", #names == n_info, table.concat(names, ", "))
+    end
+  end
+  -- Tweedledum names the last Move in The Fool's box: none yet, then Cut.
+  local tw = Card(0, 0, G.CARD_W, G.CARD_H, G.P_CARDS.empty, G.P_CENTERS.c_ww_tweedledum, params)
+  made[#made + 1] = tw
+  G.GAME.ww_last_move = nil
+  local none = table.concat(strings_of(tw:generate_UIBox_ability_table()), " ")
+  G.GAME.ww_last_move = "c_ww_cut"
+  local ui = tw:generate_UIBox_ability_table()
+  local cut = table.concat(strings_of(ui), " ")
+  G.GAME.ww_last_move = nil
+  check("Tweedledum's box says None before any Move", none:find(localize("k_none"), 1, true) ~= nil, none)
+  local names = {}
+  for i, box in ipairs(ui.info or {}) do names[i] = tostring(box.name) end
+  check("Tweedledum's box names the last Move", cut:find(" Cut ", 1, true) ~= nil, cut)
+  check("Tweedledum shows the last Move's tooltip", #names >= 1, table.concat(names, ", "))
+  -- Decks and Blinds have no loc_vars: their text only has to exist, and the Cut the Ordinal Deck names must too.
+  for set, keys in pairs({ Back = { "b_ww_field", "b_ww_ordinal" }, Blind = { "bl_ww_heap", "bl_ww_misere" } }) do
+    for _, key in ipairs(keys) do
+      local d = G.localization.descriptions[set][key]
+      check(key .. " has its text", d and d.text_parsed and #d.text_parsed > 0)
+    end
+  end
+  check("{C:ww_move} names the Moves' bright green", loc_colour("ww_move") == G.C.SET.Move)
+end
+
 local function speed()
   local wild = cut(N.omega, n(2))
   local hand = { card("H_K", wild), card("S_9"), card("D_A", wild), card("C_7"), card("H_8", cut(n(9), n(5))) }
@@ -387,6 +454,7 @@ local function run()
   eating()
   jokers()
   quintessence()
+  tooltips()
   speed()
 end
 

@@ -21,6 +21,14 @@ SMODS.ConsumableType {
   default = "c_ww_cut",
 }
 
+-- {C:ww_move} names a Move in text, as vanilla writes {C:tarot}Tarot. Steamodded's own {C:move} is the badge's dark
+-- green, which doesn't read on a tooltip's white; this is the bright one.
+local loc_colour_ref = loc_colour
+function loc_colour(_c, _default)
+  if _c == "ww_move" then return G.C.SET.Move end
+  return loc_colour_ref(_c, _default)
+end
+
 -- effects -----------------------------------------------------------------------------------------------
 
 -- Is this card one of ours (a value we can read)?
@@ -206,6 +214,8 @@ local function use(move, consumable)
 end
 
 local ORDER = { "cut", "sum", "heat", "cool", "frobenius", "tweedledum", "repaint", "nimbus", "mex" }
+-- The info box each Move's text leans on, as vanilla's Tarots show the enhancement they give.
+local INFO = { cut = "ww_hot", heat = "ww_hot", cool = "ww_hot", mex = "ww_mex" }
 for i, key in ipairs(ORDER) do
   local move = WW.MOVES[key]
   SMODS.Consumable {
@@ -217,9 +227,18 @@ for i, key in ipairs(ORDER) do
     config = move and { max_highlighted = move.max, min_highlighted = move.min } or {},
     loc_vars = function(self, info_queue, card)
       if key == "tweedledum" then
-        local last = G.GAME and G.GAME.ww_last_move
-        return { vars = { last and localize({ type = "name_text", key = last, set = "Move" }) or localize("k_none") } }
+        -- The Fool's box: the last Move's name, green, or red when there's none yet.
+        local last = G.GAME and G.GAME.ww_last_move and G.P_CENTERS[G.GAME.ww_last_move]
+        local name = last and localize({ type = "name_text", key = last.key, set = "Move" }) or localize("k_none")
+        if last then info_queue[#info_queue + 1] = last end
+        return { main_end = { { n = G.UIT.C, config = { align = "bm", padding = 0.02 }, nodes = {
+          { n = G.UIT.C, config = { align = "m", colour = last and G.C.GREEN or G.C.RED, r = 0.05, padding = 0.05 }, nodes = {
+            { n = G.UIT.T, config = { text = " " .. name .. " ", colour = G.C.UI.TEXT_LIGHT, scale = 0.3, shadow = true } },
+          } },
+        } } } }
       end
+      local term = INFO[key]
+      if term then info_queue[#info_queue + 1] = { set = "Other", key = term } end
       return { vars = { move and move.max or 0 } }
     end,
     can_use = function(self, card)
@@ -256,6 +275,9 @@ SMODS.Consumable {
   pos = { x = 0, y = 0 },
   cost = 4,
   config = { max_highlighted = 1 },
+  loc_vars = function(self, info_queue, card)
+    info_queue[#info_queue + 1] = { set = "Other", key = "ww_omega" }
+  end,
   can_use = function(self, card) return can_use(WW.MOVES.omega) end,
   use = function(self, card, area, copier) use(WW.MOVES.omega, card) end,
 }

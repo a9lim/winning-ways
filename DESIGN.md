@@ -187,7 +187,8 @@ game-theory reason.
 
 Adds * to the modifiers of up to two cards: a nimber halo. The vanilla Tarot already has the name "Star".
 - For hands nothing changes: n* plays as n.
-- In nim arithmetic n* is the heap n ⊕ 1, so Nimbus is Bouton's tuning knob.
+- Nim-sums read the rank a card plays as, so n* counts as n there too. (Reading it as the heap n ⊕ 1 instead would
+  make Nimbus Bouton's tuning knob; see § 9.)
 - Haloed cards cancel in pairs under Sum: 5* + 5* = 10.
 
 ### Mex
@@ -200,8 +201,8 @@ becomes a 1; beside a 0 and a 1 it becomes a 2. It's the easy way to make born r
 Adds ω to a selected card's modifier. The card keeps its rank and its rank's chips, and starts eating (§ 2.4). An
 earlier version turned a 2 into ω, but a Spectral pack's hand often holds no 2: 8 cards contain one only about 52% of
 the time.
-- **The ω³ = 2 nod stays in the text:** ω is the smallest cube root of 2 in nim arithmetic, and no finite rank is one
-  (the nim-cubes of 1–15 are only 1, 8, 10, Q and K).
+- **The ω³ = 2 nod lives here, not on the card** (the pixel font has no ³): ω is the smallest cube root of 2 in nim
+  arithmetic, and no finite rank is one (the nim-cubes of 1–15 are only 1, 8, 10, Q and K).
 - **No bonus for using a 2.** Making ω's siblings ω·2 and ω·3, the other two cube roots, as well would give three
   eaters from one card, since infinities don't eat each other. That's too strong.
 
@@ -379,7 +380,8 @@ a9 thought most of these were great. They wait on tuning and a final call.
 
 ## 9. Open questions
 
-- None right now.
+- **Should n* nim-sum as n ⊕ 1?** It would make Nimbus a tuning knob for Bouton and The Heap: 5* would count as
+  a 4 heap while still playing as a 5. It's a balance change, not a fix.
 
 ## 10. Facts this rests on
 

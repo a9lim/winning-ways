@@ -89,7 +89,10 @@ SMODS.Joker {
   rarity = 3, cost = 8,
   blueprint_compat = true,
   config = { extra = { xmult = 3 } },
-  loc_vars = function(self, info_queue, card) return { vars = { card.ability.extra.xmult } } end,
+  loc_vars = function(self, info_queue, card)
+    info_queue[#info_queue + 1] = { set = "Other", key = "ww_nim_sum" }
+    return { vars = { card.ability.extra.xmult } }
+  end,
   calculate = function(self, card, context)
     if context.joker_main and WW.bouton(context.full_hand, context.scoring_hand) then
       return { xmult = card.ability.extra.xmult }
@@ -157,7 +160,10 @@ SMODS.Joker {
   blueprint_compat = true,
   perishable_compat = false,
   config = { extra = { mult = 0 } },
-  loc_vars = function(self, info_queue, card) return { vars = { card.ability.extra.mult } } end,
+  loc_vars = function(self, info_queue, card)
+    info_queue[#info_queue + 1] = { set = "Other", key = "ww_mex" }
+    return { vars = { card.ability.extra.mult } }
+  end,
   calculate = function(self, card, context)
     if context.before and not context.blueprint then
       local m = WW.mex_of(context.scoring_hand)
@@ -228,6 +234,9 @@ SMODS.Joker {
   atlas = ATLAS, pos = cell(5),
   rarity = 3, cost = 8,
   blueprint_compat = true,
+  loc_vars = function(self, info_queue, card)
+    info_queue[#info_queue + 1] = G.P_CENTERS.c_ww_cut
+  end,
   calculate = function(self, card, context)
     if context.before and G.GAME.current_round.hands_played == 0 and #context.full_hand == 2 then
       local row = in_row(context.full_hand)
@@ -314,6 +323,7 @@ SMODS.Joker {
   perishable_compat = false,
   config = { extra = { gain = 0.1, xmult = 1 } },
   loc_vars = function(self, info_queue, card)
+    info_queue[#info_queue + 1] = { set = "Other", key = "ww_omega" }
     return { vars = { card.ability.extra.gain, card.ability.extra.xmult } }
   end,
   calculate = function(self, card, context)
@@ -355,14 +365,14 @@ SMODS.Joker {
   rarity = 4, cost = 20,
   blueprint_compat = false,
   loc_vars = function(self, info_queue, card)
-    info_queue[#info_queue + 1] = { set = "Move", key = "c_ww_cut" }
+    info_queue[#info_queue + 1] = G.P_CENTERS.c_ww_cut
   end,
 }
 
 -- Birthday -----------------------------------------------------------------------------------------------
 
---- How many days after its integer part a value was born: 3½ (day 4) is 1 day after 3, 3¼ (day 5) 2 days, 5*
---- (day 6) 1 day, 7±2 = {9|5} (day 10) 3 days after 7. A game's integer part is its mean's, rounded toward 0; the
+--- How many days after its integer part a value was born: 3½ = ++++− (day 5) is 2 days after 3, 3¼ (day 6) 3
+--- days, 5* (day 6) 1 day, 7±2 = {9|5} (day 10) 3 days after 7. A game's integer part is its mean's, rounded toward 0; the
 --- integer n is born on day |n|. nil for a value born on an infinite day (ω + 14, the wild).
 function WW.days_after(v)
   local b = Gm.birthday(v)
@@ -400,7 +410,7 @@ SMODS.Joker {
   atlas = ATLAS, pos = cell(11),
   rarity = 3, cost = 8,
   blueprint_compat = false,
-  config = { card_limit = 2, h_size = -1, extra = { slots = 1, hand = 1 } },
+  config = { card_limit = 2, h_size = -1, extra = { slots = 2, hand = 1 } },
   loc_vars = function(self, info_queue, card)
     return { vars = { card.ability.extra.slots, card.ability.extra.hand } }
   end,

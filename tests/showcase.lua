@@ -10,7 +10,8 @@ local palette = os.getenv("WINNINGWAYS_SHOWCASE_PALETTE")
 local saved_palettes, saved_cb
 
 -- WINNINGWAYS_SHOWCASE_SET=moves shows the Moves, Omega and the Game Packs beside vanilla consumables instead;
--- =jokers shows the jokers beside vanilla ones.
+-- =jokers shows the jokers beside vanilla ones; =tooltips hovers each card in turn and saves one shot per tooltip,
+-- named <png>-<key>.png.
 local set = os.getenv("WINNINGWAYS_SHOWCASE_SET")
 local rows = set == "moves" and {
   { "c_ww_cut", "c_ww_sum", "c_ww_heat", "c_ww_cool", "c_ww_frobenius", "c_fool", "c_strength" },
@@ -25,17 +26,22 @@ local rows = set == "moves" and {
   { "S_9", "H_4", "S_A", "D_8", "C_K", "H_2" },
 }
 
+local function clear_menu()
+  for _, ui in ipairs({ "MAIN_MENU_UI", "PROFILE_BUTTON" }) do
+    if G[ui] then G[ui]:remove(); G[ui] = nil end
+  end
+  -- Hidden, not removed: the menu still deals a Joker into the title a few seconds in.
+  if G.title_top then G.title_top.states.visible = false end
+  if G.SPLASH_LOGO then G.SPLASH_LOGO:remove(); G.SPLASH_LOGO = nil end
+end
+
 local function build()
   -- With Quintessence installed, a row of its Wild suit: the born ranks and a Wild 7±2 beside its own Wild cards.
   -- (Asked here, not at load: the cards exist only once every mod has loaded.)
   if not set and G.P_CARDS.quint_W_ww_0 then
     rows[#rows + 1] = { "quint_W_ww_0", "quint_W_ww_1", "quint_W_ww_C", "quint_W_7", "quint_W_J", "quint_W_T" }
   end
-  for _, ui in ipairs({ "MAIN_MENU_UI", "PROFILE_BUTTON" }) do
-    if G[ui] then G[ui]:remove(); G[ui] = nil end
-  end
-  if G.title_top then G.title_top:remove(); G.title_top = nil end
-  if G.SPLASH_LOGO then G.SPLASH_LOGO:remove(); G.SPLASH_LOGO = nil end
+  clear_menu()
   if palette then
     saved_palettes, saved_cb = copy_table(G.SETTINGS.colour_palettes), G.SETTINGS.colourblind_option
     for _, suit in ipairs(SMODS.Suit.obj_buffer) do G.SETTINGS.colour_palettes[suit] = palette end
@@ -75,11 +81,54 @@ local function build()
   }
 end
 
+-- Tooltips: one card at a time, left of centre so its box opens to the right, hovered as the mouse would.
+local TIPS = {
+  "j_ww_bouton", "j_ww_generator", "j_ww_grundy", "j_ww_hotstrat", "j_ww_thermograph", "j_ww_sprouts",
+  "j_ww_cantor", "j_ww_paradise", "j_ww_birthday", "j_ww_hilbert", "j_ww_conway", "j_ww_berlekamp", "j_ww_guy",
+  "c_ww_cut", "c_ww_sum", "c_ww_heat", "c_ww_cool", "c_ww_frobenius", "c_ww_tweedledum", "c_ww_repaint",
+  "c_ww_nimbus", "c_ww_mex", "c_ww_omega", "p_ww_game_normal_1", "H_7", "c_lovers",
+}
+local tip, tip_card = 0, nil
+local function next_tip()
+  if tip_card then tip_card:stop_hover(); tip_card:remove(); tip_card = nil end
+  tip = tip + 1
+  local key = TIPS[tip]
+  if not key then return false end
+  if not (G.P_CENTERS[key] or G.P_CARDS[key]) then return next_tip() end
+  local x, y = G.ROOM.T.w * 0.3, (G.ROOM.T.h - G.CARD_H) / 2
+  local params = { bypass_discovery_center = true, bypass_discovery_ui = true }
+  if G.P_CARDS[key] then
+    tip_card = Card(x, y, G.CARD_W, G.CARD_H, G.P_CARDS[key], G.P_CENTERS.c_base, params)
+    WW.set_value(tip_card, Gm.of({ N.new(9) }, { N.new(5) })) -- 7±2: the Modifier box
+  else
+    tip_card = Card(x, y, G.CARD_W, G.CARD_H, G.P_CARDS.empty, G.P_CENTERS[key], params)
+  end
+  tip_card:hover()
+  return true
+end
+
 local phase, frames = "wait", 0
 local update = Game.update
 function Game:update(dt)
   update(self, dt)
   frames = frames + 1
+  if set == "tooltips" then
+    if phase == "wait" and G.STATE == G.STATES.MENU and G.MAIN_MENU_UI and frames > 60 then
+      clear_menu()
+      phase, frames = next_tip() and "settle" or "done", 0
+    elseif phase == "settle" and frames > 45 then
+      phase = "shot"
+      local key = TIPS[tip]
+      love.graphics.captureScreenshot(function(image)
+        local f = io.open(out_path:gsub("%.png$", "") .. "-" .. key .. ".png", "wb")
+        if f then f:write(image:encode("png"):getString()); f:close() end
+        phase, frames = next_tip() and "settle" or "done", 0
+      end)
+    elseif phase == "done" then
+      love.event.quit()
+    end
+    return
+  end
   if phase == "wait" and G.STATE == G.STATES.MENU and G.MAIN_MENU_UI and frames > 60 then
     build()
     phase, frames = "settle", 0

@@ -31,11 +31,11 @@ the jokers, The Heap and the Field Deck are built. `DESIGN.md` is the source of 
 | `src/omega.lua` | infinity eating: who eats whom in the played row, growth, destruction, always-scores |
 | `src/moves.lua` | the Move consumables, the Omega Spectral and the Game Packs; each effect is `WW.MOVES[key].apply` |
 | `src/jokers.lua` | the jokers; their rules are plain functions (`WW.bouton`, `WW.mex_of`, `WW.missing_pairs`, `WW.extra_ranks`) |
-| `src/blinds.lua` | The Heap, a Boss Blind |
-| `src/decks.lua` | the Field Deck |
+| `src/blinds.lua` | the Boss Blinds: The Heap and The Misère |
+| `src/decks.lua` | the Field Deck and the Ordinal Deck |
 | `src/font.lua` | attaches Fable's symbol font (ω ½ ↑ …) as a fallback to Balatro's pixel font |
 | `src/lab.lua` | the modifier sample the tests use, and the Laboratory Deck (only with `WINNINGWAYS_LAB=1`) |
-| `localization/en-us.lua` | all text |
+| `localization/en-us.lua` | all text, in vanilla's voice (see Text) |
 | `art/` | Fable's sheet programs on `art/pixel.py`; `art/build.py` rebuilds `assets/`; `art/NOTES.md` has provenance |
 | `tools/fixtures.py` | regenerates `tests/fixtures/ogdoad.lua` from ogdoad |
 | `tests/` | unit tests on LuaJIT (`known_test.lua`, `ogdoad_test.lua`, `hands_test.lua`); `ingame.lua` |
@@ -61,6 +61,8 @@ format.
 - `WINNINGWAYS_SHOWCASE=<png> balala` lays out the born ranks and every kind of modifier beside vanilla cards,
   screenshots them and quits; add `WINNINGWAYS_SHOWCASE_PALETTE=lc|hc` to force the palette (the settings are put
   back). `WINNINGWAYS_SHOWCASE_SET=moves` or `=jokers` shows those instead. Use it after any art or drawing change.
+  `=tooltips` hovers each card in turn and saves one shot per tooltip as `<png>-<key>.png`; use it after a text
+  change.
 - `WINNINGWAYS_RUNTEST_SHOT=<prefix> scripts/runtest` also saves two screenshots of the run (The Heap's chip, the
   Field Deck's back, the jokers in their slots) as `<prefix>-1.png` and `<prefix>-2.png`.
 - After changing the engine, the ogdoad fixtures must still pass. Regenerate them with
@@ -69,6 +71,21 @@ format.
 - `scripts/selftest` boots the game with `tests/ingame.lua`, checks at the main menu that the engine loaded and
   works on the game's own LuaJIT, and quits. It needs Steam running (`open -g -a Steam`) and the mod in `Mods/`.
   Grow it as content arrives, following Quintessence's self-test (`~/Work/quintessence/tests/ingame.lua`).
+
+## Text
+
+Tooltips read like vanilla's, which is the model for every line (the game's own `localization/en-us.lua`, inside
+`Balatro.love`):
+
+- Short lines, about 22 characters, two to four of them; no full stops. Numbers and key words go in
+  `{C:attention}`, Mult in `{C:mult}`, `{X:mult,C:white}`, Chips in `{C:chips}`.
+- Vanilla's phrasings where one fits: "Played cards give … when scored", "This Joker gains …", "(Currently …)",
+  "Start run with …", "Select … cards, convert the left card …", "(Drag to rearrange)", "(ex: … -> …)", and a
+  `{s:0.8}` line for an aside. Moves take the Tarots' verbs (Fuses, Converts, Creates), and Omega the Spectrals' (Add).
+- `{C:ww_move}` names a Move, as `{C:tarot}` names a Tarot.
+- A term of art gets its own info box (`ww_hot`, `ww_mex`, `ww_nim_sum`, `ww_omega`, `ww_ace_cycle`) through
+  `info_queue`, the way a Tarot shows the enhancement it gives, so the card's own text can stay short.
+- The self-test renders every tooltip and fails on an unfilled `#1#` or a missing key.
 
 ## Dev setup
 
