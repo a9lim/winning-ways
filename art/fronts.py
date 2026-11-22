@@ -1,19 +1,23 @@
-"""fronts.py — card fronts for the three born ranks: 0, 1 and C, the Cavalier.
+"""fronts.py — card fronts for the born ranks: 0, 1, C (the Cavalier) and ω.
 
-ranks.png / ranks_hc.png: columns 0, 1, C; rows Hearts, Clubs, Diamonds,
+ranks.png / ranks_hc.png: columns 0, 1, C, ω; rows Hearts, Clubs, Diamonds,
 Spades (vanilla's 8BitDeck row order, which is Steamodded's rank-atlas
 order), then Wild, Quintessence's fifth suit (see the Wild row below; read
 through quint.py). Cells are 71x95 and composed exactly like vanilla's: transparent
 except for the ink, so the card body shows through.
 
-  0   {|}, the game with no moves. The field holds one pip, but only its
-      outline: the place where a move would be, with nothing in it.
+  0   {|}, the game with no moves: no pips. The field is empty, and the
+      corners say whose nothing it is. (An outlined pip now means a pip
+      still in play, on a hot card: see parts.py.)
   1   one ordinary pip in the middle (the 3's centre pip). Not an Ace:
       the Ace's pip is three times the size.
   C   the Cavalier, tarot's knight, between Jack and Queen. Each suit's
       Cavalier rides in on the Jack of its sister suit (hearts <-> diamonds,
       clubs <-> spades), re-inked, with the hat and face replaced by a great
       helm and a plume.
+  ω   the first infinite number. The card is turned inside out: the body
+      takes the suit's ink to its edges, and the index, the corner pip and
+      one large ω in the middle are left white.
 
 Everything is built in vanilla's normal colours. The high-contrast sheet is
 the same drawing passed through hc(): vanilla's high-contrast deck is not a
@@ -21,8 +25,9 @@ palette swap (suit ink is a top-to-bottom ramp, courts re-ink their accents
 per suit), so hc() learns, per suit, what each (colour, row) turns into from
 8BitDeck vs 8BitDeck_opt2 and applies that.
 
-The index digits are the strokes of vanilla's "10"; the C, the outline pip,
-the helm and the plume are drawn here. Pips and court bodies are
+The index 0 is the nought of vanilla's "10"; the 1 (flagged, so that it
+still reads as a 1 beside a ± or a /), the C, the helm and the plume are
+drawn here, and the ω in parts.py. Pips and court bodies are
 LocalThunk's pixels (see NOTES.md).
 
 fable, 2026-11-14 (claude-fable-5-2)
@@ -73,6 +78,18 @@ C_GLYPH = """
 """
 
 
+ONE_GLYPH = """
+..##
+.###
+####
+..##
+..##
+..##
+..##
+..##
+"""
+
+
 @lru_cache(maxsize=None)
 def index_mask(rank):
     """The corner glyph, 71x95 mask, top-left only. Vanilla glyphs live in
@@ -81,12 +98,11 @@ def index_mask(rank):
     ten = V.cell("8BitDeck", TEN, 0)[..., 3] > 0
     if rank == "0":
         m[7:15, 7:12] = ten[7:15, 9:14]          # the 10's nought, re-centred
-    elif rank == "1":
-        m[7:15, 8:10] = ten[7:15, 6:8]           # the 10's one, re-centred
     else:
-        for j, r in enumerate(sprite_rows(C_GLYPH)):
+        art, x = (ONE_GLYPH, 7) if rank == "1" else (C_GLYPH, 6)
+        for j, r in enumerate(sprite_rows(art)):
             for i, ch in enumerate(r):
-                m[7 + j, 6 + i] = ch == "#"
+                m[7 + j, x + i] = ch == "#"
     return m
 
 
@@ -111,8 +127,6 @@ def corners(cell, rank, suit):
 def zero(suit):
     cell = np.zeros((H, W, 4), np.uint8)
     corners(cell, "0", suit)
-    p = centre_pip(suit)
-    paint(cell, p & ~erode(p), INK[suit])
     return cell
 
 
@@ -121,6 +135,38 @@ def one(suit):
     corners(cell, "1", suit)
     paint(cell, centre_pip(suit), INK[suit])
     return cell
+
+
+# -------------------------------------------------------------------- ω ----
+def body():
+    """Vanilla's plain card body, Enhancers (1, 0): the silhouette an ω card fills."""
+    return V.cell("Enhancers", 1, 0)
+
+
+def inside_out(marks, ink_by_row):
+    """A card turned inside out: the plain body multiplied by the ink, row by
+    row, and the marks left white. This is what src/fronts.lua composes for
+    an ω card on any body; on the plain one it comes out as this cell."""
+    cell = body().astype(float)
+    for y in range(H):
+        cell[y, :, :3] *= rgba(ink_by_row[y])[:3] / 255.0
+    cell = cell.astype(np.uint8)
+    cell[marks] = rgba("ffffff")
+    return cell
+
+
+def omega_marks(small):
+    """The ω card's white: index and corner pip in both corners, and the large ω."""
+    import parts
+    m = small.copy()
+    g = parts.glyphs()["ω"]
+    m[parts.INDEX_Y:parts.INDEX_Y + g.shape[0], parts.INDEX_X:parts.INDEX_X + g.shape[1]] |= g
+    return m | m[::-1, ::-1] | parts.big_mask()
+
+
+def omega(suit, high_contrast=False):
+    ink = ramp(suit) if high_contrast else [INK[suit]] * H
+    return inside_out(omega_marks(small_pip(suit)), ink)
 
 
 # --------------------------------------------------------- the Cavalier ----
@@ -287,10 +333,8 @@ def wild_index(rank):
     ten = Q.cell(Q.TEN)[..., 3] > 0
     if rank == "0":
         m[7:15, 7:12] = ten[7:15, 9:14]
-    elif rank == "1":
-        m[7:15, 8:10] = ten[7:15, 6:8]
     else:
-        m = index_mask("C").copy()
+        m = index_mask(rank).copy()
     return m
 
 
@@ -309,8 +353,6 @@ def wild_pip():
 def wild_zero():
     cell = np.zeros((H, W, 4), np.uint8)
     wild_corners(cell, "0")
-    p = wild_pip()
-    paint(cell, p & ~erode(p), WILD)
     return cell
 
 
@@ -350,6 +392,12 @@ def wild_cavalier():
     return cell
 
 
+def wild_omega(high_contrast=False):
+    small = np.zeros((H, W), bool)
+    small[16:26, 4:16] = Q.cell(Q.TEN)[16:26, 4:16, 3] > 0
+    return inside_out(omega_marks(small), [WILD_HC if high_contrast else WILD] * H)
+
+
 @lru_cache(maxsize=None)
 def wild_court_map():
     """(normal colour, row) -> high-contrast colour, learned from
@@ -383,12 +431,15 @@ WILD_ROW = 4
 
 # ---------------------------------------------------------------- sheet ----
 def cells():
-    """{(col, row): normal-contrast RGBA cell}."""
+    """{(col, row): normal-contrast RGBA cell} for 0, 1 and C."""
     return {(c, ROW[s]): f(s) for s in SUITS for c, f in enumerate((zero, one, cavalier))}
 
 
+OMEGA_COL = 3
+
+
 def sheet_rgba(high_contrast=False):
-    out = np.zeros((H * 5, W * 3, 4), np.uint8)
+    out = np.zeros((H * 5, W * 4, 4), np.uint8)
     for (c, r), cell in cells().items():
         if high_contrast:
             cell = hc(cell, SUITS[r], court=(c == 2))
@@ -396,6 +447,10 @@ def sheet_rgba(high_contrast=False):
     for c, f in enumerate((wild_zero, wild_one, wild_cavalier)):
         cell = wild_hc(f()) if high_contrast else f()
         out[WILD_ROW * H:, c * W:(c + 1) * W] = cell
+    x = OMEGA_COL * W
+    for s in SUITS:                              # ω is built per palette: its ink is the body, not the marks
+        out[ROW[s] * H:(ROW[s] + 1) * H, x:x + W] = omega(s, high_contrast)
+    out[WILD_ROW * H:, x:x + W] = wild_omega(high_contrast)
     return out
 
 

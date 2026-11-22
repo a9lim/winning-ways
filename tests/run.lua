@@ -82,10 +82,11 @@ end }
 steps[4] = { wait = function() return G.STATE == G.STATES.SELECTING_HAND end, run = function()
   check("the hot hand was Three of a Kind", G.GAME.last_hand_played == "Three of a Kind", G.GAME.last_hand_played)
   check("it scored (30 + 7 + 7 + 9) × 3 = 159", score() - before == 159, score() - before)
-  -- 7 7 K+ω 9 9: the King eats both 7s and grows by twice their 14; a Pair of 9s, and the King always scores.
+  -- 7 7 ω+14 9 9: the ω eats both 7s and grows by twice their 14; a Pair of 9s, and the ω always scores (its +14
+  -- scores a King's 10).
   before = score()
   local a, b = make(1, "Hearts", "7"), make(2, "Clubs", "7")
-  eater = make(3, "Spades", "King", N.omega)
+  eater = make(3, "Spades", "ww_w", n(14))
   ate = { a, b }
   play({ a, b, eater, make(4, "Diamonds", "9"), make(5, "Spades", "9") })
 end }
@@ -93,7 +94,7 @@ steps[5] = { wait = function() return G.STATE == G.STATES.SELECTING_HAND end, ru
   check("with the 7s eaten, the hand was a Pair", G.GAME.last_hand_played == "Pair", G.GAME.last_hand_played)
   check("it scored (10 + 9 + 9 + 10 + 28) × 2 = 132", score() - before == 132, score() - before)
   check("the eaten 7s are gone", not alive(ate[1]) and not alive(ate[2]))
-  check("the King kept 28 bonus chips", eater.ability.perma_bonus == 28, eater.ability.perma_bonus)
+  check("the ω kept 28 bonus chips", eater.ability.perma_bonus == 28, eater.ability.perma_bonus)
   -- A Move, used through the game's own button: Cut on a 3 and a 7 makes a 4.
   left, right = make(1, "Hearts", "3"), make(2, "Spades", "7")
   cut = SMODS.add_card({ key = "c_ww_cut", area = G.consumeables })
@@ -182,10 +183,10 @@ steps[#steps + 1] = { frames = 120, run = function()
   check("whose pair was missing", c and extra[c.base.suit .. "|" .. c.base.value], c and (c.base.suit .. " " .. c.base.value))
 end }
 after_hand(function()
-  -- Cantor's Paradise: 7 7 K+ω 9 9; the King eats both 7s, so the Paradise gains ×0.2.
+  -- Cantor's Paradise: 7 7 ω+14 9 9; the ω eats both 7s, so the Paradise gains ×0.2.
   subject = hold({ "paradise" })
   before = score()
-  play({ make(1, "Hearts", "7"), make(2, "Clubs", "7"), make(3, "Spades", "King", N.omega), make(4, "Diamonds", "9"),
+  play({ make(1, "Hearts", "7"), make(2, "Clubs", "7"), make(3, "Spades", "ww_w", n(14)), make(4, "Diamonds", "9"),
     make(5, "Spades", "9") })
 end)
 after_hand(function()
@@ -312,10 +313,10 @@ steps[#steps + 1] = { wait = function() return G.STATE == G.STATES.BLIND_SELECT 
   local omegas = 0
   for _, c in ipairs(G.playing_cards) do
     local v = WW.value_of(c)
-    if v and Gm.encode(v) == "w" then omegas = omegas + 1 end
+    if v and Gm.encode(v) == "w" and c.base.value == "ww_w" and c.base.suit == "Spades" then omegas = omegas + 1 end
   end
   check("the Ordinal Deck has 53 cards", #G.playing_cards == 53, #G.playing_cards)
-  check("one of them worth exactly ω", omegas == 1, omegas)
+  check("one of them the ω of Spades", omegas == 1, omegas)
   local cut_held = G.consumeables.cards[1] and G.consumeables.cards[1].config.center.key
   check("and starts with a Cut", cut_held == "c_ww_cut", cut_held)
 end }

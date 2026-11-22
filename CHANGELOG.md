@@ -1,5 +1,25 @@
 # Changelog
 
+## Unreleased
+
+- **Cards draw their values.** A card with a modifier has its own front. The corner reads as the value in the rank's
+  own letterforms and ink (3+1/2, 7±2, ω+14), and the pips show its stops: the Right stop's worth solid, on up to
+  the Left stop in outline, a fraction cutting the last pip. A 0 is an empty field. Courts and the Ace keep their
+  art under the new corner. Editions, debuffs and Negative now cover the whole face.
+- **A \* goes before the rank** (\*5) and turns the pips to a checkerboard. The halo is gone.
+- **ω is a rank**, past the Ace, drawn as the card inside out: the body in the suit's ink to its edges, so an
+  enhancement still shows through. Omega turns a card into an ω (n + ω = ω) instead of adding ω to it; ω + 14 comes
+  from Sum. The Ordinal Deck starts with an ω of Spades.
+- **{ω | x} is split along the diagonal**, the ω card above and the x card below. {ω | 0} plays as every rank.
+- **A made value sits on its mean, rounded down**, so a fraction counts up from the rank below: 3¾ is a 3 with +¾,
+  where it was a 4 with −¼.
+- A mod icon: { ▪ | ▪ } on the Moves' slate.
+- Cards with no rank sort by the rank they sit on (a 3½ among the 3s, an ω past the Ace) instead of last.
+- A * no longer stops two rankless values pairing: 3½* pairs with 3½, and ω* with ω.
+- Fixed: a Wild card whose * had been cancelled still counted as having a modifier (of 0).
+- `scripts/sheet` draws a sheet of fronts without the game, and `WINNINGWAYS_SHOWCASE_SET=omega` shows ω cards on
+  every enhancement and edition.
+
 ## 1.0.2 (2026-11-15)
 
 - A halo adds 1 in nim-sums: 5* plays as a 5 but counts as a 4 for Bouton and The Heap, so Nimbus is Bouton's

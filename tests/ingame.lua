@@ -20,7 +20,7 @@ local made = {}
 local function card(code, value)
   -- Steamodded prefixes a mod rank's card key: the Cavalier of Hearts is H_ww_C.
   local suit, rank = code:match("^(%a)_(%w+)$")
-  if rank == "0" or rank == "1" or rank == "C" then code = suit .. "_ww_" .. rank end
+  if rank == "0" or rank == "1" or rank == "C" or rank == "w" then code = suit .. "_ww_" .. rank end
   assert(G.P_CARDS[code], "no card " .. code)
   local c = Card(0, 0, G.CARD_W, G.CARD_H, G.P_CARDS[code], G.P_CENTERS.c_base)
   made[#made + 1] = c
@@ -53,7 +53,14 @@ local function engine()
 end
 
 local function ranks()
-  for _, k in ipairs({ "ww_0", "ww_1", "ww_C" }) do check("rank " .. k .. " registered", SMODS.Ranks[k] ~= nil) end
+  for _, k in ipairs({ "ww_0", "ww_1", "ww_C", "ww_w" }) do check("rank " .. k .. " registered", SMODS.Ranks[k] ~= nil) end
+  local om = card("S_w")
+  check("an ω is worth ω", Gm.encode(WW.value_of(om)) == "w" and not WW.has_mod(om), Gm.encode(WW.value_of(om)))
+  check("ω plays as no rank", SMODS.has_no_rank(om) == true and #WW.ranks_of(om) == 0 and WW.rank_int("ww_w") == nil)
+  check("ω scores no chips of its own", om:get_chip_bonus() == 0, om:get_chip_bonus())
+  check("ω sorts after the Ace", SMODS.Ranks.ww_w.sort_nominal > SMODS.Ranks.Ace.sort_nominal)
+  check("Strength leaves ω alone", SMODS.Ranks.ww_w.strength_effect.ignore == true and #SMODS.Ranks.ww_w.next == 0)
+  check("the mod icon is registered", G.ASSET_ATLAS.ww_modicon ~= nil)
   local c = card("H_C")
   check("the Cavalier is a face card", c:is_face() == true)
   check("the Cavalier scores 10", c:get_chip_bonus() == 10, c:get_chip_bonus())
@@ -102,12 +109,45 @@ local function values()
   local copy = copy_card(card("H_8", h9))
   made[#made + 1] = copy
   check("copies keep the modifier", copy.ability.ww_mod == "{2|-2}", copy.ability.ww_mod)
-  local omega_k = WW.add_mod(card("H_K"), N.omega)
-  check("adding ω to a King gives ω + 14", Gm.encode(WW.value_of(omega_k)) == "w+14", Gm.encode(WW.value_of(omega_k)))
-  local w13, w2, w2b, ww = card("H_K"), card("S_2"), card("D_2"), card("C_5")
-  WW.add_mod(w13, N.omega); WW.add_mod(w2, N.omega); WW.add_mod(w2b, n(0, 2)); WW.add_mod(ww, n(0, 2))
-  expect("ω + 14 and ω + 2 are in one galaxy, so a Pair", { w13, w2, card("D_7"), card("C_9") }, "Pair")
-  expect("ω + 14 and 2ω + 2 are not", { card("H_K"), w2b, card("D_7"), card("C_9") }, "High Card")
+  -- Infinite cards go first in these rows, so nothing is to their left to eat.
+  local function row(cards) for i, x in ipairs(cards) do x.T.x = i end return cards end
+  local w13 = card("H_K", n(14, 1))
+  check("ω + 14 is an ω with +14", w13.base.value == "ww_w" and w13.ability.ww_mod == "14",
+    w13.base.value .. " " .. tostring(w13.ability.ww_mod))
+  check("rank + modifier gives ω + 14 back", Gm.encode(WW.value_of(w13)) == "w+14", Gm.encode(WW.value_of(w13)))
+  expect("ω + 14 and ω + 2 are in one galaxy, so a Pair",
+    row({ w13, card("S_2", n(2, 1)), card("D_7"), card("C_9") }), "Pair")
+  expect("ω + 14 and 2ω + 2 are not",
+    row({ card("H_K", n(14, 1)), card("D_2", n(2, 2)), card("D_7"), card("C_9") }), "High Card")
+  expect("two ωs are a Pair", row({ card("S_w"), card("H_w"), card("D_7"), card("C_9") }), "Pair")
+  -- A * changes nothing for hands: n* plays as n, with or without a rank.
+  local star = cut(n(0), n(0))
+  expect("ω and ω* are still a Pair",
+    row({ card("S_w"), card("H_w", Gm.add(N.omega, star)), card("D_7"), card("C_9") }), "Pair")
+  expect("3½ and 3½* are still a Pair",
+    { card("H_3", n(3.5)), card("S_3", Gm.add(n(3.5), star)), card("D_7"), card("C_9") }, "Pair")
+  -- An ω is past every rank, but it is no High Card: the King is, and the ω scores beside it.
+  local wk = row({ card("S_w"), card("H_K"), card("D_5") })
+  local high = evaluate_poker_hand(wk)["High Card"][1]
+  check("ω K 5: the High Card is the King", #high == 1 and high[1] == wk[2])
+  -- Sorting a row is another matter: there a card stands by the rank it sits on.
+  local function place_of(c) return c:get_nominal() end
+  check("an ω sorts past the Ace", place_of(card("S_w")) > place_of(card("S_A")), place_of(card("S_w")))
+  check("a 3½ sorts among the 3s",
+    place_of(card("S_3", n(3.5))) > place_of(card("S_2")) and place_of(card("S_3", n(3.5))) < place_of(card("S_4")))
+  -- Which rank a made value sits on (DESIGN.md § 2.3½).
+  local function sits(v) local c = card("H_2", v) return c.base.value .. " " .. tostring(c.ability.ww_mod) end
+  check("3¾ sits on the 3 with +¾: a fraction counts up", sits(n(3.75)) == "3 3/4", sits(n(3.75)))
+  check("{7±2|3} has mean 5 but plays as 3 or 4, so it sits on the 4",
+    sits(cut(cut(n(9), n(5)), n(3))):match("^4 ") ~= nil, sits(cut(cut(n(9), n(5)), n(3))))
+  check("13¼±4 sits on the Queen", sits(cut(n(17.25), n(9.25))):match("^Queen ") ~= nil, sits(cut(n(17.25), n(9.25))))
+  check("28 sits on the Ace with +13", sits(n(28)) == "Ace 13", sits(n(28)))
+  check("−1½ sits on the 0", sits(n(-1.5)) == "ww_0 -3/2", sits(n(-1.5)))
+  check("ω/2 sits on ω", sits(n(0, 0.5)):match("^ww_w ") ~= nil, sits(n(0, 0.5)))
+  check("ω±1 is infinite either way, so it sits on ω",
+    sits(cut(n(1, 1), n(-1, 1))):match("^ww_w ") ~= nil, sits(cut(n(1, 1), n(-1, 1))))
+  check("{ω|16} plays as no rank but can end on 16, so it sits on the Ace, not on ω",
+    sits(cut(N.omega, n(16))):match("^Ace ") ~= nil, sits(cut(N.omega, n(16))))
   local plain = card("H_6", n(6))
   check("an integer value is a plain card", plain.ability.ww_mod == nil and plain.base.value == "6")
 end
@@ -129,8 +169,8 @@ local function scoring()
 end
 
 local function faces()
-  if not WW.badge_of then
-    check("the faces loaded (Fable's art is present)", false)
+  if not WW.look_of then
+    check("the faces loaded (Fable's parts are present)", false)
     return
   end
   local cards = {}
@@ -139,23 +179,78 @@ local function faces()
   end
   WW.apply_lab(cards)
   local want = {
-    "offset:+ offset:½", "offset:− offset:¼", "offset:+ offset:⅜", "heat:± heat:2", "heat:± heat:1",
-    "heat:± heat:1", " *", " *", "wild", "heat:5 heat:| heat:3", "infinite:+ infinite:ω",
+    "field Diamonds 3+1/2 3.5..3.5", "field Clubs 6−1/4 5.75..5.75", "field Hearts 10+3/8 10.375..10.375",
+    "field Hearts 7±2 5..9", "field Clubs 5±1 4..6", "base Spades Q±1 court", "field Spades *9 9..9 checker",
+    "field Hearts *4 4..4 checker", "split Spades ω over 2", "field Diamonds 4± 3..5", "omega Clubs ω+14",
   }
   for i, c in ipairs(cards) do
-    local got = WW.look_text(WW.badge_of(c))
+    local got = WW.look_text(c)
     check("look of lab card " .. i, got == want[i], ("got %s, want %s"):format(got, want[i]))
   end
+  check("a plain card keeps its own front", WW.look_text(card("H_7")) == "none")
+  check("a plain ω draws itself", WW.look_text(card("S_w")) == "omega Spades ω", WW.look_text(card("S_w")))
+  check("the wild {ω|0}", WW.look_text(card("H_A", cut(N.omega, n(0)))) == "split Hearts ω over 0")
   local ui = cards[1]:generate_UIBox_ability_table()
   local last = ui.info and ui.info[#ui.info]
   check("the tooltip has a Modifier box", last and last.name == "Modifier", last and last.name)
   local sixteenth = card("H_5")
   WW.add_mod(sixteenth, n(5 / 16))
-  local got = WW.look_text(WW.badge_of(sixteenth))
-  check("other fractions use small digits", got == "offset:+ offset:s5 offset:s/ offset:s1 offset:s6", got)
+  local got = WW.look_text(sixteenth)
+  check("a fraction is written out", got == "field Hearts 5+5/16 5.3125..5.3125", got)
   local up = card("H_6")
   WW.add_mod(up, Gm.of({ N.zero }, { Gm.of({ N.zero }, { N.zero }) }))
-  check("↑ shows as an arrow", WW.look_text(WW.badge_of(up)) == "infinitesimal:↑", WW.look_text(WW.badge_of(up)))
+  check("↑ shows as an arrow", WW.look_text(up) == "field Hearts 6↑ 6..6", WW.look_text(up))
+
+  -- A number card's composed front, with no modifier, is vanilla's own card, pixel for pixel: every suit, 2 to 10.
+  local F, parts, atlas = WW.fronts, WW.parts, G.ASSET_ATLAS.cards_1
+  local scale = G.SETTINGS.GRAPHICS.texture_scaling
+  local canvas = love.graphics.newCanvas(F.W, F.H, { dpiscale = scale })
+  local wrong, seen = 0, 0
+  for letter, suit in pairs({ H = "Hearts", C = "Clubs", D = "Diamonds", S = "Spades" }) do
+    for r = 2, 10 do
+      local pos = G.P_CARDS[letter .. "_" .. (r == 10 and "T" or r)].pos
+      love.graphics.push("all")
+      love.graphics.setCanvas(canvas)
+      love.graphics.origin()
+      love.graphics.clear(0, 0, 0, 0)
+      love.graphics.setBlendMode("replace")
+      love.graphics.draw(atlas.image,
+        love.graphics.newQuad(pos.x * atlas.px, pos.y * atlas.py, F.W, F.H, atlas.image:getDimensions()), 0, 0)
+      love.graphics.pop()
+      local data = canvas:newImageData()
+      local layer = F.compose(parts, { mode = "field", suit = suit, index = { tostring(r) }, right = r, left = r })
+      for y = 0, F.H - 1 do
+        for x = 0, F.W - 1 do
+          local _, _, _, alpha = data:getPixel(x * scale, y * scale)
+          if (alpha > 0.5) ~= (layer.cells[y * F.W + x + 1] == F.INK) then wrong = wrong + 1 end
+          seen = seen + 1
+        end
+      end
+    end
+  end
+  check("composed 2 to 10 match vanilla's fronts, every suit", wrong == 0 and seen == 36 * F.W * F.H, wrong .. " pixels differ")
+
+  -- The composed front takes the place of the card's front sprite, and gives it back.
+  local step = SMODS.DrawSteps.ww_value_front
+  local hot = card("H_7")
+  local own = hot.children.front.atlas
+  WW.add_mod(hot, cut(n(2), n(-2)))
+  step.func(hot)
+  local ours = hot.children.front.atlas
+  check("a 7±2 draws a composed front", ours ~= own and ours.name:find("ww_front_", 1, true) ~= nil, ours.name)
+  local twin = card("H_7")
+  WW.add_mod(twin, cut(n(2), n(-2)))
+  step.func(twin)
+  check("equal looks share one texture", twin.children.front.atlas == ours)
+  WW.set_mod(hot, N.zero)
+  step.func(hot)
+  check("a card that loses its modifier gets its own front back", hot.children.front.atlas == own, hot.children.front.atlas.name)
+  local gold = card("S_w")
+  step.func(gold)
+  local plain_w = gold.children.front.atlas
+  gold:set_ability(G.P_CENTERS.m_gold)
+  step.func(gold)
+  check("an ω is redrawn for its body: Gold shows through", gold.children.front.atlas ~= plain_w)
 end
 
 local function moves()
@@ -204,10 +299,18 @@ local function moves()
   M.nimbus.apply({ h })
   check("Nimbus: 5*", v(h) == "{5|5}", v(h))
   M.nimbus.apply({ h })
-  check("two halos cancel: * + * = 0", v(h) == "5" and not WW.has_mod(h), v(h))
+  check("two stars cancel: * + * = 0", v(h) == "5" and not WW.has_mod(h), v(h))
   local k = card("C_K")
   M.omega.apply({ k })
-  check("Omega: K + ω", v(k) == "w+14" and k.base.value == "King", v(k))
+  check("Omega: a King becomes an ω (n + ω = ω)", v(k) == "w" and k.base.value == "ww_w" and not WW.has_mod(k), v(k))
+  M.omega.apply({ k })
+  check("Omega on an ω makes ω·2", v(k) == Gm.encode(n(0, 2)) and k.base.value == "ww_w", v(k))
+  k = card("D_7", cut(n(9), n(5)))
+  M.omega.apply({ k })
+  check("Omega on a hot card makes an ω too", v(k) == "w", v(k))
+  a, b = card("H_K"), card("S_w")
+  M.sum.apply({ a, b })
+  check("Sum K + ω is ω + 14, an ω with +14", v(a) == "w+14" and a.base.value == "ww_w", v(a) .. " on " .. a.base.value)
   check("the Move set is registered", SMODS.ConsumableTypes and SMODS.ConsumableTypes.Move ~= nil)
   for _, key in ipairs({ "cut", "sum", "heat", "cool", "frobenius", "tweedledum", "repaint", "nimbus", "mex", "omega" }) do
     check("c_ww_" .. key .. " exists", G.P_CENTERS["c_ww_" .. key] ~= nil)
@@ -216,7 +319,7 @@ local function moves()
 end
 
 local function eating()
-  local function omega(code) return WW.add_mod(card(code), N.omega) end
+  local function omega(code) return card(code, N.omega) end
   local j1, w1, j2, w2, j3 = card("H_3"), omega("S_K"), card("D_5"), omega("C_2"), card("H_9")
   local eaten = WW.eating({ j1, w1, j2, w2, j3 })
   check("ω eats the finite card to its left", eaten[j1] == w1)
@@ -269,7 +372,7 @@ local function jokers()
   check("Bouton: a 4 kicker can't", not WW.bouton({ k1, q, four }, { k1 }))
   check("Bouton: a scoring wild plays as its assigned rank, not any", not WW.bouton({ k1, q, w }, { k1, w }))
 
-  -- A halo adds 1 to a heap (DESIGN.md § 3, Nimbus): 5* plays as a 5 but nim-sums as a 4.
+  -- A * adds 1 to a heap (DESIGN.md § 3, Nimbus): 5* plays as a 5 but nim-sums as a 4.
   local star = cut(n(0), n(0))
   local s5 = card("D_5", Gm.add(n(5), star))
   check("5* is the heap 4", WW.heap(s5) == 4, WW.heap(s5))
@@ -277,8 +380,8 @@ local function jokers()
   check("Bouton: 5* 4 and a 0 kicker", WW.bouton({ s5, four, z }, { s5, four }))
   check("a bare * reads *, not +0*", WW.pretty(star, true) == "*", WW.pretty(star, true))
   local hs = card("S_5", Gm.add(cut(n(6), n(4)), star))
-  check("5±1* wears a halo over its ±1", WW.halo(hs) and WW.look_text(WW.badge_of(hs)) == "heat:± heat:1 *",
-    WW.look_text(WW.badge_of(hs)))
+  check("5±1* shows its star before the rank, and checkered pips",
+    WW.halo(hs) and WW.look_text(hs) == "field Spades *5±1 4..6 checker", WW.look_text(hs))
   -- The * closes a hot card's range at both ends: 5±1* = {6*|4*} plays only as 5 (±1* − 1 = {*|−2*} ≤ 0).
   check("5±1* plays only as 5", table.concat(WW.ranks_of(hs), ",") == "5", table.concat(WW.ranks_of(hs), ","))
   -- K K 4 0 nim-sum to 4, so Bouton needs the 5±1* kicker to be the heap 5 ⊕ 1 = 4; as a plain 5 it would be 5.
@@ -387,11 +490,12 @@ local function quintessence()
   local g5 = card("quint_W_5")
   check("a Wild 5 is worth 5*", WW.pretty(WW.value_of(g5)) == "5*", WW.pretty(WW.value_of(g5)))
   check("and plays as a 5", g5:get_id() == SMODS.Ranks["5"].id and g5.ability.ww_mod == nil)
-  check("it wears the halo", WW.look_text(WW.badge_of(g5)) == " *", WW.look_text(WW.badge_of(g5)))
+  check("it shows its star", WW.look_text(g5) == "field quint_Wild *5 5..5 checker", WW.look_text(g5))
   check("a Pair with a Wild 5 nim-sums to 1, so it escapes The Heap", WW.nim_sum({ g5, card("H_5") }) == 1)
   WW.MOVES.nimbus.apply({ g5 })
   check("Nimbus on a Wild 5 makes a plain 5 (* + * = 0)",
-    WW.pretty(WW.value_of(g5)) == "5" and not WW.halo(g5) and WW.badge_of(g5) == nil, WW.pretty(WW.value_of(g5)))
+    WW.pretty(WW.value_of(g5)) == "5" and not WW.halo(g5) and WW.look_of(g5) == nil,
+    WW.pretty(WW.value_of(g5)) .. " " .. tostring(WW.halo(g5)) .. " " .. WW.look_text(g5))
   assert(SMODS.change_base(g5, "Hearts"))
   check("which is a 5* again off the Wild suit", WW.pretty(WW.value_of(g5)) == "5*", WW.pretty(WW.value_of(g5)))
   assert(SMODS.change_base(g5, "quint_Wild"))
@@ -406,7 +510,11 @@ local function quintessence()
     WW.pretty(WW.value_of(c6)) == "6" and c6.ability.ww_mod == "{0|0}", WW.pretty(WW.value_of(c6)))
   local om = card("quint_W_K")
   WW.MOVES.omega.apply({ om })
-  check("a Wild ω card still eats", WW.is_eater(om))
+  check("Omega on a Wild King makes exactly ω, storing the * that cancels the suit's",
+    WW.pretty(WW.value_of(om)) == "ω" and om.ability.ww_mod == "{0|0}", WW.pretty(WW.value_of(om)))
+  WW.MOVES.nimbus.apply({ om })
+  check("a Wild ω with its * still eats", WW.halo(om) and WW.is_eater(om) and WW.look_text(om) == "omega quint_Wild *ω",
+    WW.look_text(om))
   local flush = {}
   for i, r in ipairs({ "2", "3", "4", "5", "6" }) do flush[i] = card("quint_W_" .. r) end
   local r = WW.resolve(flush)
@@ -482,6 +590,10 @@ local function tooltips()
     end
   end
   check("{C:ww_move} names the Moves' bright green", loc_colour("ww_move") == G.C.SET.Move)
+  local w = card("S_w")
+  local wtext = table.concat(strings_of(w:generate_UIBox_ability_table()), " / ")
+  check("an ω's tooltip: what it's worth, and that it eats",
+    wtext:find("Worth", 1, true) and wtext:find("no rank", 1, true) and wtext:find("Eats", 1, true), wtext)
   -- With Quintessence, a Wild card's tooltip says what its * is.
   if G.P_CARDS.quint_W_5 then
     local g = card("quint_W_5")

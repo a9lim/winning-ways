@@ -7,11 +7,17 @@ local E = {}
 for _, name in ipairs({ "num", "game", "nim", "play", "hands" }) do load("src/engine/" .. name .. ".lua", E) end
 WinningWays.engine = E
 
+WinningWays.fronts = load("src/fronts.lua", E)
+
+if NFS.getInfo(WinningWays.path .. "assets/1x/icon.png") then
+  SMODS.Atlas { key = "modicon", path = "icon.png", px = 34, py = 34 }
+end
+
 load("src/ranks.lua")
 load("src/cards.lua")
 load("src/omega.lua")
--- The faces need Fable's art (art/glyphs.lua, art/layout.lua, assets/*/mods*.png, glyphs.png).
-if NFS.getInfo(WinningWays.path .. "art/glyphs.lua") then load("src/faces.lua") end
+-- The faces need Fable's parts (assets/parts.lua).
+if NFS.getInfo(WinningWays.path .. "assets/parts.lua") then load("src/faces.lua") end
 if NFS.getInfo(WinningWays.path .. "assets/fonts/ww_symbols.ttf") then load("src/font.lua") end
 load("src/lab.lua")
 if NFS.getInfo(WinningWays.path .. "assets/1x/moves.png") then load("src/moves.lua") end

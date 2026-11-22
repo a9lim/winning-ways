@@ -1,0 +1,14 @@
+#!/bin/bash
+# Draw a sheet of composed card fronts without the game: scripts/sheet <png> [lc|hc].
+# Uses `love` from PATH, or the unfused LÖVE runtime that scripts/test borrows from Balatro.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+out="${1:?usage: scripts/sheet <png> [lc|hc]}"
+case "$out" in /*) ;; *) out="$PWD/$out" ;; esac
+if command -v love >/dev/null 2>&1; then exec love tests/sheet "$out" "${2:-lc}"; fi
+runtime="${XDG_CACHE_HOME:-$HOME/.cache}/winning-ways/love.app/Contents/MacOS/love"
+if [[ ! -x "$runtime" ]]; then
+  echo "No love on PATH and no borrowed runtime yet: run scripts/test once first." >&2
+  exit 2
+fi
+exec "$runtime" tests/sheet "$out" "${2:-lc}"

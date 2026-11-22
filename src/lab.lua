@@ -12,18 +12,24 @@ local STAR = cut(N.zero, N.zero)
 -- {suit, rank, how, what}: "mod" adds to the modifier, "value" makes the card worth it.
 WW.LAB = {
   { "Diamonds", "3", "mod", n(1 / 2) },                  -- 3½
-  { "Clubs", "6", "mod", n(-1 / 4) },                    -- 5¾
+  { "Clubs", "6", "mod", n(-1 / 4) },                    -- 5¾, on the 6 (a rank change can leave a − behind)
   { "Hearts", "10", "mod", n(3 / 8) },                   -- 10⅜
   { "Hearts", "7", "mod", cut(n(2), n(-2)) },            -- 7±2: plays as 5–9
   { "Clubs", "5", "mod", cut(n(1), n(-1)) },             -- 5±1
   { "Spades", "Queen", "mod", cut(n(1), n(-1)) },        -- Q±1: plays as C, Q or K
   { "Spades", "9", "mod", STAR },                        -- 9*
   { "Hearts", "4", "mod", STAR },                        -- 4*
-  { "Spades", "Ace", "value", cut(N.omega, n(2)) },      -- the wild
+  { "Spades", "Ace", "value", cut(N.omega, n(2)) },      -- the wild, {ω|2}
   { "Diamonds", "8", "value", cut(cut(n(9), n(5)), n(3)) }, -- a game: {7±2 | 3}
-  { "Clubs", "King", "mod", N.omega },                   -- ω + 14 (eating isn't built yet)
+  { "Clubs", "King", "value", n(14, 1) },                -- ω + 14: an ω with +14
+  { "Spades", "8", "value", cut(n(15), n(2)) },          -- 8½±6½: plays as 2–A
+  { "Diamonds", "5", "mod", Gm.add(cut(n(1), n(-1)), STAR) }, -- 5±1*
+  { "Clubs", "3", "mod", cut(n(0), STAR) },              -- 3↑
+  { "Spades", "King", "mod", STAR },                     -- K*
+  { "Diamonds", "Ace", "value", cut(N.omega, n(0)) },    -- {ω|0}: plays as every rank
+  { "Diamonds", "2", "value", n(0, 2) },                 -- ω·2
 }
-WW.LAB_EXTRA = { "H_ww_0", "C_ww_1", "D_ww_C", "S_ww_C" }
+WW.LAB_EXTRA = { "H_ww_0", "C_ww_1", "D_ww_C", "S_ww_C", "S_ww_w" }
 
 function WW.apply_lab(cards)
   for _, row in ipairs(WW.LAB) do

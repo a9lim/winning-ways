@@ -1,5 +1,6 @@
--- Showcase: `WINNINGWAYS_SHOWCASE=<png> balala` lays out the born ranks and every kind of modifier beside vanilla
--- cards at real scale once the main menu is up, saves a screenshot and quits. For checking the art in the engine.
+-- Showcase: `WINNINGWAYS_SHOWCASE=<png> balala` lays out the born ranks and every kind of value-drawn front beside
+-- vanilla cards at real scale once the main menu is up, saves a screenshot and quits. For checking the art in the
+-- engine.
 -- WINNINGWAYS_SHOWCASE_PALETTE=lc or hc forces normal or high-contrast colours for the shot; the settings are
 -- put back before quitting.
 
@@ -10,8 +11,8 @@ local palette = os.getenv("WINNINGWAYS_SHOWCASE_PALETTE")
 local saved_palettes, saved_cb
 
 -- WINNINGWAYS_SHOWCASE_SET=moves shows the Moves, Omega and the Game Packs beside vanilla consumables instead;
--- =jokers shows the jokers beside vanilla ones; =tooltips hovers each card in turn and saves one shot per tooltip,
--- named <png>-<key>.png.
+-- =jokers shows the jokers beside vanilla ones; =omega shows ω cards and wilds on every enhancement and edition;
+-- =tooltips hovers each card in turn and saves one shot per tooltip, named <png>-<key>.png.
 local set = os.getenv("WINNINGWAYS_SHOWCASE_SET")
 local rows = set == "moves" and {
   { "c_ww_cut", "c_ww_sum", "c_ww_heat", "c_ww_cool", "c_ww_frobenius", "c_fool", "c_strength" },
@@ -20,10 +21,20 @@ local rows = set == "moves" and {
 } or set == "jokers" and {
   { "j_ww_bouton", "j_ww_generator", "j_ww_grundy", "j_ww_hotstrat", "j_ww_thermograph", "j_joker", "j_dna" },
   { "j_ww_sprouts", "j_ww_cantor", "j_ww_paradise", "j_ww_conway", "j_triboulet", "j_fibonacci", "j_splash" },
+} or set == "omega" and {
+  { "S_ww_w", "H_ww_w", "C_ww_w", "D_ww_w", "S_ww_w", "H_ww_w", "C_ww_w", "D_ww_w" },
+  { "S_A", "D_A", "S_A", "D_A", "S_ww_w", "H_ww_w", "C_ww_w", "D_ww_w" },
+  { "H_7", "H_7", "H_7", "H_7", "S_Q", "S_Q", "S_Q", "S_Q" },
 } or {
-  { "H_ww_0", "C_ww_1", "D_ww_C", "S_ww_C", "H_J", "H_Q", "H_K", "H_A", "S_T" },
-  { "D_3", "C_6", "H_T", "H_7", "C_5", "S_Q" },
-  { "S_9", "H_4", "S_A", "D_8", "C_K", "H_2" },
+  { "H_ww_0", "C_ww_1", "D_ww_C", "S_ww_C", "S_ww_w", "H_J", "H_Q", "H_K", "H_A", "S_T" },
+  { "D_3", "C_6", "H_T", "H_7", "C_5", "S_Q", "S_8", "D_5", "C_3" },
+  { "S_9", "H_4", "S_K", "D_8", "S_A", "D_A", "C_K", "D_2", "H_2" },
+}
+-- For =omega: the body or edition of each card, row by row.
+local DRESS = {
+  { "c_base", "m_gold", "m_bonus", "m_mult", "m_glass", "m_steel", "m_lucky", "m_wild" },
+  { "c_base", "c_base", "m_gold", "m_steel", "e_foil", "e_holo", "e_polychrome", "e_negative" },
+  { "c_base", "m_gold", "e_polychrome", "e_negative", "c_base", "m_gold", "e_polychrome", "e_negative" },
 }
 
 local function clear_menu()
@@ -66,13 +77,28 @@ local function build()
       all[#all + 1] = card
     end
   end
-  WW.apply_lab(all)
+  if set == "omega" then
+    local wild = Gm.of({ N.omega }, { N.zero })
+    for r, keys in ipairs(rows) do
+      for i, key in ipairs(keys) do
+        local c = all[(r - 1) * #keys + i]
+        if key:find("_A$") then WW.set_value(c, wild) end
+        if key == "H_7" then WW.add_mod(c, Gm.of({ N.new(2) }, { N.new(-2) })) end
+        if key == "S_Q" then WW.add_mod(c, Gm.of({ N.new(1) }, { N.new(-1) })) end
+        local how = DRESS[r][i]
+        if how:sub(1, 2) == "e_" then c:set_edition({ [how:sub(3)] = true }, true, true)
+        elseif how ~= "c_base" then c:set_ability(G.P_CENTERS[how]) end
+      end
+    end
+  else
+    WW.apply_lab(all)
+  end
   for _, c in ipairs(all) do
     if c.base.suit == "quint_Wild" and c.base.value == "7" then WW.add_mod(c, Gm.of({ N.new(2) }, { N.new(-2) })) end
   end
   -- A line of the game's own font, to check the symbol fallback (src/font.lua).
   local last = WW.value_of(all[#all - 1])
-  local sample = "Worth {ω|2}  ±½  ⅜  ↑ ↓  ∞ ⊕ ⊗  −¼  " .. (last and WW.pretty(last) or "")
+  local sample = "Worth {ω|2}  ±½  ⅜  ↑ ↓  ∞ ⊕ ⊗  −¼  " .. ((last and WW.pretty) and WW.pretty(last) or "")
   G.ww_font_check = UIBox {
     definition = { n = G.UIT.ROOT, config = { colour = G.C.CLEAR }, nodes = {
       { n = G.UIT.T, config = { text = sample, scale = 0.5, colour = G.C.WHITE, shadow = true } },
@@ -86,7 +112,7 @@ local TIPS = {
   "j_ww_bouton", "j_ww_generator", "j_ww_grundy", "j_ww_hotstrat", "j_ww_thermograph", "j_ww_sprouts",
   "j_ww_cantor", "j_ww_paradise", "j_ww_birthday", "j_ww_hilbert", "j_ww_conway", "j_ww_berlekamp", "j_ww_guy",
   "c_ww_cut", "c_ww_sum", "c_ww_heat", "c_ww_cool", "c_ww_frobenius", "c_ww_tweedledum", "c_ww_repaint",
-  "c_ww_nimbus", "c_ww_mex", "c_ww_omega", "p_ww_game_normal_1", "H_7", "c_lovers", "quint_W_5",
+  "c_ww_nimbus", "c_ww_mex", "c_ww_omega", "p_ww_game_normal_1", "H_7", "S_ww_w", "c_lovers", "quint_W_5",
 }
 local tip, tip_card = 0, nil
 local function next_tip()

@@ -3,15 +3,15 @@
     ~/.venv/bin/python -I art/build.py
 
 Runs each sheet program and writes assets/1x/<name> and assets/2x/<name>,
-the 2x being the 1x upscaled by exact nearest-neighbour x2; writes the two
-small Lua tables the mod reads (art/glyphs.lua, art/layout.lua) and the
-symbol font (assets/fonts/ww_symbols.ttf); then checks the sizes and metrics
-the Lua side depends on.
+the 2x being the 1x upscaled by exact nearest-neighbour x2; writes the Lua
+table the mod composes card fronts from (assets/parts.lua) and the symbol font
+(assets/fonts/ww_symbols.ttf); then checks the sizes and metrics the Lua
+side depends on.
 
-The rank fronts, Omega, the packs, the jokers and the blind chip are derived from Balatro's own textures, read from the
-installed game archive (override its path with BALATRO_LOVE). Without the
+The rank fronts, the front parts, Omega, the packs, the jokers and the blind chip are derived from Balatro's own
+textures, read from the installed game archive (override its path with BALATRO_LOVE). Without the
 game the build stops with a message saying so. The Wild row of the rank
-fronts is derived from Quintessence's Wild sheets, read from its checkout
+fronts and the Wild suit's parts are derived from Quintessence's Wild sheets, read from its checkout
 beside this one (override with QUINTESSENCE_ASSETS); without it the build
 stops the same way.
 
@@ -32,19 +32,18 @@ import backs   # noqa: E402
 import blinds  # noqa: E402
 import font    # noqa: E402
 import fronts  # noqa: E402
-import glyphs  # noqa: E402
+import icon    # noqa: E402
 import jokers  # noqa: E402
-import mods    # noqa: E402
 import moves   # noqa: E402
 import packs   # noqa: E402
+import parts   # noqa: E402
 from pixel import upscale  # noqa: E402
 
 ASSETS = HERE.parent / "assets"
 
 EXPECT = {
-    "ranks.png": (213, 475), "ranks_hc.png": (213, 475),      # 3 x 5 cells of 71x95 (row 4: Quintessence's Wild)
-    "mods.png": (142, 95), "mods_hc.png": (142, 95),          # 2 cells of 71x95
-    "glyphs.png": (266, 9),                                   # 38 cells of 7x9
+    "ranks.png": (284, 475), "ranks_hc.png": (284, 475),      # 4 x 5 cells of 71x95 (row 4: Quintessence's Wild)
+    "icon.png": (34, 34),                                     # the mod icon
     "moves.png": (639, 95), "omega.png": (71, 95),            # 9 Moves; one Spectral
     "packs.png": (284, 95),                                   # 4 Game Packs
     "jokers.png": (1136, 95),                                 # 16 cells of 71x95 (souls: 9, 13, 15)
@@ -73,12 +72,11 @@ def main():
         print(f"build.py: {e}", file=sys.stderr)
         return 2
     made = set()
-    for mod in (fronts, mods, glyphs, moves, packs, jokers, blinds, backs):
+    for mod in (fronts, moves, packs, jokers, blinds, backs, icon):
         for name, art in mod.outputs().items():
             write(name, art)
             made.add(name)
-    (HERE / "glyphs.lua").write_text(glyphs.lua(), encoding="utf-8")
-    (HERE / "layout.lua").write_text(mods.lua(), encoding="utf-8")
+    (ASSETS / "parts.lua").write_text(parts.lua(), encoding="utf-8")
     ok = True
     for name, size in EXPECT.items():
         one = Image.open(ASSETS / "1x" / name)
@@ -88,14 +86,14 @@ def main():
                 and np.array_equal(np.repeat(np.repeat(a, 2, 0), 2, 1), b))
         ok &= good
         print(f"{'ok ' if good else 'BAD'} {name:14s} {one.size} -> {two.size}")
-    # the glyph sheet is pure white on transparent, every glyph hard left in its cell
-    g = np.asarray(Image.open(ASSETS / "1x" / "glyphs.png").convert("RGBA"))
-    ink = g[..., 3] > 0
-    white = bool((g[ink][:, :3] == 255).all()) and set(np.unique(g[..., 3])) <= {0, 255}
-    left = all(ink[:, i * glyphs.CW].any() for i in range(len(glyphs.ORDER)))
-    count = len(glyphs.ORDER) == 38
-    print(f"{'ok ' if white and left and count else 'BAD'} glyphs: 38 cells, white, left-aligned")
-    ok &= white and left and count
+    # the ω front is what the Lua side composes on a plain body: the body times the ink, the marks white
+    for name, hc in (("ranks.png", False), ("ranks_hc.png", True)):
+        sheet = np.asarray(Image.open(ASSETS / "1x" / name).convert("RGBA"))
+        cell = sheet[3 * 95:4 * 95, fronts.OMEGA_COL * 71:(fronts.OMEGA_COL + 1) * 71]
+        body = fronts.body()
+        good = np.array_equal(cell[..., 3], body[..., 3]) and bool((cell[parts.big_mask()][:, :3] == 255).all())
+        print(f"{'ok ' if good else 'BAD'} {name}: the ω of Spades fills the plain body's silhouette")
+        ok &= good
     # the symbol font: the game font's em, line and pixel; only glyphs the game font lacks
     from fontTools.ttLib import TTFont
     m = font.build(ASSETS / "fonts" / "ww_symbols.ttf")

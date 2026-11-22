@@ -19,7 +19,7 @@ end
 
 local STAR = Gm.of({ N.zero }, { N.zero })
 
---- Does this card eat: a positive infinite number, not debuffed? A halo doesn't stop it: a Wild ω card is ω + *.
+--- Does this card eat: a positive infinite number, not debuffed? A * doesn't stop it: ω + * still eats.
 function WW.is_eater(card)
   if card.debuff then return false end
   local v = WW.value_of(card)

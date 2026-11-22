@@ -2,7 +2,6 @@
 -- sixteen ranks are the field F₁₆.
 
 local WW = WinningWays
-local N = WW.engine.num
 
 local ART = NFS.getInfo(WW.path .. "assets/1x/backs.png") ~= nil
 if ART then SMODS.Atlas { key = "backs", path = "backs.png", px = 71, py = 95 } end
@@ -22,7 +21,7 @@ SMODS.Back {
   end,
 }
 
--- The Ordinal Deck: the standard 52, a 0 of Spades worth exactly ω (0 + ω), and a Cut.
+-- The Ordinal Deck: the standard 52, an ω of Spades, and a Cut.
 SMODS.Back {
   key = "ordinal",
   atlas = ART and "backs" or nil,
@@ -30,16 +29,7 @@ SMODS.Back {
   config = { consumables = { "c_ww_cut" } },
   apply = function(self)
     local extra = G.GAME.starting_params.extra_cards or {}
-    extra[#extra + 1] = { s = "S", r = "ww_0" }
+    extra[#extra + 1] = { s = "S", r = "ww_w" }
     G.GAME.starting_params.extra_cards = extra
-    G.E_MANAGER:add_event(Event({ func = function()
-      for _, c in ipairs(G.playing_cards) do
-        if c.base.value == "ww_0" and not WW.has_mod(c) then
-          WW.add_mod(c, N.omega)
-          break
-        end
-      end
-      return true
-    end }))
   end,
 }

@@ -1,5 +1,6 @@
--- The born ranks: 0 = {|}, 1 = {0|}, and the Cavalier C = {J|Q} = 12, tarot's fourth court card, between the
--- Jack and the Queen. None is in the starting deck; Moves make them, and the Field Deck starts with them.
+-- The born ranks: 0 = {|}, 1 = {0|}, the Cavalier C = {J|Q} = 12, tarot's fourth court card, between the Jack
+-- and the Queen, and ω, the first infinite number, past the Ace. None is in the starting deck; Moves make the
+-- first three (the Field Deck starts with them), and the Omega Spectral makes an ω.
 -- Fable drew the fronts (art/fronts.py), from vanilla's own sprites.
 
 SMODS.Atlas { key = "ranks", path = "ranks.png", px = 71, py = 95 }
@@ -52,6 +53,24 @@ SMODS.Rank {
   face_nominal = 0.15, -- between the Jack (0.1) and the Queen (0.2)
   face = true,
   next = { "Queen" },
+  in_pool = never,
+}
+
+-- ω is past every rank: it follows nothing and nothing follows it, so no straight holds one and Strength leaves
+-- it alone. It scores no chips of its own (DESIGN.md § 2.4). Its sorting weight puts it after the Ace (11.4),
+-- in the rank list and, through Card:get_nominal in src/cards.lua, in a sorted hand.
+SMODS.Rank {
+  key = "w",
+  card_key = "w",
+  shorthand = "ω",
+  pos = { x = 3 },
+  lc_atlas = "ww_ranks",
+  hc_atlas = "ww_ranks_hc",
+  suit_map = SUIT_ROWS,
+  nominal = 0,
+  face_nominal = 12,
+  next = {},
+  strength_effect = { ignore = true },
   in_pool = never,
 }
 

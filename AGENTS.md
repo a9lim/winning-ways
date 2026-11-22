@@ -1,7 +1,7 @@
 # AGENTS.md — Winning Ways editing contract
 
-Winning Ways is a Balatro mod on Steamodded. Card values are Conway's numbers and games. The engine, values, Moves, ω eating,
-the jokers, The Heap and the Field Deck are built. `DESIGN.md` is the source of truth for the rules: its
+Winning Ways is a Balatro mod on Steamodded. Card values are Conway's numbers and games. The engine, values, value-drawn
+card fronts, Moves, ω eating, the jokers, the Blinds and the decks are built. `DESIGN.md` is the source of truth for the rules: its
 **Decided** sections are agreed, and its **Candidates** wait on a9. Git history records what changed.
 
 ## Stance
@@ -25,9 +25,10 @@ the jokers, The Heap and the Field Deck are built. `DESIGN.md` is the source of 
 | `src/engine/nim.lua` | nim arithmetic on the ranks 0–15 (F₁₆) |
 | `src/engine/play.lua` | how a hand of values scores, and the ranks a value plays as |
 | `src/engine/hands.lua` | which rank each card plays as: the candidate assignments for a hand |
-| `src/ranks.lua` | the born ranks 0, 1 and the Cavalier (C, between J and Q) |
+| `src/fronts.lua` | what a value looks like (`F.spec`) and that look composed as a 71×95 grid (`F.compose`); pure Lua, like the engine |
+| `src/ranks.lua` | the born ranks 0, 1 and the Cavalier (C, between J and Q), and ω, past the Ace |
 | `src/cards.lua` | values on cards (rank + modifier), hand reading (evaluate, get_id, get_X_same), chips |
-| `src/faces.lua` | how modifiers show: badge frames, runtime-composed labels, the nimbus halo, the tooltip |
+| `src/faces.lua` | puts composed fronts on cards (one canvas per look, in place of the front sprite), and the tooltip |
 | `src/omega.lua` | infinity eating: who eats whom in the played row, growth, destruction, always-scores |
 | `src/moves.lua` | the Move consumables, the Omega Spectral and the Game Packs; each effect is `WW.MOVES[key].apply` |
 | `src/jokers.lua` | the jokers; their rules are plain functions (`WW.bouton`, `WW.mex_of`, `WW.missing_pairs`, `WW.extra_ranks`) |
@@ -37,13 +38,14 @@ the jokers, The Heap and the Field Deck are built. `DESIGN.md` is the source of 
 | `src/lab.lua` | the modifier sample the tests use, and the Laboratory Deck (only with `WINNINGWAYS_LAB=1`) |
 | `localization/en-us.lua` | all text, in vanilla's voice (see Text) |
 | `art/` | Fable's sheet programs on `art/pixel.py`; `art/build.py` rebuilds `assets/`; `art/NOTES.md` has provenance |
+| `assets/parts.lua` | built by `art/parts.py`: the index alphabet, pips, layouts and inks that `src/fronts.lua` composes from |
 | `tools/fixtures.py` | regenerates `tests/fixtures/ogdoad.lua` from ogdoad |
-| `tests/` | unit tests on LuaJIT (`known_test.lua`, `ogdoad_test.lua`, `hands_test.lua`); `ingame.lua` |
+| `tests/` | unit tests on LuaJIT (`known_test.lua`, `ogdoad_test.lua`, `hands_test.lua`, `fronts_test.lua`); `ingame.lua` |
 | `DESIGN.md` | the rules; § 11 is the engine |
 
 Engine modules (`src/engine/`) are pure Lua with no game state; `src/cards.lua` is where they meet the game.
 Inside it, `Gm` is the engine's game module: never name it `G`, which is Balatro's global.
-Engine modules Each one takes the shared engine table as its chunk argument
+Each one takes the shared engine table as its chunk argument
 (`loadfile(path)(E)` in tests, `SMODS.load_file(path)(E)` in the game), and they load in the order num, game, nim,
 play, hands. Values print and parse in one ASCII notation (`3`, `-7/2`, `w/2-1`, `{9|5}`), which doubles as the save
 format.
@@ -58,11 +60,13 @@ format.
   restores the save files. It is the only test of the scoring path as the game runs it, so run it after any change
   to scoring, eating or the Moves. If the game crashes, close it (`pkill -f Balatro.app/Contents/MacOS`) before the
   next run.
-- `WINNINGWAYS_SHOWCASE=<png> balala` lays out the born ranks and every kind of modifier beside vanilla cards,
-  screenshots them and quits; add `WINNINGWAYS_SHOWCASE_PALETTE=lc|hc` to force the palette (the settings are put
-  back). `WINNINGWAYS_SHOWCASE_SET=moves` or `=jokers` shows those instead. Use it after any art or drawing change.
-  `=tooltips` hovers each card in turn and saves one shot per tooltip as `<png>-<key>.png`; use it after a text
-  change.
+- `scripts/sheet <png> [lc|hc]` draws a sheet of composed fronts without the game, on a mock body (courts and Aces
+  show only what we add). It's the quick look after a change to `src/fronts.lua` or `art/parts.py`.
+- `WINNINGWAYS_SHOWCASE=<png> balala` lays out the born ranks and every kind of value-drawn front beside vanilla
+  cards, screenshots them and quits; add `WINNINGWAYS_SHOWCASE_PALETTE=lc|hc` to force the palette (the settings are
+  put back). `WINNINGWAYS_SHOWCASE_SET=moves` or `=jokers` shows those instead, and `=omega` shows ω cards and wilds
+  on every enhancement and edition. Use it after any art or drawing change. `=tooltips` hovers each card in turn and
+  saves one shot per tooltip as `<png>-<key>.png`; use it after a text change.
 - `WINNINGWAYS_RUNTEST_SHOT=<prefix> scripts/runtest` also saves two screenshots of the run (The Heap's chip, the
   Field Deck's back, the jokers in their slots) as `<prefix>-1.png` and `<prefix>-2.png`.
 - After changing the engine, the ogdoad fixtures must still pass. Regenerate them with
@@ -110,5 +114,8 @@ sprites so it reads as vanilla. That's the same approach as Quintessence (`~/Wor
   ranks in that suit, built by `art/quint.py` from Quintessence's own sheets, which it reads at build time from
   `../quintessence/assets/1x` (override with `QUINTESSENCE_ASSETS`). `src/ranks.lua` maps `quint_Wild` to that row,
   and the self-test's Quintessence checks run whenever it's installed.
-- The Lua side depends on the sheet sizes and cell orders listed in `art/NOTES.md`, and on `art/layout.lua` (the
-  badge text box) and `art/glyphs.lua` (the glyph order and widths).
+- The Lua side depends on the sheet sizes and cell orders listed in `art/NOTES.md`, and on `assets/parts.lua`,
+  which `art/parts.py` builds. That table holds LocalThunk's pip and glyph shapes as data, so it lives in `assets/`
+  and `assets/NOTICE.md` lists it; nothing in `art/` holds a vanilla pixel.
+- **Fronts are composed, not drawn per value.** `src/fronts.lua` must keep reproducing vanilla's own 2 to 10 from
+  the parts (the self-test checks every pixel), so a change to a layout or a pip is a change to `art/parts.py`.

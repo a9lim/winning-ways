@@ -24,15 +24,19 @@ Or by hand: install [Steamodded](https://github.com/Steamodded/smods), then put 
 
 - **Every card has a value:** its rank plus a modifier. The ranks run 2–10, J = 11, Q = 13, K = 14, A = 15, plus three
   born ranks that no starting deck holds (except the Field Deck): **0**, **1**, and the **Cavalier** (C = 12, tarot's
-  fourth court card, between the Jack and the Queen, and optional in straights).
-- **Modifiers** show beside the corner index: 3+½, 7±2, 5*, K+ω. They live in their own slot, so a card can be Glass
-  and +½, and rank changes keep them.
+  fourth court card, between the Jack and the Queen, and optional in straights). Past the Ace there is one more,
+  **ω**.
+- **Modifiers** live in their own slot, so a card can be Glass and +½, and rank changes keep them.
+- **A card with a modifier draws its own front.** The corner reads as the value (3+1/2, 7±2, \*5, ω+14) and the pips
+  show it: a 3½ has three pips and half a pip, and 7±2 = {9 | 5} is a 9 with five pips solid and four outlined, so
+  you can count the ranks it plays as. A * turns the pips to a checkerboard, an ω is the card inside out, and the
+  wild {ω | 0} is half of each.
 - **A card plays as any rank its value equals or is confused with**, and you choose: 7±2 plays as 5 to 9, and the
-  wild {ω | 2} plays as every rank. Equal values pair even without a rank: two 3½s are a Pair.
+  wild {ω | 0} plays as every rank. Equal values pair even without a rank: two 3½s are a Pair.
 - **The hand is a game.** You move first, the Blind replies, and each card scores the number it ends on. A hand of
   plain numbers scores exactly as in vanilla.
-- **ω eats.** A card worth ω (or ω + 14, or ω·2) eats the finite cards played to its left, n + ω = ω, and gains twice
-  their chips for good. It always scores.
+- **ω eats.** An ω (or ω + 14, or ω·2) eats the finite cards played to its left, n + ω = ω, and gains twice their
+  chips for good. It always scores.
 
 ## Moves
 
@@ -46,9 +50,9 @@ A new kind of consumable, sold in Game Packs and in the shop:
 | Frobenius | squares ranks in nim arithmetic |
 | Tweedledum | copies the last Move used |
 | Repaint | swaps ♠ with ♥ and ♣ with ♦ |
-| Nimbus | adds a * halo: 5* plays as a 5 but nim-sums as a 4 |
+| Nimbus | adds a *: 5* plays as a 5 but nim-sums as a 4 |
 | Mex | turns a card into the smallest rank the others miss |
-| Omega (Spectral) | adds ω |
+| Omega (Spectral) | turns a card into an ω |
 
 ## Jokers
 
@@ -73,7 +77,7 @@ A new kind of consumable, sold in Game Packs and in the shop:
 - **The Heap:** a hand whose scoring cards nim-sum to 0 scores nothing, so Pairs never do.
 - **The Misère:** the last mover loses, so your final hand of the round scores nothing.
 - **Field Deck:** 64 cards, every rank from 0 to Ace with the Cavalier, in all four suits: the field F₁₆.
-- **Ordinal Deck:** starts with a card worth exactly ω, and a Cut.
+- **Ordinal Deck:** starts with an ω of Spades, and a Cut.
 
 ## Other mods
 
@@ -88,7 +92,8 @@ Made by a9lim and Claude, code and art.
 - **Mathematics:** Elwyn Berlekamp, John Horton Conway and Richard Guy (*Winning Ways*, *On Numbers and Games*).
   Further ideas come from Charles Bouton (Nim), Patrick Grundy, Georg Cantor and David Hilbert.
 - **Real-valued ranks:** [UnStable](https://github.com/kirbio/UnStable) by
-  kirbio first did these in Balatro. Winning Ways reimplements the idea; it uses none of UnStable's code or art.
+  kirbio first did these in Balatro, fractions drawn as part of a pip included. Winning Ways reimplements the idea;
+  it uses none of UnStable's code or art.
 - **Checking:** [ogdoad](https://github.com/a9lim/ogdoad) is the test oracle. It is a development tool only, and none
   of its code ships.
 
@@ -97,12 +102,13 @@ Made by a9lim and Claude, code and art.
 The code and the original art are [MIT](LICENSE).
 
 Some sprites in `assets/` are built from Balatro's own art, © LocalThunk, so that they match the game.
-[assets/NOTICE.md](assets/NOTICE.md) lists which. Those pixels aren't ours to license: they're included only for use
-with Balatro and aren't covered by the MIT license. The programs in `art/` contain no Balatro pixels; they read the
+[assets/NOTICE.md](assets/NOTICE.md) lists which, `assets/parts.lua` among them (pip and glyph shapes, as data). Those
+pixels aren't ours to license: they're included only for use with Balatro and aren't covered by the MIT license. The programs in `art/` contain no Balatro pixels; they read the
 textures from your own copy of the game.
 
 ## Development
 
-See [AGENTS.md](AGENTS.md). In short: `scripts/test` runs the unit tests on LuaJIT, `scripts/selftest` checks the mod
-inside the game at the main menu, and `scripts/runtest` plays a real run and checks every score to the chip. Launch
+See [AGENTS.md](AGENTS.md). In short: `scripts/test` runs the unit tests on LuaJIT, `scripts/sheet` draws a sheet of card
+fronts without the game, `scripts/selftest` checks the mod inside the game at the main menu, and `scripts/runtest`
+plays a real run and checks every score to the chip. Launch
 with `WINNINGWAYS_LAB=1` for the Laboratory Deck, a development deck with a sample of every kind of modifier.

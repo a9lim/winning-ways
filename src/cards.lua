@@ -1,10 +1,11 @@
 -- Values on playing cards, and how hands of them are read and scored (DESIGN.md § 2).
 --
 -- A card's value is its rank plus a modifier. Ranks are integers (2–10, J 11, C 12, Q 13, K 14, A 15, and the
--- born 0 and 1); the modifier is any game, kept in card.ability.ww_mod as canonical notation. 3½ is a 3 with
--- +½ (or a 4 with −½: equal values play alike), 5* is a 5 with *, 7±2 a 7 with ±2. The modifier is its own
--- slot, beside enhancement, edition and seal, so a card can be Glass and +½. Rank changes from anywhere
--- (Strength, Ouija, Generator) keep the modifier and shift the value with the rank; copies keep it too.
+-- born 0 and 1), and one more, ω, past them all; the modifier is any game, kept in card.ability.ww_mod as
+-- canonical notation. 3½ is a 3 with +½ (or a 4 with −½: equal values play alike), 5* is a 5 with *, 7±2 a 7
+-- with ±2, ω + 14 an ω with +14. The modifier is its own slot, beside enhancement, edition and seal, so a card
+-- can be Glass and +½. Rank changes from anywhere (Strength, Ouija, Generator) keep the modifier and shift the
+-- value with the rank; copies keep it too.
 --
 -- Reading a hand: evaluate_poker_hand tries the rank assignments that src/engine/hands.lua proposes, runs the
 -- game's own evaluator on each, and keeps the best by the hand list's order. While a hand is assigned, a
@@ -25,7 +26,17 @@ local KEYS = {
 local INTS = {}
 for r, k in pairs(KEYS) do INTS[k] = r end
 function WW.rank_key(r) return KEYS[r] end
+--- A rank as an integer, 0–15: the ranks of F₁₆, which nim arithmetic and hands are about. nil for ω.
 function WW.rank_int(key) return INTS[key] end
+
+-- ω is a rank too, the seventeenth, standing after the Ace. It is worth ω, not 16 (16 is an Ace with +1), so
+-- it has no integer: it plays as no rank and takes no part in nim arithmetic.
+local OMEGA = "ww_w"
+WW.OMEGA = OMEGA
+local BASE = { [OMEGA] = N.omega }
+for r, k in pairs(KEYS) do BASE[k] = N.new(r) end
+--- The number a rank is worth; nil for a rank that isn't ours.
+function WW.rank_value(key) return BASE[key] end
 
 -- values ------------------------------------------------------------------------------------------------
 
@@ -61,8 +72,6 @@ end
 local base_has_no_rank = SMODS.has_no_rank
 
 local STAR = Gm.of({ N.zero }, { N.zero })
-local UP = Gm.of({ N.zero }, { STAR })
-local DOWN = Gm.neg(UP)
 
 --- Is this card a green edge? Quintessence's Wild suit counts as every suit, as a green Hackenbush edge can be cut
 --- by either player, and a lone green edge is *. So a Wild card's value carries a *: a Wild 5 is 5*, which plays as
@@ -80,7 +89,7 @@ local function mod_key(card)
   local e = green_keys[k]
   if e == nil then
     local m = Gm.add(stored and parse(stored) or N.zero, STAR)
-    e = (N.is(m) and N.eq(m, N.zero)) and false or Gm.encode(m)
+    if N.is(m) and N.eq(m, N.zero) then e = false else e = Gm.encode(m) end
     green_keys[k] = e
   end
   return e or nil
@@ -97,37 +106,34 @@ end
 --- modifier on such a card lies dormant until it has a rank again.
 function WW.value_of(card)
   if base_has_no_rank(card) then return nil end
-  local r = INTS[card.base.value]
-  if not r then return nil end
+  local rank = card.base.value
+  local base = BASE[rank]
+  if not base then return nil end
   local m = card.ability and mod_key(card)
-  if not m then return N.new(r) end
-  local key = r .. "|" .. m
+  if not m then return base end
+  local key = rank .. "|" .. m
   local v = sums[key]
-  if not v then v = Gm.add(N.new(r), parse(m)); sums[key] = v end
+  if not v then v = Gm.add(base, parse(m)); sums[key] = v end
   return v
 end
 
-local function is_switch(g)
-  return Gm.is_game(g) and #g.L == 1 and #g.R == 1 and N.is(g.L[1]) and N.is(g.R[1])
-    and N.eq(g.L[1], N.neg(g.R[1]))
+--- Is this card more than a plain rank: has it a modifier, or is it an ω? Those are the cards a hand reads by
+--- value, and the ones that draw their own front.
+function WW.is_value(card)
+  return WW.has_mod(card) or (card.base ~= nil and card.base.value == OMEGA)
 end
-WW.is_switch = is_switch
 
 --- Does a modifier carry a *: is it x + *, where x is a number plus nothing, ↑, ↓ or a switch ±t? Those are the
---- shapes a card draws, so this is exactly when it wears the nimbus halo.
+--- shapes a card draws (src/fronts.lua), so this is exactly when it shows its star.
 local halos = {}
 function WW.has_star(m)
   if N.is(m) then return false end
   local k = Gm.encode(m)
-  if halos[k] == nil then
-    local rest = Gm.sub(m, Gm.mean(m))
-    local plain = Gm.add(rest, STAR)
-    halos[k] = Gm.eq(rest, STAR) or Gm.eq(plain, UP) or Gm.eq(plain, DOWN) or is_switch(plain)
-  end
+  if halos[k] == nil then halos[k] = WW.fronts.has_star(m) end
   return halos[k]
 end
 
---- Does a card wear a halo? In nim-sums a halo adds 1: n* is the heap n ⊕ 1 (DESIGN.md § 3, Nimbus).
+--- Does a card carry a *? In nim-sums a * adds 1: n* is the heap n ⊕ 1 (DESIGN.md § 3, Nimbus).
 function WW.halo(card)
   local m = card.ability and mod_key(card)
   return m ~= nil and WW.has_star(parse(m))
@@ -137,7 +143,7 @@ end
 function WW.ranks_of(card)
   local v = WW.value_of(card)
   if not v then return nil end
-  if not WW.has_mod(card) then return { v.x } end
+  if not WW.has_mod(card) then return { INTS[card.base.value] } end -- an ω: none
   return ranks_of_value(v)
 end
 
@@ -146,18 +152,28 @@ function WW.is_hot(v)
   return v ~= nil and Gm.is_game(v) and N.lt(N.zero, Gm.temperature(v))
 end
 
---- The rank a card made with value v sits on: the rank nearest v's mean among those it plays as (the lower on
---- a tie), or the nearest rank to the mean when it plays as none. An infinite mean picks the top or bottom.
+--- The rank a card made with value v sits on, as a rank key: its mean, rounded down. So 3¾ is a 3 with +¾, and
+--- a fraction always counts up from the rank below. When the card plays as ranks but not as that one, it sits
+--- on the nearest rank it does play as (the lower on a tie): {7±2|3} has mean 5, plays as a 3 or a 4, and sits
+--- on the 4. A value that is infinite however it's played (its Right stop is) sits on ω. Any other with an
+--- infinite mean sits at that end of the ranks it plays as, or of all of them: the wild {ω|2} on the Ace.
 function WW.rank_for(v)
   local mean = Gm.mean(v)
-  local target = N.is_finite(mean) and N.finite(mean) or (mean.k > 0 and 1e9 or -1e9)
   local ranks = ranks_of_value(v)
-  if #ranks == 0 then return math.max(0, math.min(15, math.ceil(target - 0.5))) end
+  if not N.is_finite(mean) then
+    if Gm.right_stop(v).k > 0 then return OMEGA end
+    if #ranks > 0 then return KEYS[mean.k > 0 and ranks[#ranks] or ranks[1]] end
+    return KEYS[mean.k > 0 and 15 or 0]
+  end
+  local target = N.finite(mean)
+  local down = math.floor(target)
+  if #ranks == 0 then return KEYS[math.max(0, math.min(15, down))] end
   local best = ranks[1]
   for _, r in ipairs(ranks) do
+    if r == down then return KEYS[r] end
     if math.abs(r - target) < math.abs(best - target) then best = r end
   end
-  return best
+  return KEYS[best]
 end
 
 -- Store a card's modifier. A green edge's * is the suit's, so it comes off first (−* = *).
@@ -167,11 +183,11 @@ local function store_mod(card, m)
 end
 
 --- Make a card worth v (a canonical number or game): it moves to rank_for(v) and keeps v − rank as its
---- modifier. An integer from 0 to 15 is that plain rank.
+--- modifier. An integer from 0 to 15 is that plain rank, and ω the plain ω.
 function WW.set_value(card, v)
-  local r = WW.rank_for(v)
-  assert(SMODS.change_base(card, nil, KEYS[r]))
-  store_mod(card, Gm.sub(v, N.new(r)))
+  local rank = WW.rank_for(v)
+  assert(SMODS.change_base(card, nil, rank))
+  store_mod(card, Gm.sub(v, BASE[rank]))
   return card
 end
 
@@ -191,6 +207,8 @@ end
 
 local active = setmetatable({}, { __mode = "k" }) -- flexible card -> rank key it plays as
 local ties = setmetatable({}, { __mode = "k" })   -- rankless card -> tie token, while it pairs with an equal one
+local reading = 0                                 -- hands being read right now (evaluate_poker_hand calls)
+local sorting                                     -- the card whose place in a sorted row is being asked
 
 local set_base = Card.set_base
 function Card:set_base(card, initial, manual_sprites)
@@ -200,8 +218,9 @@ end
 
 function SMODS.has_no_rank(card)
   if base_has_no_rank(card) then return true end
+  if card == sorting then return false end -- it sorts as the rank it sits on (see get_nominal)
   if active[card] then return false end -- assigned a rank in the hand being read (Conway can give 3½ one)
-  if WW.has_mod(card) then
+  if WW.is_value(card) then
     local v = WW.value_of(card)
     if v and #ranks_of_value(v) == 0 then return true end
   end
@@ -235,8 +254,17 @@ function WW.rank_now(card)
   return INTS[card.base.value]
 end
 
+-- While a hand is read, a card's nominal is that of the rank it plays as, and a card with no rank has none (the
+-- game picks a High Card by it). Anywhere else it is asked for to sort a row of cards, and there a card stands
+-- by the rank it sits on: a 3½ among the 3s, an ω past the Ace. The game would put every rankless card last.
 local get_nominal, is_face = Card.get_nominal, Card.is_face
-function Card:get_nominal(mod) return as_assigned(self, get_nominal, mod) end
+function Card:get_nominal(mod)
+  if reading > 0 then return as_assigned(self, get_nominal, mod) end
+  sorting = self
+  local r = get_nominal(self, mod)
+  sorting = nil
+  return r
+end
 function Card:is_face(from_boss) return as_assigned(self, is_face, from_boss) end
 
 -- Groups of equal ranks; tie groups (two 3½s) group by their token and come after the ranked ones. Without
@@ -276,7 +304,12 @@ end
 --- Which rankless values pair. Finite ones pair when equal, so a 3 with +½ pairs with a 4 with −½. Infinite numbers
 --- pair when they lie in the same galaxy, a finite distance apart (nonstandard analysis's word): ω + 13 pairs with
 --- ω + 2, but not with 2ω. Seen from the finite ranks, everything in a galaxy is equally far away.
+--- A * changes none of that: n* plays as n, so 3½* pairs with 3½, and ω* with ω.
 function WW.tie_key(v)
+  if not N.is(v) then
+    local plain = Gm.add(v, STAR)
+    if N.is(plain) then v = plain end
+  end
   if N.is(v) and not N.is_finite(v) then return "galaxy " .. N.encode(N.new(0, v.k)) end
   return Gm.encode(v)
 end
@@ -290,7 +323,7 @@ local function top_of(results)
 end
 
 local evaluate = evaluate_poker_hand
-function evaluate_poker_hand(hand)
+local function read(hand)
   -- The played or selected hand, possibly minus what infinity ate (src/omega.lua sets reading_main for that).
   local main = WW.reading_main or (G.play and hand == G.play.cards) or (G.hand and hand == G.hand.highlighted)
   if main then
@@ -306,7 +339,7 @@ function evaluate_poker_hand(hand)
   for i, c in ipairs(hand) do
     active[c], ties[c] = nil, nil
     local v = WW.value_of(c)
-    local modded = v ~= nil and WW.has_mod(c)
+    local modded = v ~= nil and WW.is_value(c)
     if modded then any = true end
     local key = modded and WW.tie_key(v) or ("#" .. i)
     local ranks = WW.ranks_of(c) or {}
@@ -350,6 +383,12 @@ function evaluate_poker_hand(hand)
   apply(best_a)
   return best
 end
+function evaluate_poker_hand(hand)
+  reading = reading + 1
+  local results = read(hand)
+  reading = reading - 1
+  return results
+end
 
 -- scoring -----------------------------------------------------------------------------------------------
 
@@ -372,7 +411,7 @@ function WW.resolve(scoring_hand)
       if v and frozen and WW.is_hot(v) and N.is_finite(Gm.temperature(v)) then v = Gm.mean(v) end
       if v then
         cards[#cards + 1], values[#values + 1] = c, v
-        if WW.has_mod(c) then any = true end
+        if WW.is_value(c) then any = true end
       end
     end
   end

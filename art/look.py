@@ -4,7 +4,7 @@ Renders big nearest-neighbour blow-ups into art/preview/ (gitignored). Card
 fronts and overlays are shown on a mock white card body, with vanilla cells
 (read from the installed game, only ever looked at) beside ours.
 
-    python -I art/look.py fronts|fronts_hc|wild|courts|courts_hc|mods|glyphs|moves|packs|font|jokers|blinds|backs [k]
+    python -I art/look.py fronts|fronts_hc|wild|courts|courts_hc|glyphs|moves|packs|font|jokers|blinds|backs|icon [k]
 
 fable, 2026-11-14 (claude-fable-5-2)
 """
@@ -66,9 +66,9 @@ def main():
         s = fronts.sheet_rgba(hc)
         rows = []
         for r in range(4):
-            ours = [s[r * 95:(r + 1) * 95, c * 71:(c + 1) * 71] for c in range(3)]
+            ours = [s[r * 95:(r + 1) * 95, c * 71:(c + 1) * 71] for c in range(4)]
             ref = [V.cell(tex, c, r) for c in (0, 12, 9, 10)]
-            rows.append(on_cards(row(ours[:2] + ref[:2] + ours[2:] + ref[2:])))
+            rows.append(on_cards(row(ours[:2] + ref[:2] + ours[2:3] + ref[2:] + ours[3:])))
         save(vstack(rows[:2], gap=2), f"{what}_a.png", k)
         save(vstack(rows[2:], gap=2), f"{what}_b.png", k)
     elif what == "wild":
@@ -77,9 +77,9 @@ def main():
         rows = []
         for h in (False, True):
             s = fronts.sheet_rgba(h)[4 * 95:]
-            ours = [s[:, c * 71:(c + 1) * 71] for c in range(3)]
+            ours = [s[:, c * 71:(c + 1) * 71] for c in range(4)]
             ref = [quint.cell(c, hc=h) for c in (0, 8, 9)]
-            rows.append(on_cards(row(ours[:2] + ref[:2] + ours[2:] + ref[2:])))
+            rows.append(on_cards(row(ours[:2] + ref[:2] + ours[2:3] + ref[2:] + ours[3:])))
         save(vstack(rows, gap=2), "wild.png", k)
         save(vstack(rows, gap=2), "wild_1x.png", 1)
     elif what.startswith("courts"):
@@ -92,9 +92,10 @@ def main():
             b = Image.new("RGBA", (71 * 4, 50), (255, 255, 255, 255))
             b.alpha_composite(Image.fromarray(row(cs)))
             save(b, f"{what}_{nm}.png", k if len(sys.argv) > 2 else 7)
-    elif what == "mods":
-        import mods
-        mods.preview(save, on_cards, k)
+    elif what == "icon":
+        import icon
+        save(icon.icon().image(), "icon.png", 8, bg="#374244")
+        save(icon.icon().image(), "icon_1x.png", 1, bg="#374244")
     elif what == "moves":
         import moves
         im = moves.sheet_canvas().image()

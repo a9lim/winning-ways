@@ -5,6 +5,7 @@ are derived from Balatro's own sprites and contain pixels that are
 (c) LocalThunk. They are **not** covered by the MIT licence:
 
 - `1x/ranks.png`, `2x/ranks.png`, `1x/ranks_hc.png`, `2x/ranks_hc.png`
+- `parts.lua` (the same kind of thing as a texture, written as text)
 - `1x/omega.png`, `2x/omega.png`
 - `1x/packs.png`, `2x/packs.png`
 - `1x/jokers.png`, `2x/jokers.png`
@@ -12,10 +13,17 @@ are derived from Balatro's own sprites and contain pixels that are
 
 What in them is Balatro's:
 
-- **ranks**: the suit pips, the strokes of the "0" and "1" index digits
-  (from vanilla's "10"), the bodies of the four Cavaliers (the vanilla
-  Jacks, re-inked), and the high-contrast shading. Ours: the "C" index, the
-  outline pip of the 0, the helms and plumes, the composition.
+- **ranks**: the suit pips, the stroke of the "0" index digit (from
+  vanilla's "10"), the bodies of the four Cavaliers (the vanilla Jacks,
+  re-inked), the silhouette of the ω cards (vanilla's plain card body), and
+  the high-contrast shading. Ours: the "1" and "C" indices, the ω, the helms
+  and plumes, the composition.
+- **parts.lua**: each suit's pip and corner pip, vanilla's index glyphs
+  (2 to 10, J, Q, K, A), where its pips stand on the 2 to the 10, and the
+  high-contrast inks, all measured from its card fronts and written out as
+  masks and numbers. The Wild suit's pips are Quintessence's. Ours: the
+  glyphs 1, C, ω, + − ± * / ↑ ↓, the order pips fill in, and the 11th
+  place.
   **Row 4 (Wild)** is derived from Quintessence's Wild suit fronts
   (a9lim, MIT): the asterisk pips are Quintessence's own drawing; the "0"
   and "1" strokes and the body of the Wild Cavalier (Quintessence's Wild
@@ -41,8 +49,7 @@ What in them is Balatro's:
 
 Everything else contains no pixels from the game and is MIT like the code:
 
-- `1x/mods.png`, `2x/mods.png`, `1x/mods_hc.png`, `2x/mods_hc.png`
-- `1x/glyphs.png`, `2x/glyphs.png`
+- `1x/icon.png`, `2x/icon.png`
 - `1x/moves.png`, `2x/moves.png` (the frame follows the Tarot frame's
   measurements; no Tarot pixel is copied)
 - `1x/backs.png`, `2x/backs.png` (both backs; the frame follows vanilla's
@@ -51,11 +58,10 @@ Everything else contains no pixels from the game and is MIT like the code:
   and pixel size are set equal to those of the game's font, m6x11plus by
   Daniel Linssen, so the two can be mixed; no glyph is taken from it.
 
-These use Balatro's interface colours, and the label anchors in
-`art/layout.lua` are measured from its card fronts.
+These use Balatro's interface colours.
 
-The 0 as a hollow pip and the 1 as a single small pip are solutions shared
-with UnStable (kirbio, MIT); no UnStable pixels are used. The Tweedledum
+The 1 as a single small pip, and a fraction as part of a pip, are solutions
+shared with UnStable (kirbio, MIT); no UnStable pixels are used. The Tweedledum
 card quotes the pose of John Tenniel's illustration (public domain).
 
 Provenance in full: `art/NOTES.md`. The sprites are rebuilt from an

@@ -3,13 +3,15 @@
 Pixel art as code. Engine: `art/pixel.py`. One program per sheet;
 `~/.venv/bin/python -I art/build.py` regenerates everything into `assets/1x`
 and `assets/2x` (2x = exact nearest-neighbour x2 of the 1x; build.py checks
-it and every sheet size) and writes `art/glyphs.lua` and `art/layout.lua`.
-`art/look.py fronts|fronts_hc|wild|courts|courts_hc|mods|glyphs|moves|packs|font|jokers|blinds|backs [k]` renders
-previews beside vanilla cells into `art/preview/` (gitignored).
+it and every sheet size) and writes `assets/parts.lua`.
+`art/look.py fronts|fronts_hc|wild|courts|courts_hc|glyphs|moves|packs|font|jokers|blinds|backs|icon [k]` renders
+previews beside vanilla cells into `art/preview/` (gitignored). Composed
+fronts are the Lua side's: `scripts/sheet <png> [lc|hc]` draws a sheet of
+them without the game.
 
 `art/vanilla.py` reads Balatro's textures at build time from the installed
 game archive (`Balatro.love`, a zip; override with `BALATRO_LOVE`). Nothing
-from the archive is stored in the repo as source, but two built sheets
+from the archive is stored in the repo as source, but built files
 contain LocalThunk's pixels (the table's last column): see
 `assets/NOTICE.md`. `art/quint.py` reads Quintessence's Wild suit sheets the
 same way, from its checkout at `../quintessence/assets/1x` (override with
@@ -17,9 +19,9 @@ same way, from its checkout at `../quintessence/assets/1x` (override with
 
 | sheet | 1x size | program | vanilla pixels |
 |---|---|---|---|
-| `ranks.png`, `ranks_hc.png` | 213x475 (3x5 cells of 71x95) | `fronts.py` | yes (row 4 by way of Quintessence) |
-| `mods.png`, `mods_hc.png` | 142x95 (2 cells of 71x95) | `mods.py` | no |
-| `glyphs.png` | 266x9 (38 cells of 7x9) | `glyphs.py` | no |
+| `ranks.png`, `ranks_hc.png` | 284x475 (4x5 cells of 71x95) | `fronts.py` | yes (row 4 by way of Quintessence) |
+| `parts.lua` | a Lua table, not a texture | `parts.py` | yes (pips, rank glyphs, layouts, as masks and numbers) |
+| `icon.png` | 34x34 | `icon.py` | no |
 | `moves.png` | 639x95 (9 cells of 71x95) | `moves.py` | no (frame geometry only) |
 | `omega.png` | 71x95 | `moves.py` | yes |
 | `packs.png` | 284x95 (4 cells of 71x95) | `packs.py` | yes |
@@ -30,26 +32,35 @@ same way, from its checkout at `../quintessence/assets/1x` (override with
 
 ## Rank fronts (`fronts.py`)
 
-Columns 0, 1, C; rows Hearts, Clubs, Diamonds, Spades (the row order of
+Columns 0, 1, C, ω; rows Hearts, Clubs, Diamonds, Spades (the row order of
 vanilla's `8BitDeck.png`). Cells are transparent except for ink, like
 vanilla's. Vanilla cells below are (column, row), 0-based, in
 `resources/textures/1x/8BitDeck.png`.
 
-- **Index digits.** "0" and "1" are the two strokes of vanilla's "10",
-  cell (8, 0): the nought from x 9..13 moved to x 7..11, the one from
-  x 6..7 moved to x 8..9, both centred on x = 9 over the small pip like
-  every vanilla index. **"C" is drawn here** (7x8, two-pixel strokes, the
-  Q's bowl without its tail).
+- **Index digits.** "0" is the nought of vanilla's "10", cell (8, 0), moved
+  from x 9..13 to x 7..11 so it stands centred on x = 9 over the small pip,
+  like every vanilla index. **"1" is drawn here** (4x8, a flagged one): it
+  was the 10's bare stroke until 1.1, but a bare stroke reads as a bar once
+  the index says 1±2 or 3+1/2. **"C" is drawn here** (7x8, two-pixel
+  strokes, the Q's bowl without its tail).
 - **Small corner pips:** each suit's own, from its 10, cell (8, row).
-- **0** is {|}: one pip in the middle of the field, outline only (the 3's
-  centre pip, cell (1, row), minus its one-pixel erosion). The move that
-  isn't there. *Idea shared with UnStable* (kirbio, MIT), whose 0 is also a
-  hollow pip; no UnStable pixels are used, the outline is computed from
-  vanilla's pip. Alternative considered: a wholly empty field (reads as a
-  missing texture).
+- **0** is {|}: an empty field. No pips, and the corners say whose nothing
+  it is. Until 1.1 it was one outlined pip (an idea shared with UnStable);
+  an outlined pip now means a pip still in play on a hot card (see Front
+  parts), so the 0 gave it up. The old worry, that an empty field reads as
+  a missing texture, doesn't hold beside the index.
 - **1** is the 3's centre pip, cell (1, row), alone. The Ace's pip is three
   times the size, so the two don't confuse. (UnStable's 1 is the same
   solution.)
+- **ω** is the card inside out. `inside_out()` multiplies vanilla's plain
+  body, `Enhancers.png` (1, 0), by the suit's ink, so the cell covers the
+  card to its edges, and leaves the marks white: the ω index and the corner
+  pip in both corners, and one large ω in the middle, the index glyph x3,
+  as the Ace's pip is a pip x3. This cell is what a plain ω shows before
+  the Lua side takes over, and it is exactly what the Lua side composes on
+  a plain body (build.py checks the silhouette). The high-contrast cell is
+  built separately, the body multiplied row by row by `ramp()`: `hc()`
+  would re-ink the white marks too.
 - **C, the Cavalier.** Each suit's Cavalier is the Jack of its *sister*
   suit, re-inked, with a helm for a head:
 
@@ -92,16 +103,15 @@ Quintessence's built sheets `wild_deck.png` / `wild_deck_hc.png` (13 cells:
 2..10, J, Q, K, A; its `art/NOTES.md` has their provenance) as rows 0..3
 derive from vanilla's; cells below are columns of that sheet.
 
-- **Index digits**: "0" and "1" are the strokes of Wild's "10", cell 8,
-  moved as for the other suits. Quintessence's glyphs are vanilla's spades
-  glyphs re-inked, so these are LocalThunk's strokes at one remove. "C" is
-  ours, the same glyph as rows 0..3.
+- **Index digits**: "0" is the nought of Wild's "10", cell 8, moved as for
+  the other suits. Quintessence's glyphs are vanilla's spades glyphs
+  re-inked, so it is LocalThunk's stroke at one remove. "1" and "C" are
+  ours, the same glyphs as rows 0..3.
 - **Small corner pip**: Wild's own 9x9 asterisk, from its 10, cell 8
   (x 4..15, y 16..25). Quintessence's drawing, not vanilla's.
-- **0**: the centre asterisk of Wild's 3, cell 1, minus its one-pixel
-  erosion. The asterisk's arms are three pixels thick, so the outline is a
-  hollow star with a one-pixel open core: lacier than the hollow heart, but
-  the same rule. **1**: that asterisk, whole.
+- **0**: empty, like the others. **1**: the centre asterisk of Wild's 3,
+  cell 1. **ω**: the body in Wild purple (green in high contrast, flat),
+  with Wild's own corner asterisk.
 - **Cavalier**: Wild has no sister suit, so it rides in on **Wild's own
   Jack**, cell 9. That Jack is itself a collage (head of vanilla's Jack of
   Hearts, robes and frame of the Jack of Diamonds in Wild purple), and the
@@ -124,60 +134,99 @@ derive from vanilla's; cells below are columns of that sheet.
 Preview: `look.py wild` -> `preview/wild.png` (ours beside Wild's 2, 10 and
 J; normal above, high contrast below).
 
-## Modifiers (`mods.py`)
+## Front parts (`parts.py` -> `assets/parts.lua`)
 
-Round 2: no plates. A modifier is **coloured text on the card's white,
-beside the corner index**, so the corner reads as the value (3+½, 7±2,
-K+ω). The Lua side composes it from `glyphs.png`; `mods.py` owns only its
-geometry and colours, written to `art/layout.lua`.
+Round 5 (1.1): no labels, no overlays. A card with a modifier draws its
+**whole front** at run time, and this program gives the Lua side
+(`src/fronts.lua`) what it composes from, as a table of masks and numbers.
+There is no texture: the Lua side fills rows of pixels.
 
-### Labels
+### The index alphabet
 
-- **Anchor** (`label[rank]`, keyed by Steamodded rank key): the top-left of
-  the label's first glyph cell. y = 7 for every rank: a 7x9 cell there puts
-  cap-height glyphs on y 8..14, bottoms level with the index (y 7..14).
-  x = the index's last inked column + 2 (one clear column): 14 for most,
-  15 for `10` and `King`, 13 for `ww_0`, 11 for `ww_1`. Measured from the
-  fronts at build time.
-- **free**: columns before the label meets that rank's own art (tightest
-  suit). Ace, `ww_0`, `ww_1`: 52+ (the whole top). 2, 3: 16. 4..9: 5; 10: 4
-  (the left pip column's lobes, rows 13..14). Courts and `ww_C`: 2..3 (the
-  frame). **max** (51..55) is the run to x = 66.
-- **Knockout.** Most labels are 11..17 px, so on 4..10 and the courts they
-  run over art. Bare colour on a pip or a court is not legible
-  (`look.py mods` writes `mods_a_bare.png` to show it); with a one-pixel
-  card-white edge it is. So: draw the label in `colours.knockout`
-  (`#ffffff`) at the eight one-pixel offsets, then the label itself. With
-  that, any overlap up to `max` is fine: it reads like a vanilla sticker
-  laid over the art. Within `free` the knockout is invisible, so it can
-  simply always be drawn. On enhanced bodies (Gold, Steel...) the knockout
-  shows as a thin white edge.
-- **Second copy:** the composed label, knockout included, turned 180
-  degrees about (35.5, 47.5), i.e. pixel (x, y) -> (70 - x, 94 - y). That
-  is exactly how vanilla's own corners relate; nothing else is needed.
-  `mods.label()` is the reference implementation.
-- **Colours** (`colours`), chosen to hold as bare text on white:
+One line, from x = 6, y = 7 (where every vanilla index starts), each glyph
+advancing by its width + 1, all in the suit's ink: **the corner reads as
+the value**, 3+1/2, 7±2, \*5, ω+14.
 
-  | role | hex | |
-  |---|---|---|
-  | offset | `009dff` | chips blue |
-  | heat | `fe5f55` | mult red |
-  | infinite | `c8900f` | gold, deepened: `eac058` washes out on white |
-  | infinitesimal | `4584fa` | Spectral blue, the halo's |
-  | knockout | `ffffff` | vanilla's card white |
+- Rank glyphs are vanilla's own, cut from `8BitDeck.png` row 0: 2..9, the
+  10 (one glyph, 8 wide), J, Q, K, A. The 0, 1 and C are `fronts.py`'s.
+  Used after a sign they are the digits of a modifier too.
+- Drawn here, to stand beside them (two-pixel strokes, 8 rows): `+ −`
+  (6x6 and 6x2, on the middle rows), `±` (6x9: the plus, a clear row, a
+  two-row bar; it runs one row under the baseline), `ω` (8x6, on the
+  baseline: x-height), `*` (6x6), `/` (5x8), `↑ ↓` (6x8).
+- Fractions are written out, 1/2, in the same heavy digits. The old label
+  font's one-cell ½ can't be drawn in two-pixel strokes at this height.
+- A narrow first glyph is centred over the corner pip, as vanilla's are
+  (the 0 and the 1 start at x = 7).
 
-### Overlay cells (`mods.png`; `mods_hc.png` is identical)
+### Pips and layouts
 
-- **0 nimbus** (the `*`): a 9x3 halo over the index (x 5..13, y 3..5), in
-  `4584fa` with a `2f62c9` lower arc, and again turned bottom right. The
-  round-1 glint is gone: labels start where it sat.
-- **1 wild**: the wild rank's index, a **stamp**: a white ± (8x8,
-  two-pixel strokes) on mult red `fe5f55`, rimmed `cc4846` (the red stake
-  chip's shade), covering x 5..14, y 6..15 in the top-left corner
-  (`wild_box`) and the same turned bottom right. Every vanilla index glyph
-  lies inside x 6..13, y 7..14, so it hides any rank on any card body; the
-  suit pip (from y 16) is untouched. Red, not gold: ± is the heat sign, and
-  white holds on red where it washes out on gold.
+Per suit: the pip (the 3's centre pip; 11x10 for hearts and spades, 11x11
+for clubs and diamonds), the small corner pip (from the 10; 7x8 at (6, 17)),
+and where n pips stand for n = 1..11, measured from vanilla's own cells:
+x is 19, 30 or 41, and a pip in the lower half is turned. 1 is the 3's
+centre; 11 is the 10 plus that centre. Past 11 the Lua side sets small pips
+in rows of four (9 px apart, rows 11 px apart, centred), up to 28.
+
+The Wild suit's are measured from Quintessence's sheet the same way.
+
+**Fill order** (`ORDER`) is the order pips turn solid. The Lua side draws a
+value's stops: the Right stop's worth of pips solid from the front of the
+list, then outlined ones up to the Left stop, a fraction cutting the last
+of each. The orders are chosen so that:
+
+- prefixes are a smaller rank's layout where one fits: 6..11 start with the
+  4's corners, the 7 and 8 start with the 6, the 9's first five are the
+  corners and the upper centre. So 7±2 = {9|5} is a 9 whose four inner pips
+  are the outlined ones;
+- the last pip, the one a fraction cuts, is never the one under the index
+  (top left) or under the turned index (bottom right).
+
+A cut pip keeps its left columns: `round(width x fraction)`, but never none
+and never all. An outlined pip is the pip minus its erosion, as the old 0
+was. With a \*, a filled pip is a one-pixel checkerboard, and a bare
+outline is dashed on `(u + 2v) mod 4 < 2`: a checkerboard can't draw a
+one-pixel diagonal, which lies wholly on one colour (a diamond's outline
+would vanish), and this pattern breaks along rows, columns and both
+diagonals. Both patterns are the pip's own, so they turn with a turned pip.
+
+Check: the Lua side composing a plain 2..10 from these parts reproduces
+vanilla's cell exactly, every suit (`tests/ingame.lua`, in the game).
+
+### Inks
+
+The index and pip ink by row, per palette and suit. Normal contrast is
+flat. High contrast is `fronts.ramp()`: 95 colours a suit, and a second
+ramp for the courts' corners (clubs' run a shade off). The Lua side inks
+every row of a composed front from these, so a pip it puts anywhere takes
+the colour vanilla's would have there, and an ω's body is the same ramp.
+
+### What the Lua side does with courts, ω and {ω|x}
+
+- **Courts and the Ace** keep their art. The Lua side clears their own
+  index (a 10x10 box at (5, 6), which holds any vanilla index glyph) and
+  writes the line in its place, then clears a one-pixel gap round the line
+  where it runs over the portrait. The gap is a true knockout: the body
+  shows through, so there is no white edge on Gold or Steel.
+- **ω** is `fronts.inside_out()` done on whatever body the card has.
+- **{ω|x}** is the same body tint above the diagonal from bottom left to top
+  right (row y is tinted for `ceil(71 (1 - (y + ½)/95) - ½)` columns), with
+  the ω corner in white above and x's corner in ink below.
+
+Alternatives considered: role colours for the label, as in round 2 (a9:
+the corner should be the rank's own ink); a halo for \*, as in rounds 1..4
+(a9: a star in the index); turning the pips for \* (vanilla's diamond is
+unchanged by any quarter turn); small-pip grids for values above 10 on the
+courts (a9: courts keep their faces); an opaque flood for ω (hides the
+enhancement; the multiply shows it).
+
+## The mod icon (`icon.py`)
+
+34x34, on a rounded tile the shape of Quintessence's. Conway's notation for
+a game, `{ Left | Right }`, chalked on the Moves' slate `2f5a50` (bevel
+`376a5c`, edge `274c44`): chalk braces and bar `f3f6e8`, a blue square
+`52b6ff` for Left's option and a red one `fe6f66` for Right's, the way the
+Conway joker's plate is signed. No vanilla pixel.
 
 ## The Moves and Omega (`moves.py`)
 
@@ -193,7 +242,7 @@ badge and UI: **primary `4d9f7c`, secondary `2f5a50`** (`moves.SET_COLOURS`).
 - Palette: slate `2f5a50` (`376a5c` dust, `274c44` edge), chalk `f3f6e8`
   (`b9cdbd` rubbed thin), Left blue `52b6ff`, Right red `fe6f66`, yellow
   `f0cc6a` for the thing the card is about, ledge `a9dcc0`. Numerals on the
-  boards are `glyphs.png`'s.
+  boards are `glyphs.py`'s.
 
 | cell | picture |
 |---|---|
@@ -269,7 +318,7 @@ Measured from vanilla's `Jokers.png` (cells are (column, row)):
 | `guy` | legendary background: the same marble, hue 0.29 (green); plate signed `012345` | vanilla + here |
 | `guy_soul` | Guy, head and shoulders, with his stick | here |
 
-Digits and ω on the cards are `glyphs.png`'s. Alternatives considered:
+Digits and ω on the cards are `glyphs.py`'s. Alternatives considered:
 Bouton as stacks of counters (kept for the blind chip instead); Grundy as
 a week calendar (unreadable at this size); Hotstrat as a jester strategist
 (a face in 40 px says nothing about heat).
@@ -301,7 +350,7 @@ stars), white lettering as on Generator and Paradise. The tower's half-width
 runs from 20.5 px at the foot to 5 at the top of the window and it leaves
 the card still going; each floor is 0.86 of the one below, five windows a
 floor, every one lit (the hotel is full). The vacancy sign is `+1` in
-`glyphs.png`'s digits on a dark board with a lit rim: room for one more, and
+`glyphs.py`'s digits on a dark board with a lit rim: room for one more, and
 also what the joker does to the slots. Alternatives considered: a corridor
 of doors receding to a point (the JOKER lettering sits on both walls); a
 guest stepping from door n to n+1 (two doors and a figure at this size say
@@ -412,7 +461,7 @@ build.py):
 | − (U+2212) | 6 | 2 |
 | ½ ¼ ¾ ⅛ ⅜ ⅝ ⅞ | 9 | 11 |
 
-The fractions are the card labels' small digits (3x5, one-pixel strokes)
+The fractions are `glyphs.py`'s small digits (3x5, one-pixel strokes)
 either side of a slash: two-pixel strokes do not fit a numerator and a
 denominator into eleven rows, so they are lighter than the text round them.
 `look.py font` renders `preview/font_check.png`: "Worth ω+14, ±½, ↑ ↓ ∞ ⊕ ⊗
@@ -421,14 +470,18 @@ falling back glyph by glyph.
 
 ## Glyphs (`glyphs.py`)
 
+The art's own small font: the numerals on the Moves' boards and the jokers,
+and the digits the symbol font's fractions are built from. It was also the
+card labels' font until 1.1; `glyphs.png` no longer ships (card fronts use
+the index alphabet in Front parts).
+
 38 cells of 7x9, white `ffffff` on transparent, each glyph hard left in its
 cell. One-pixel strokes with clipped corners (the Eternal sticker's ∞ is the
 model; proportions after the game font: open-topped 4, flagged 1). Drawn
 here.
 
 Order: `0 1 2 3 4 5 6 7 8 9 + − ± / * ω | ↑ ↓ ? ½ ¼ ¾ ⅛ ⅜ ⅝ ⅞`, then small
-`0..9` and a small `/`. In `art/glyphs.lua` the small ones are keyed
-`"s0".."s9"` and `"s/"` (the minus is U+2212).
+`0..9` and a small `/`, keyed `"s0".."s9"` and `"s/"` (the minus is U+2212).
 
 Rows of the cell, 0..8:
 
@@ -452,13 +505,14 @@ denominator. `glyphs.layout()` is the reference implementation. Widths:
 
 ## Open
 
-- Labels on 4..10 and the courts overlap art (see knockout). The other
-  place with room on every rank is the strip above the pips (cell y = 2,
-  glyphs on y 3..9: a superscript, 51 px free on number cards, 7..12 on
-  courts).
-- In the high-contrast deck clubs are chips blue and hearts are close to
-  mult red, so an offset on a club or a heat on a heart shares its index's
-  colour. It still reads (thin strokes vs the index's heavy ones).
+- An index line runs over the top pips of a 4..10 and over a court's crown
+  (the gap keeps it legible). Fractions make it long: 3+1/2 is 33 px, and
+  past 59 px the Lua side drops numbers off the end.
+- A long line on a hot card can cover most of an outlined pip in the top
+  row (3+1/2±1/2 on a 4).
+- Gold under a red or orange suit nearly vanishes when an ω multiplies it.
+- In the high-contrast deck an ω's body is the suit's ramp, so it shades
+  from top to bottom. Wild's is flat.
 - Moves have no name on the card (a ledge instead); vanilla consumables do.
 - Jokers carry vanilla's JOKER lettering although the brief said no words;
   `jokers.finish()` is the one place to take it off.

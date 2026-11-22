@@ -1,6 +1,6 @@
 -- The jokers (DESIGN.md § 4). "Rank" here means the rank a card plays as in the hand being scored (WW.rank_now):
 -- a wild in a Pair of Kings is a King. Cards with no rank (Stone, 3½, ω) are invisible to nim-sums and to the mex,
--- the way a 0 is. In nim-sums a card is a heap: its rank, plus 1 for a halo (5* is the heap 4).
+-- the way a 0 is. In nim-sums a card is a heap: its rank, plus 1 for a * (5* is the heap 4).
 
 local WW = WinningWays
 local E = WW.engine
@@ -19,7 +19,7 @@ local function in_row(cards)
   return row
 end
 
---- A card's heap for nim-sums: the rank it plays as (r, or the one given), plus 1 for a halo. nil with no rank.
+--- A card's heap for nim-sums: the rank it plays as (r, or the one given), plus 1 for a *. nil with no rank.
 function WW.heap(card, r)
   r = r or WW.rank_now(card)
   if not r then return nil end
@@ -47,7 +47,7 @@ end
 --- Can the played cards nim-sum to 0 with at least three distinct ranks among them? Scoring cards count as the
 --- rank they play as. A flexible kicker (one that doesn't score) can play as any of its ranks, Conway's included:
 --- you move first in a confused position, so you choose. Cards with no rank, and cards infinity ate, don't count.
---- Ranks are what count as distinct; heaps (a halo adds 1) are what nim-sum.
+--- Ranks are what count as distinct; heaps (a * adds 1) are what nim-sum.
 function WW.bouton(full_hand, scoring_hand)
   local scores = {}
   for _, c in ipairs(scoring_hand) do scores[c] = true end

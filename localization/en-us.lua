@@ -30,7 +30,7 @@ return {
         name = "Ordinal Deck",
         text = {
           "Start run with an",
-          "extra {C:attention}0{} worth {C:attention}ω{}",
+          "{C:attention}ω{} of {C:spades}Spades{}",
           "and a {C:ww_move,T:c_ww_cut}Cut{} card",
         },
       },
@@ -212,7 +212,7 @@ return {
     Spectral = {
       c_ww_omega = {
         name = "Omega",
-        text = { "Add {C:attention}ω{} to {C:attention}1{}", "selected card", "in your hand" },
+        text = { "Converts {C:attention}1{} selected", "card to an {C:attention}ω" },
       },
     },
     Other = {
@@ -280,6 +280,13 @@ return {
           "Plays as {C:attention}#3#{}",
         },
       },
+      ww_value = {
+        name = "Value",
+        text = {
+          "Worth {C:chips}#1#{}",
+          "Plays as {C:attention}#2#{}",
+        },
+      },
       ww_modifier_green = {
         name = "Modifier",
         text = {
@@ -296,6 +303,7 @@ return {
       ww_0 = "0",
       ww_1 = "1",
       ww_C = "Cavalier",
+      ww_w = "ω",
     },
     dictionary = {
       k_ww_no_rank = "no rank",

@@ -135,10 +135,15 @@ WW.MOVES = {
       return {}
     end,
   },
+  -- n + ω = ω: added on the right, as the played row adds, ω absorbs everything finite before it. So the card
+  -- becomes an ω, whatever it was; one that is already an infinite number keeps that and gains another ω
+  -- (ω + 14 becomes ω·2).
   omega = {
     min = 1, max = 1,
     apply = function(cards)
-      WW.add_mod(cards[1], N.omega)
+      local v = WW.value_of(cards[1])
+      local k = (N.is(v) and v.k > 0) and v.k or 0
+      WW.set_value(cards[1], N.new(0, k + 1))
       return {}
     end,
   },

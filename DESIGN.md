@@ -1,6 +1,6 @@
 # Winning Ways — design sketch
 
-*Status: 1.0.0. Everything in the Decided sections is built (§ 11).
+*Status: everything in the Decided sections is built (§ 11).
 **Decided** sections record what a9 and Claude have agreed. **Candidates** are proposals still waiting on a9's call. § 10 lists the facts the design
 rests on, each one checked with ogdoad or marked standard.*
 
@@ -34,7 +34,10 @@ Each family breaks one assumption the deck makes about ranks:
   - **1** = {0|}.
   - **C, the Cavalier** = {J|Q} = 12, tarot's fourth court card, which the French deck dropped. It is a face card and
     scores 10, like the other court cards.
-- With the born ranks, the deck's ranks 0–15 form the field F₁₆ under nim arithmetic.
+  - **ω**, the first infinite number, is a rank too: the seventeenth, past the Ace. Only the Omega Spectral makes
+    one (§ 2.4). It is worth ω, not 16, which is an Ace with +1.
+- With the born ranks, the deck's ranks 0–15 form the field F₁₆ under nim arithmetic. ω is outside it: it plays as no
+  rank and takes no part in nim arithmetic.
 - **Straights:** the Cavalier is optional. 10-J-Q-K-A and 10-J-C-Q-K are both straights, so no deck changes and
   vanilla's straights are untouched. The born ranks extend straights downward (0-1-2-3-4). The Ace still tops a
   straight or plays low at its start (A-2-3-4-5), and still can't wrap (K-A-2 isn't a straight). These are ordinary
@@ -57,7 +60,8 @@ A card **acts as any rank its value equals or is confused with**. For example:
 - **Hand type:** you choose the ranks. You are the first player in a confused position, and the first player wins
   those. Assigning ranks is a matching problem like Quintessence's suit matching, and easier, because each card's
   options form one range of ranks.
-- **Equal values pair**, even when they have no rank: two 3½s are a Pair.
+- **Equal values pair**, even when they have no rank: two 3½s are a Pair. A * changes nothing here: 3½* pairs with
+  3½, as n* plays as n.
 - **Infinite cards pair by galaxy**, the set of values a finite distance apart (nonstandard analysis's word):
   ω + 13 pairs with ω + 2, but not with 2ω. Seen from the finite ranks, everything in one galaxy is equally far
   away.
@@ -86,15 +90,23 @@ A card **acts as any rank its value equals or is confused with**. For example:
   - 7±2 is a 7 with ±2.
 
   Cards without a modifier are worth their rank.
-- **Its own slot.** The modifier sits beside enhancement, edition and seal, so a card can be Glass *and* +½. It will
-  be drawn as a badge over the normal rank front.
+- **Its own slot.** The modifier sits beside enhancement, edition and seal, so a card can be Glass *and* +½. A card
+  with one draws its own front (§ 2.5).
 - **Rank changes keep it.** Strength, Ouija and Generator change the rank, the modifier stays, and the value shifts
   with the rank: 7±2 on an 8 is 8±2. This is coherent because heating and cooling commute with adding a number:
   ∫^t(G + x) = ∫^t G + x and (G + x)_t = G_t + x. Copies (Death, Cryptid) keep the modifier.
-- **Which rank a made value sits on.** When a Move makes a value V, the card sits on the rank nearest V's mean among
-  the ranks V plays as (the lower one on a tie), or on the nearest rank at all when V plays as none. Its modifier is
-  V minus that rank. So 3½ sits on the 3 with +½, and 7±2 on the 7 with ±2. The wild {ω|2} has an infinite mean, so
-  it sits on the Ace, with the modifier {ω−15 | −13}.
+- **Which rank a made value sits on.** When a Move makes a value V, the card sits on V's mean, rounded down, and its
+  modifier is V minus that rank. So 3½ sits on the 3 with +½, 3¾ on the 3 with +¾, 7±2 on the 7 with ±2, and 13¼±4
+  on the Queen: a fraction always counts up from the rank below. Three cases need more:
+  - When V plays as some ranks but not that one, it sits on the nearest rank it does play as (the lower on a tie).
+    {7±2|3} has mean 5, plays as a 3 or a 4, and sits on the 4.
+  - Past the ends it sits on the end: 28 is an Ace with +13, and −1½ a 0 with −1½.
+  - A value that is infinite however it's played (its Right stop is infinite) sits on ω: ω + 14 is an ω with +14.
+    Any other value with an infinite mean sits at that end of the ranks it plays as: the wild {ω|2} sits on the
+    Ace, with the modifier {ω−15 | −13}, and so does {ω|16}, which plays as none.
+
+  a9 decided this on 2026-11-22. Before, a card sat on the rank nearest its mean among those it played as, so 3¾ was
+  a 4 with −¼.
 - **Equal values play alike.** A 3 with +½ and a 4 with −½ are both 3½, so they pair.
 - **No rank.** A value that plays as no rank (3½, ω) counts as having no rank, like a Stone card, except that equal
   values still pair.
@@ -103,16 +115,20 @@ A card **acts as any rank its value equals or is confused with**. For example:
 
 ### 2.4 Transfinites
 
-- **ω only enters from outside**, through the Omega Spectral, which adds ω to a card's modifier. No chain of Moves on
+- **ω is a rank**, the seventeenth, past the Ace (§ 2.1). a9 decided that on 2026-11-22; before, ω was a modifier,
+  and the card under it kept its rank.
+- **ω only enters from outside**, through the Omega Spectral, which turns a card into an ω. No chain of Moves on
   finite cards can reach it, because every value they build is born on a finite day.
 - **An ω card:**
-  - is above every rank, and pairs with any card in its galaxy (§ 2.2);
+  - is above every rank, plays as none, and pairs with any card in its galaxy (§ 2.2). In a sorted hand it stands
+    past the Ace, but it is never the High Card;
   - always scores, like a Stone card;
   - **eats** the finite cards between it and the nearest infinite card to its left (n + ω = ω). Eaten cards don't
     count toward the hand, and are destroyed;
   - **grows like Ceremonial Dagger**: twice the eaten cards' chips become its permanent bonus chips (Dagger takes
     double too; `WW.EAT`, a balance number, § 5½). Its value doesn't change; the bonus is stored the way Hiker's is.
-  - scores its rank's chips: a King with +ω is ω + 14, and scores a King's 10.
+  - scores no chips of its own. Only a finite part scores: Sum(K, ω) is ω + 14, an ω with +14, and scores a King's
+    10.
 - **Infinities don't eat each other.** [junk, ω, junk, ω] adds up to ω + ω = ω·2, so each ω eats its own junk and
   both survive.
 - **Two additions.** The played row uses ordinal addition, which depends on order. Sum uses Conway's sum, which
@@ -126,6 +142,43 @@ A card **acts as any rank its value equals or is confused with**. For example:
     score; and they're destroyed once the hand has scored.
 - **The wild rank {ω|2}** (made with Cut) has infinite temperature, so it is always the hottest card in a hand. You
   take ω (0 chips), and the Blind gets first pick of your other hot cards.
+
+### 2.5 Faces: the value, drawn
+
+A plain card keeps its own front. A card with a modifier, and every ω, draws its own. a9 and Claude settled this on
+2026-11-22; before it, a modifier was coloured text beside the corner index.
+
+- **The corner reads as the value**, in the rank's own letterforms and ink: 3+1/2, 7±2, ω+14. Fractions are written
+  out, and a number that isn't whole is one fraction (±13/2), because in one ink 6 1/2 would read as 61/2. A line
+  too long for the card drops numbers off its end and keeps their sign: 8+1/2±13/2 becomes 8+1/2±.
+- **The field shows the value's stops in pips.** The Right stop's worth of pips are solid, and pips on up to the
+  Left stop are outlined. A fraction cuts the last pip of each kind.
+  - A number has no outlines: 3½ is three pips and half a pip, and 0 is an empty field.
+  - 7±2 = {9|5} is a 9 with five pips solid and four outlined. For a switch, the solid count to the whole count is
+    exactly the ranks it plays as. It is the scoring too: you take every pip if you move first there, and the Blind
+    leaves you the solid ones.
+  - Any other game shows its stops the same way. It plays inside that range, but not always at the ends: {7±2|3}
+    shows 3 solid and 2 outlined and plays as a 3 or a 4, and 5±1* shows 4 to 6 and plays only as a 5. The tooltip
+    says exactly.
+  - Up to 11 pips use vanilla's layouts (11 is the 10 with a pip in the middle). From 12 to 28 they are small pips in
+    rows of four. Past that, the rank's own pips stay.
+  - Pips never go below zero: 1±2 = {3|−1} shows three outlined pips, which are the ranks it plays as, 0 to 3.
+  - This is a picture, not a rule. Nothing in the game reads it.
+- **A \* goes before the rank** (\*5) and turns the pips to a checkerboard; outlined pips are dashed, since a
+  one-pixel diagonal lies wholly on one colour of the board. Turning the pips instead, a9's first idea, can't work:
+  vanilla's diamond is unchanged by any quarter turn.
+- **Courts and the Ace keep their own art** under the new corner: Q±1 still looks like a Queen. So their fields
+  don't show their values, a limit a9 accepted. A card of a suit we have no pips for (another mod's) does the same.
+- **ω is the card inside out.** The body takes the suit's ink to its edges, multiplied, so an enhancement still
+  shows through; the index, the corner pip and one large ω are white.
+- **{ω|x} is split along the diagonal** from bottom left to top right: the ω card above, with its corner, and the x
+  card below, with its own. {ω|0} is half ω and half 0, and plays as every rank. The tooltip calls {ω|x} the wild
+  rank when x is 2 or less, since those play as every rank a standard deck has.
+- **As built:** `src/fronts.lua` decides the look and composes it as a 71×95 grid from Fable's parts
+  (`assets/parts.lua`: the index alphabet, each suit's pips, vanilla's layouts in fill order, the inks).
+  `src/faces.lua` draws each distinct look once onto a canvas and puts it in place of the card's front sprite, so
+  editions, debuffs and Negative treat it like any front. A composed number card with no modifier is vanilla's own
+  card, pixel for pixel; the self-test checks 2 to 10 in every suit.
 
 ## 3. Moves — Decided
 
@@ -185,14 +238,15 @@ game-theory reason.
 
 ### Nimbus
 
-Adds * to the modifiers of up to two cards: a nimber halo. The vanilla Tarot already has the name "Star".
+Adds * to the modifiers of up to two cards. The card shows it as a * before its rank and checkered pips (§ 2.5).
+The Move is named for a halo because the vanilla Tarot already has the name "Star".
 - For hands nothing changes: n* plays as n.
-- **In nim-sums a halo adds 1:** n* is the heap n ⊕ 1, so 5* plays as a 5 but nim-sums as a 4. That makes Nimbus
+- **In nim-sums a \* adds 1:** n* is the heap n ⊕ 1, so 5* plays as a 5 but nim-sums as a 4. That makes Nimbus
   Bouton's tuning knob and a way past The Heap (a 5 and a 5* nim-sum to 1). Distinct ranks still count by the rank a
   card plays as, and Grundy's mex reads ranks. a9 decided this on 2026-11-15.
-- **The halo is a *:** a card wears it exactly when its modifier is x + * for x a number plus nothing, ↑, ↓ or a
-  switch (`WW.has_star`), so 5±1* draws ±1 under a halo. Nim-sums read the same test.
-- Haloed cards cancel in pairs under Sum: 5* + 5* = 10.
+- **Which cards carry a \*:** exactly those whose modifier is x + * for x a number plus nothing, ↑, ↓ or a switch
+  (`WW.has_star`), so 5±1* reads \*5±1. Nim-sums read the same test.
+- Starred cards cancel in pairs under Sum: 5* + 5* = 10.
 
 ### Mex
 
@@ -201,9 +255,13 @@ becomes a 1; beside a 0 and a 1 it becomes a 2. It's the easy way to make born r
 
 ### Omega (Spectral)
 
-Adds ω to a selected card's modifier. The card keeps its rank and its rank's chips, and starts eating (§ 2.4). An
-earlier version turned a 2 into ω, but a Spectral pack's hand often holds no 2: 8 cards contain one only about 52% of
-the time.
+Turns a selected card into an ω: n + ω = ω. Added on the right, as the played row adds (§ 2.4), ω absorbs
+everything finite before it, which is the rule an ω eats by. So the card's rank, chips and modifier go, and it starts
+eating. A card that is already an infinite number keeps that and gains another ω: ω + 14 becomes ω·2.
+- **Any card will do.** The first version turned a 2 into ω, but a Spectral pack's hand often holds no 2: 8 cards
+  contain one only about 52% of the time. The second added ω to the card's modifier and kept its rank, so a King
+  became K + ω = ω + 14. a9 replaced that with the ω rank on 2026-11-22.
+- **ω + 14 still exists:** Sum(K, ω) makes it, because Conway's sum commutes and absorbs nothing.
 - **The ω³ = 2 nod lives here, not on the card** (the pixel font has no ³): ω is the smallest cube root of 2 in nim
   arithmetic, and no finite rank is one (the nim-cubes of 1–15 are only 1, 8, 10, Q and K).
 - **No bonus for using a 2.** Making ω's siblings ω·2 and ω·3, the other two cube roots, as well would give three
@@ -265,8 +323,8 @@ Claude's calls where the sketch left room, waiting on a9's say-so:
   you choose in a confused position. So a wild kicker completes a Bouton whenever the other cards nim-sum to a rank it can play as
   (K, Q and a wild: K ⊕ Q = 3). Scoring cards keep the rank the hand gave them.
 - **Generator** pays **+2 chips per place** on the Ace's cycle (A 2, 9 4, …, 1 30; 16 on average), from the card's own
-  rank, then steps that rank. It acts on the rank under any modifier (K+ω becomes 6+ω), never on Stone cards, and
-  the 0 neither pays nor moves. Blueprint copies the chips but not the step.
+  rank, then steps that rank. It acts on the rank under any modifier (7±2 becomes J±2), never on Stone cards or an
+  ω, and the 0 neither pays nor moves. Blueprint copies the chips but not the step.
 - **Grundy** grows before the hand scores, so the mex counts the same hand. Only the scoring cards count, so a High
   Card's kickers don't.
 - **Hotstrat** retriggers cards whose value has temperature above 0: 7±2 and the wild, not *, ↑ or ↓.
@@ -303,7 +361,7 @@ Claude's calls where the sketch left room, waiting on a9's say-so:
 - **Field Deck:** 64 cards, ranks 0 through A with the Cavalier (the field F₁₆) in every suit.
   - **As built** (`src/decks.lua`): the born ranks join the deck through vanilla's `extra_cards` when it is built,
     so they count toward the starting deck size (Erosion sees 64).
-- **Ordinal Deck:** the standard 52 plus a 0 of Spades worth exactly ω, and a Cut in the consumable slot.
+- **Ordinal Deck:** the standard 52 plus an ω of Spades, and a Cut in the consumable slot.
 
 ## 5½. Balance
 
@@ -333,15 +391,16 @@ Quintessence makes Wild a fifth suit that counts as every suit. In Hackenbush th
 player may cut, and a lone green edge is the nimber * (green Hackenbush is Nim). Quintessence's Wild pip is already a
 `*`. So:
 
-- **A Wild card's value carries a *:** a Wild 5 is 5*. It plays as a 5, wears the halo, nim-sums as a 4, and is a day
-  younger than 5 for Birthday. a9 decided this on 2026-11-15.
+- **A Wild card's value carries a *:** a Wild 5 is 5*. It plays as a 5, shows its star and checkered pips, nim-sums as
+  a 4, and is a day younger than 5 for Birthday. a9 decided this on 2026-11-15.
 - **The * is the suit's.** It isn't stored in `ww_mod`. `WW.mod_of` adds it on read, and writes take it off first.
   So it comes and goes with the suit (The Star takes it away, The Lovers gives it), and every Move acts on the whole
   value:
   - Nimbus on a Wild 5 gives a plain 5 (* + * = 0).
   - Heat gives 5±1.
   - Cut gives exactly {L|R}, storing a * where it must cancel the suit's.
-- A Wild ω card still eats: ω + * is ω with a halo.
+- An ω with a * still eats: ω + * reads \*ω. Omega itself makes exactly ω on a Wild card, storing the * that cancels
+  the suit's.
 - The born ranks have Wild fronts, values play in Spectrum hands, and Repaint leaves Wild cards alone, because a green
   edge is its own negative.
 
@@ -415,6 +474,9 @@ it only reflects which card you put first.
 - **The Axe** (Boss): the Blind's side of Hackenbush (§ 7). After each hand it cuts your leftmost red card and every
   card to its right. Sorting reds to the right limits the damage, but that fights the other uses of card order (ω
   eats leftward, Conway reads neighbours). a9 likes it and parked it on 2026-11-15.
+- **ω in nim-sums** (Claude's, 2026-11-22): count an ω as a heap of its own, so that ω ⊕ ω = 0 and no finite ranks
+  cancel one. A lone ω would always get past The Heap, and would break Bouton unless paired. Now that ω is a rank
+  this is a few lines; today an ω is invisible to nim-sums.
 - **Later:** vouchers, tags, challenges, and the Moves' Game Pack art.
 
 ## 9. Open questions
@@ -440,6 +502,11 @@ Checked with ogdoad's Python bindings unless marked standard.
 - **Squares** (nim-multiplication) permute ranks in the Frobenius cycles above. **15, the Ace, generates F₁₆'s
   multiplicative group**: its powers visit every nonzero rank once.
 - **Cut(J, Q) = {11|13} = 12**, the Cavalier.
+- **Sitting ranks:** {7±2|3} has mean 5 and stops 5 and 3, and is confused with exactly 3 and 4. 13¼±4 = {17¼|9¼} is
+  confused with 10 through A.
+- **Heat can pass zero:** {2|0} heated by 1 is {3|−1}, which is confused with 0, 1, 2 and 3.
+- **The wilds** (the engine; ogdoad has no transfinite games): {ω|0} is confused with every rank from 0 to A, and
+  {ω|2} with 2 to A.
 - **ω:**
   - ω³ = 2 in nim arithmetic, and the three cube roots of 2 are ω, ω·2 and ω·3. They nim-sum to 0 and nim-multiply
     to 2 (Vieta).
@@ -454,11 +521,13 @@ Checked with ogdoad's Python bindings unless marked standard.
 
 - **Doesn't K + ω reduce to ω?** Not for surreal numbers, whose (Conway's) sum commutes, so K + ω = ω + 14, a
   different number from ω. Only ordinal addition, which depends on order, absorbs: 14 + ω = ω, but ω + 14 ≠ ω even
-  there. That ordinal rule is what the played row uses for eating (§ 2.4); values use Conway's sum.
+  there. That ordinal rule is what the played row uses for eating (§ 2.4); values use Conway's sum. Since 2026-11-22
+  the Omega Spectral uses the ordinal rule too: it adds ω on the right of the card, so the card becomes ω. Sum(K, ω)
+  is still ω + 14.
 
 ## 11. Engine
 
-Built and tested (`src/engine/`, `tests/`); nothing in the game uses it yet.
+Built and tested (`src/engine/`, `tests/`).
 
 - **Numbers** (`num.lua`) have the form k·ω + x, with k and x dyadic, stored as doubles on a grid: multiples of
   2^-32 below 2^20 in magnitude. That takes 52 of a double's 53 bits, so sums are exact. A value off the grid, such
@@ -507,13 +576,14 @@ Built and tested (`src/engine/`, `tests/`); nothing in the game uses it yet.
 
   Tie groups of equal rankless values pair only with each other.
 - **In the game** (`src/cards.lua`, `src/ranks.lua`):
-  - **Ranks:** the born ranks are registered, with fronts Fable drew from vanilla's sprites (`art/fronts.py`).
+  - **Ranks:** the born ranks and ω are registered, with fronts Fable drew from vanilla's sprites
+    (`art/fronts.py`).
   - **Reading a hand:** `evaluate_poker_hand` runs the game's own evaluator once per candidate assignment, so other
     mods' hands count too, and keeps the best hand by the hand list's order, then the most scoring cards.
-  - **Faces:** a modifier is colour text beside the corner index, mirrored like vanilla's (3+½, 7±2, K+ω). The wild's
-    index is a white ± stamp on mult red. A * is a halo. Fable's symbol font is a fallback for Balatro's pixel font,
-    so text can say ω, ½ and ↑ (`src/faces.lua`, `src/font.lua`).
+  - **Faces:** a card with a modifier draws its own front (§ 2.5; `src/fronts.lua`, `src/faces.lua`). Fable's symbol
+    font is a fallback for Balatro's pixel font, so text can say ω, ½ and ↑ (`src/font.lua`).
   - **Hooks:** while a hand is assigned, `get_id`, `get_nominal` and `is_face` report the rank a card plays as.
+    Outside a hand being read, `get_nominal` sorts a card by the rank it sits on (a 3½ among the 3s).
     `get_X_same` handles tie groups. Straights are Steamodded's own: the optional Cavalier is just another entry in
     the Jack's next list.
   - **Values:** a card's value is computed as rank + modifier and cached by both. `WW.set_value` puts a made value
@@ -525,13 +595,10 @@ Built and tested (`src/engine/`, `tests/`); nothing in the game uses it yet.
   scripted hands through the game's own code:
   - the deck: 64 cards, 12 of them born ranks;
   - a hot card's bite: 7 7 7±2 scores exactly 159;
-  - infinity eating: 7 7 K+ω 9 9 is a Pair worth 104, the 7s are destroyed, and the King keeps +14;
+  - infinity eating: 7 7 ω+14 9 9 is a Pair worth 132, the 7s are destroyed, and the ω keeps +28;
   - Cut used through the game's own button;
   - each joker in turn: Bouton on 1 2 3 (24), Generator on an Ace (18, and it becomes a 9), Grundy on 0 1 2 3 4
     (+5 mult), Hotstrat and Thermograph on a lone 7±2 (23 and 36), Sprouts on 3 7 (a new 4), Cantor at a Blind
-    (a missing pair), Cantor's Paradise on 7 7 K+ω 9 9 (×1.2, 124), Conway on K 5 K (Three of a Kind, 165);
-  - The Heap: a Pair scores 0, three 9s score 171.
-- **Still to build:**
-  - **Card faces:** with modifiers, a card shows its normal rank front plus a modifier badge (+½, *, ±2, ω), with
-    the exact value in the tooltip. That's far easier than procedural fronts, but it is still the next thing to
-    prototype.
+    (a missing pair), Cantor's Paradise on 7 7 ω+14 9 9 (×1.2), Conway on K 5 K (Three of a Kind, 165);
+  - The Heap: a Pair scores 0, three 9s score 171;
+  - the Ordinal Deck: 53 cards, one of them the ω of Spades, and a Cut.
