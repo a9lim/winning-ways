@@ -33,9 +33,6 @@ local INK, WHITE, ERASE = F.INK, F.WHITE, F.ERASE
 
 -- A box that holds any index glyph, with a pixel to spare: what "base" clears before writing its own index.
 local BOX = { x = 5, y = 6, w = 10, h = 10 }
--- More pips than vanilla lays out go in rows of four small ones; past GRID_MAX the field is left to the rank.
-local GRID = { per = 4, dx = 9, dy = 11 }
-F.GRID_MAX = 28
 
 local floor, ceil, min, max = math.floor, math.ceil, math.min, math.max
 
@@ -190,31 +187,16 @@ local function pip(m, s, x, y, turned, solid, line, checker)
   end
 end
 
---- Where n pips go: a list of { x, y, turned }, and the sprite they use. nil when there is no layout for n.
-function F.places(parts, suit, n)
-  local p = parts.suits[suit]
-  if n < 1 or n > F.GRID_MAX then return nil end
-  if p.layouts[n] then return p.layouts[n], sprite(p.pip) end
-  local s = sprite(p.small)
-  local rows = ceil(n / GRID.per)
-  local y0 = floor((H - ((rows - 1) * GRID.dy + s.h)) / 2)
-  local out = {}
-  for k = 0, n - 1 do
-    local r, c = floor(k / GRID.per), k % GRID.per
-    local across = min(GRID.per, n - r * GRID.per)
-    local x0 = floor((W - ((across - 1) * GRID.dx + s.w)) / 2)
-    out[#out + 1] = { x0 + c * GRID.dx, y0 + r * GRID.dy }
-  end
-  return out, s
-end
-
---- The field's mask: `right` solid pips, on up to `left` outlined.
+--- The field's mask: `right` solid pips, on up to `left` outlined. Empty when there is no layout for that many
+--- (none are needed, or more than a card holds).
 function F.field(parts, suit, right, left, checker)
   local m = blank()
-  local places, s = F.places(parts, suit, ceil(left))
+  local p = parts.suits[suit]
+  local places = p.layouts[ceil(left)]
   if not places then return m end
-  for k, p in ipairs(places) do
-    pip(m, s, p[1], p[2], p[3], right - (k - 1), left - (k - 1), checker)
+  local s = sprite(p.pip)
+  for k, at in ipairs(places) do
+    pip(m, s, at[1], at[2], at[3], right - (k - 1), left - (k - 1), checker)
   end
   return m
 end
@@ -442,7 +424,10 @@ function F.spec(parts, rank, suit, value, mod, halo)
   fit(parts, index)
   spec.right, spec.left = plain_number(right), plain_number(left)
   spec.checker = halo or nil
-  spec.mode = (PIPS[rank] and have and ceil(spec.left) <= F.GRID_MAX) and "field" or "base"
+  -- The field shows the value when the rank's own field is pips, we have the suit's, and they fit on a card
+  -- (17 do). Otherwise the card keeps its art.
+  local fits = have and (spec.left <= 0 or parts.suits[suit].layouts[ceil(spec.left)] ~= nil)
+  spec.mode = (PIPS[rank] and fits) and "field" or "base"
   return spec
 end
 

@@ -165,8 +165,11 @@ A plain card keeps its own front. A card with a modifier, and every ω, draws it
   - Any other game shows its stops the same way. It plays inside that range, but not always at the ends: {7±2|3}
     shows 3 solid and 2 outlined and plays as a 3 or a 4, and 5±1* shows 4 to 6 and plays only as a 5. The tooltip
     says exactly.
-  - Up to 11 pips use vanilla's layouts (11 is the 10 with a pip in the middle). From 12 to 28 they are small pips in
-    rows of four. Past that, the rank's own pips stay.
+  - Up to 11 pips use vanilla's layouts (11 is the 10 with a pip in the middle). From 12 to 17 the card goes on as
+    vanilla might have: two columns of six, which is the 12, and the middle column filling in between them, so
+    each holds the ones before it. 17 is as many as fit with a clear pixel between them; past that, the rank's
+    own pips stay. Many-pip cards laid out like vanilla's are UnStable's idea (its 11, 12 and 13); a9 asked for
+    them on 2026-11-22 in place of small pips in a block.
   - Pips never go below zero: 1±2 = {3|−1} shows three outlined pips, which are the ranks it plays as, 0 to 3.
   - This is a picture, not a rule. Nothing in the game reads it.
 - **A \* goes before the rank** (\*5) and turns the pips to a checkerboard; outlined pips are dashed, since a
@@ -352,6 +355,9 @@ Claude's calls where the sketch left room, waiting on a9's say-so:
 - **Hilbert's Hotel** declares Steamodded's `card_limit = 2` (its own slot plus one; a Negative edition is 1) and
   vanilla's `h_size = −1`, so the slots and hand size come and go the way Negative and Juggler's do.
 - **Guy** reads the rank a card plays as, so a wild playing as a 3 counts.
+- **Vanilla's Fibonacci and Hack count the 0 and the 1** (a9, 2026-11-22; UnStable does the same for its own). 0
+  and 1 open the Fibonacci numbers, and Hack's 2 to 5 becomes every rank up to 5. Both read the rank a card plays
+  as. Their text says so; their own rules are untouched.
 - **Costs:** Bouton $8, Generator $7, Grundy $6, Hotstrat $5, Thermograph $8, Sprouts $8, Cantor $6, Cantor's
   Paradise $7, Birthday $6, Hilbert's Hotel $8, Conway, Berlekamp and Guy $20.
 

@@ -459,3 +459,30 @@ SMODS.Joker {
     end
   end,
 }
+
+-- vanilla's jokers ----------------------------------------------------------------------------------------
+-- Two of vanilla's jokers read small ranks, and the born ranks are smaller still. 0 and 1 open the Fibonacci
+-- numbers (vanilla lets the Ace stand in for the 1), and Hack's 2 to 5 is every rank up to 5. So both count a
+-- card that plays as a 0 or a 1, as UnStable has them count its own. Their own rules run after ours and are
+-- untouched: a calculate that returns nothing falls through to vanilla's.
+
+local function plays_small(card)
+  local r = WW.rank_now(card)
+  return r == 0 or r == 1
+end
+
+SMODS.Joker:take_ownership("fibonacci", {
+  calculate = function(self, card, context)
+    if context.individual and context.cardarea == G.play and plays_small(context.other_card) then
+      return { mult = card.ability.extra, card = card }
+    end
+  end,
+}, true)
+
+SMODS.Joker:take_ownership("hack", {
+  calculate = function(self, card, context)
+    if context.repetition and context.cardarea == G.play and plays_small(context.other_card) then
+      return { message = localize("k_again_ex"), repetitions = card.ability.extra, card = card }
+    end
+  end,
+}, true)

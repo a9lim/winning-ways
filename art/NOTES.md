@@ -176,8 +176,32 @@ Per suit: the pip (the 3's centre pip; 11x10 for hearts and spades, 11x11
 for clubs and diamonds), the small corner pip (from the 10; 7x8 at (6, 17)),
 and where n pips stand for n = 1..11, measured from vanilla's own cells:
 x is 19, 30 or 41, and a pip in the lower half is turned. 1 is the 3's
-centre; 11 is the 10 plus that centre. Past 11 the Lua side sets small pips
-in rows of four (9 px apart, rows 11 px apart, centred), up to 28.
+centre; 11 is the 10 plus that centre.
+
+**12 to 17** are drawn here (`more_layouts()`), as vanilla might have gone
+on: full-size pips in its three columns, upright above the middle and
+turned below, the halves mirror images. The side columns hold six pips
+each (rows 13, 25, 37 and their mirrors; an 11-row pip starts a row
+higher, at 12, to keep a clear row), which is the 12. Then the middle
+column fills in: 13 adds the middle pip, 14 a single between the first two
+rows of each half, 15 the middle again, 16 a second single, 17 the middle.
+So each holds the ones before it, and the fill order is the side columns
+from the outside in, then the singles, then the middle. `clearance()`
+checks every layout: the four suits keep a clear pixel between any two
+pips; Wild's asterisks, which fill their corners, touch from the 13 up
+(and already do on the 11).
+
+Round 5 first set anything past 11 as small corner-size pips in rows of
+four, in a block in the middle (a9: lay them out like cards). Laying
+many-pip cards out like vanilla's is UnStable's idea: its 11, 12 and 13
+alternate pairs and singles down three columns, from above vanilla's top
+row to below its bottom one. Ours are worked out inside vanilla's rows, and
+no UnStable position is used. Its 21 and 25 stand on a diagonal lattice,
+eight pixels across and nine down, where pips touch or nearly; measured
+here, clubs need ten rows between an upright pip and a turned one at that
+offset, so nine rows of them do not fit a card with an index line along
+its top. 17 is the most that fits cleanly, and past it a card keeps its
+rank's own pips.
 
 The Wild suit's are measured from Quintessence's sheet the same way.
 

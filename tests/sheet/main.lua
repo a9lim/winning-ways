@@ -37,6 +37,12 @@ local ROWS = {
     { "ww_1", "Hearts", STAR },
   },
   {
+    { "8", "Hearts", cut(n(4), n(-4)) }, { "8", "Clubs", cut(n(5), n(-5)) }, { "9", "Diamonds", cut(n(5), n(-5)) },
+    { "8", "Spades", Gm.add(n(1 / 2), cut(n(6.5), n(-6.5))) }, { "10", "Hearts", cut(n(6), n(-6)) },
+    { "10", "Clubs", cut(n(7), n(-7)) }, { "9", "Hearts", n(4.5) }, { "9", "Spades", n(7) },
+    { "8", "Diamonds", Gm.add(Gm.add(n(1 / 2), cut(n(6.5), n(-6.5))), STAR) }, { "8", "quint_Wild", cut(n(7), n(-7)) },
+  },
+  {
     { "Queen", "Spades", cut(n(1), n(-1)) }, { "Queen", "Diamonds", n(1 / 2) }, { "King", "Hearts", STAR },
     { "Ace", "Clubs", n(1) }, { "ww_C", "Spades", Gm.add(cut(n(2), n(-2)), STAR) }, { "Jack", "Clubs", cut(n(2.5), n(-2.5)) },
     { "Ace", "Hearts", n(13) }, { "4", "Stars", n(1 / 2) }, { "King", "Diamonds", cut(n(0), STAR) }, { "10", "Spades", n(20) },

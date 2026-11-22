@@ -23,7 +23,7 @@ What in them is Balatro's:
   high-contrast inks, all measured from its card fronts and written out as
   masks and numbers. The Wild suit's pips are Quintessence's. Ours: the
   glyphs 1, C, ω, + − ± * ↑ ↓, the small digits, the order pips fill in,
-  and the 11th place.
+  and the places past the 10.
   **Row 4 (Wild)** is derived from Quintessence's Wild suit fronts
   (a9lim, MIT): the asterisk pips are Quintessence's own drawing; the "0"
   and "1" strokes and the body of the Wild Cavalier (Quintessence's Wild
@@ -60,8 +60,9 @@ Everything else contains no pixels from the game and is MIT like the code:
 
 These use Balatro's interface colours.
 
-The 1 as a single small pip, and a fraction as part of a pip, are solutions
-shared with UnStable (kirbio, MIT); no UnStable pixels are used. The Tweedledum
+The 1 as a single small pip, a fraction as part of a pip, and cards of more
+than ten pips laid out in vanilla's columns are solutions shared with
+UnStable (kirbio, MIT); no UnStable pixel or position is used. The Tweedledum
 card quotes the pose of John Tenniel's illustration (public domain).
 
 Provenance in full: `art/NOTES.md`. The sprites are rebuilt from an

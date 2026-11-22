@@ -43,7 +43,8 @@ local held = {}
 local function hold(keys)
   for _, j in ipairs(held) do j:remove() end
   held = {}
-  for _, k in ipairs(keys) do held[#held + 1] = SMODS.add_card({ key = "j_ww_" .. k }) end
+  -- Ours by their short names; any other joker by its full key.
+  for _, k in ipairs(keys) do held[#held + 1] = SMODS.add_card({ key = k:find("^j_") and k or ("j_ww_" .. k) }) end
   return held[1]
 end
 local function gained() return score() - before end
@@ -255,6 +256,26 @@ after_hand(function()
 end)
 after_hand(function()
   check("Guy: 3 3 scored (10 + 3 + 3) × 2 × 1.5 × 1.5 = 72", gained() == 72, gained())
+  -- Vanilla's Fibonacci counts a 0 and a 1: a Pair of 0s, +8 Mult each.
+  hold({ "j_fibonacci" })
+  before = score()
+  play({ make(1, "Hearts", "ww_0"), make(2, "Spades", "ww_0") })
+end)
+after_hand(function()
+  check("Fibonacci: 0 0 scored (10 + 0 + 0) × (2 + 8 + 8) = 180", gained() == 180, gained())
+  -- And vanilla's Hack retriggers them: a Pair of 1s, each scored twice.
+  hold({ "j_hack" })
+  before = score()
+  play({ make(1, "Hearts", "ww_1"), make(2, "Spades", "ww_1") })
+end)
+after_hand(function()
+  check("Hack: 1 1 scored (10 + 1 + 1 + 1 + 1) × 2 = 28", gained() == 28, gained())
+  -- Their own ranks still count, by vanilla's rule: a Pair of 5s under Hack.
+  before = score()
+  play({ make(1, "Hearts", "5"), make(2, "Spades", "5") })
+end)
+after_hand(function()
+  check("Hack: 5 5 still scores (10 + 5 + 5 + 5 + 5) × 2 = 60", gained() == 60, gained())
   hold({})
 end)
 

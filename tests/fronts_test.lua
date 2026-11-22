@@ -58,6 +58,9 @@ return function(test)
       { "ww_C", "Hearts", STAR, "base Hearts *C court" },
       { "Ace", "Hearts", n(13), "base Hearts A+13" },
       { "10", "Spades", n(20), "base Spades 10+20" },
+      -- A card holds 17 pips. Past that it keeps its rank's own.
+      { "10", "Clubs", cut(n(7), n(-7)), "field Clubs 10±7 3..17" },
+      { "10", "Clubs", cut(n(8), n(-8)), "base Clubs 10±8" },
       { "4", "Stars", n(1 / 2), "base - 4(1/2)" },
       { "Queen", "Diamonds", n(1 / 2), "base Diamonds Q+(1/2) court" },
       { "Jack", "Clubs", cut(n(2.5), n(-2.5)), "base Clubs J±2(1/2) court" },
@@ -97,13 +100,13 @@ return function(test)
     for _, suit in ipairs({ "Hearts", "Clubs", "Diamonds", "Spades", "quint_Wild" }) do
       local p = parts.suits[suit]
       local pip, small = area(p.pip), area(p.small)
-      for k = 1, 11 do
-        eq(count(F.field(parts, suit, k, k)), k * pip, suit .. ": " .. k .. " solid pips")
+      for k = 1, 17 do
+        eq(count(F.field(parts, suit, k, k)), k * pip, suit .. ": " .. k .. " solid pips, none overlapping")
       end
       eq(count(F.field(parts, suit, 0, 0)), 0, suit .. ": a zero is empty")
       eq(count(F.field(parts, suit, -1, 0)), 0, suit .. ": nothing below zero")
-      eq(count(F.field(parts, suit, 14, 14)), 14 * small, suit .. ": 14 small pips")
-      eq(count(F.field(parts, suit, 29, 29)), 0, suit .. ": no layout past " .. F.GRID_MAX)
+      eq(count(F.field(parts, suit, 18, 18)), 0, suit .. ": a card holds 17 pips and no more")
+      eq(small > 0, true, suit .. ": a corner pip")
       local five, hot = count(F.field(parts, suit, 5, 5)), count(F.field(parts, suit, 5, 9))
       local nine = count(F.field(parts, suit, 9, 9))
       eq(five < hot and hot < nine, true, suit .. ": 5 solid < 5 solid and 4 outlined < 9 solid")
@@ -138,8 +141,41 @@ return function(test)
     for _, n in ipairs({ 7, 8 }) do
       for _, p in ipairs(l[6]) do eq(has(n, 6, p[1], p[2]), true, n .. " starts with the 6") end
     end
+    -- Past the 11: two columns of six, and the middle column filling in. Each holds the ones before it.
+    local function within(a, b)
+      for _, p in ipairs(l[a]) do
+        local found = false
+        for _, q in ipairs(l[b]) do found = found or (p[1] == q[1] and p[2] == q[2] and p[3] == q[3]) end
+        if not found then return false end
+      end
+      return true
+    end
+    for _, pair in ipairs({ { 12, 13 }, { 12, 14 }, { 13, 15 }, { 14, 15 }, { 14, 16 }, { 15, 17 }, { 16, 17 } }) do
+      eq(within(pair[1], pair[2]), true, pair[2] .. " holds the " .. pair[1])
+    end
+    for n = 12, 17 do
+      for k = 1, 12 do eq(l[n][k][1] ~= 30, true, n .. ": the side columns fill first") end
+      for k = 13, n do eq(l[n][k][1], 30, n .. ": then the middle column") end
+      for _, p in ipairs(l[4]) do eq(has(n, 4, p[1], p[2]), true, n .. " starts with the 4's corners") end
+    end
+    -- And each is its own half-turn in where its pips stand, as vanilla's even cards are (the middle pip aside).
+    for _, suit in ipairs({ "Hearts", "Clubs", "Diamonds", "Spades" }) do
+      local s = parts.suits[suit]
+      local h, w = #s.pip, #s.pip[1]
+      for n = 12, 17 do
+        local ok = true
+        for _, p in ipairs(s.layouts[n]) do
+          local found = p[1] == 30 and p[2] == s.layouts[1][1][2] -- the middle pip
+          for _, q in ipairs(s.layouts[n]) do
+            found = found or (q[1] == F.W - w - p[1] and q[2] == F.H - h - p[2] and (q[3] or false) ~= (p[3] or false))
+          end
+          ok = ok and found
+        end
+        eq(ok, true, suit .. " " .. n .. " is its own half-turn")
+      end
+    end
     -- The pip a fraction cuts stands clear of both indices: not top-left, not bottom-right.
-    for n = 2, 11 do
+    for n = 2, 17 do
       local p = l[n][n]
       eq(p[1] == 19 and p[2] == 13, false, n .. ": the last pip isn't under the index")
       eq(p[1] == 41 and p[2] >= 70, false, n .. ": nor under the turned one")

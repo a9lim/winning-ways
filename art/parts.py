@@ -15,9 +15,10 @@ file gives the Lua side everything it needs, as assets/parts.lua (no texture):
             of two glyphs where 3+1/2 took five.
   suits     per suit: the pip (vanilla's, from the 3's centre), the small
             corner pip (from the 10) and the Ace's large pip, which an ω
-            card wears in white; and where pips go for 1..11 of them, in
+            card wears in white; and where pips go for 1..17 of them, in
             fill order. 2..10 are vanilla's own layouts, measured; 1 is the
-            3's centre pip; 11 is the 10 with that centre pip added.
+            3's centre pip; 11 is the 10 with that centre pip added; 12..17
+            are drawn here, as vanilla might have gone on (see below).
   inks      per palette and suit, the index and pip ink by row: flat in the
             normal deck, a top-to-bottom ramp in the high-contrast one
             (fronts.ramp), and the courts' corner ink, which in clubs runs a
@@ -29,6 +30,32 @@ them, and a fraction cuts the last. The orders are chosen so that prefixes
 are a smaller rank's layout where one fits (the 6's first four are the 4's
 corners; the 9's first five are the corners and the upper centre), and so
 that the last pip, the one a fraction cuts, stands clear of both indices.
+
+Past the 11 a card is still a card: full-size pips in vanilla's three
+columns, upright above the middle and turned below it, the two halves
+mirror images. The side columns hold six pips each, which is the 12, and
+the middle column fills in between them as vanilla's does from the 4 to
+the 10:
+
+  12   two columns of six
+  13   and a pip in the middle
+  14   the 12 and a single between the first two rows of each half
+  15   and the middle
+  16   the 14 and a single between the next two rows
+  17   and the middle
+
+So every one holds the ones before it, and the fill order is the side
+columns from the outside in, then the singles, then the middle: {15|12}
+is the two full columns with the middle column's three pips outlined. 17
+is as many as fit with a clear pixel between them; past that a card keeps
+its rank's own pips.
+
+Many-pip cards laid out like vanilla's are UnStable's idea (kirbio, MIT):
+its 11, 12 and 13 alternate pairs and singles down three columns. No
+UnStable pixel or position is used. Its taller ranks (21, 25) stand on a
+diagonal lattice that runs above and below vanilla's rows and lets pips
+touch; with our pips outlined and cut, and an index line along the top,
+that does not hold up, so we stop at 17.
 
 The Wild suit's parts are read from Quintessence's sheets (quint.py), as the
 Wild row of the rank fronts is.
@@ -46,7 +73,7 @@ import numpy as np
 import fronts
 import quint as Q
 import vanilla as V
-from pixel import components, sprite_rows
+from pixel import components, dilate, sprite_rows
 
 W, H = 71, 95
 INDEX_X, INDEX_Y = 6, 7        # vanilla index glyphs start here
@@ -293,15 +320,77 @@ def suit_parts(suit):
         layouts[n] = places(cell)
         assert len(layouts[n]) == n, (suit, n, len(layouts[n]))
     layouts[11] = sorted(layouts[10] + one, key=lambda p: (p[1], p[0]))
+    ordered = {n: [layouts[n][i] for i in ORDER[n]] for n in sorted(layouts)}
+    more = more_layouts(pip, one[0][:2])
+    for n in sorted(more):
+        assert len(more[n]) == n == len(set(more[n])), (suit, n, len(more[n]))
+        assert clearance(pip, more[n]) >= 0, (suit, n, "pips overlap")
+        ordered[n] = more[n]
     return dict(
         pip=pip, small=crop(small), small_at=(int(xs.min()), int(ys.min())), ace=crop(ace), ace_at=(ax, ay),
-        layouts={n: [layouts[n][i] for i in ORDER[n]] for n in sorted(layouts)},
+        layouts=ordered,
     )
 
 
 def _bbox(m):
     ys, xs = np.nonzero(m)
     return int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())
+
+
+# ------------------------------------------------------- past the 11 ----
+def _mirror(pts, w, h):
+    """The half-turn of a list of pips: (x, y, turned) -> the same pips seen from the other end."""
+    return [(W - w - x, H - y - h, True) for x, y, _ in pts]
+
+
+def more_layouts(pip, centre):
+    """{n: [(x, y, turned)]} for n = 12..17, in fill order. `centre` is where the suit's one pip stands (the
+    3's middle)."""
+    h, w = pip.shape
+    cx, cy = centre
+    # A top-half pip may stand no lower than leaves a clear row before its mirror; three rows of side pips fit
+    # above that with a clear row between them from vanilla's top row, or (an eleven-row pip) from one higher.
+    last = (H - 2 * h - 1) // 2
+    top = 13 if (last - 13) // 2 >= h + 1 else 12
+    rows = [top, (top + last) // 2, last]
+
+    def both(pts):
+        return pts + sorted(_mirror(pts, w, h))
+
+    twelve = [p for y in rows for p in both([(cx - w, y, False), (cx + w, y, False)])]
+    outer = both([(cx, (rows[0] + rows[1]) // 2, False)])
+    inner = both([(cx, (rows[1] + rows[2]) // 2, False)])
+    mid = [(cx, cy, False)]
+    return {
+        12: twelve,
+        13: twelve + mid,
+        14: twelve + outer,
+        15: twelve + outer + mid,
+        16: twelve + outer + inner,
+        17: twelve + outer + inner + mid,
+    }
+
+
+def clearance(pip, pts):
+    """The least clear pixels between two pips of a layout (0: they touch; -1: they overlap)."""
+    h, w = pip.shape
+    masks = []
+    for x, y, t in pts:
+        m = np.zeros((H + 2, W + 2), bool)
+        m[y + 1:y + 1 + h, x + 1:x + 1 + w] = pip[::-1, ::-1] if t else pip
+        masks.append(m)
+    best = 9
+    for i in range(len(masks)):
+        for j in range(i):
+            if (masks[i] & masks[j]).any():
+                return -1
+            grown = masks[i]
+            for gap in range(best):                    # after gap + 1 dilations they meet: gap clear pixels
+                grown = dilate(grown, diag=True)
+                if (grown & masks[j]).any():
+                    best = gap
+                    break
+    return best
 
 
 # ----------------------------------------------------------------- inks ----

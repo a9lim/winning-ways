@@ -13,6 +13,8 @@
 - **{ω | x} is split along the diagonal**, the ω card above and the x card below. {ω | 0} plays as every rank.
 - **A made value sits on its mean, rounded down**, so a fraction counts up from the rank below: 3¾ is a 3 with +¾,
   where it was a 4 with −¼.
+- Cards of 12 to 17 pips are laid out as vanilla's are: two columns of six, with the middle column filling in.
+- Vanilla's Fibonacci and Hack count a 0 and a 1.
 - A mod icon: { ▪ | ▪ } on the Moves' slate.
 - Cards with no rank sort by the rank they sit on (a 3½ among the 3s, an ω past the Ace) instead of last.
 - A * no longer stops two rankless values pairing: 3½* pairs with 3½, and ω* with ω.

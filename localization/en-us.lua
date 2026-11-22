@@ -72,6 +72,23 @@ return {
           "{C:inactive}(Currently {C:mult}+#1#{C:inactive} Mult)",
         },
       },
+      -- Vanilla's own, which count the born ranks too (src/jokers.lua): their text, with the 0 and the 1 added.
+      j_fibonacci = {
+        name = "Fibonacci",
+        text = {
+          "Each played {C:attention}0{}, {C:attention}1{}, {C:attention}Ace{},",
+          "{C:attention}2{}, {C:attention}3{}, {C:attention}5{}, or {C:attention}8{} gives",
+          "{C:mult}+#1#{} Mult when scored",
+        },
+      },
+      j_hack = {
+        name = "Hack",
+        text = {
+          "Retrigger",
+          "each played",
+          "{C:attention}0{}, {C:attention}1{}, {C:attention}2{}, {C:attention}3{}, {C:attention}4{}, or {C:attention}5{}",
+        },
+      },
       j_ww_hotstrat = {
         name = "Hotstrat",
         text = { "Retrigger all", "played {C:mult}hot{} cards" },

@@ -76,6 +76,7 @@ A new kind of consumable, sold in Game Packs and in the shop:
 
 - **The Heap:** a hand whose scoring cards nim-sum to 0 scores nothing, so Pairs never do.
 - **The Misère:** the last mover loses, so your final hand of the round scores nothing.
+- **Vanilla's Fibonacci and Hack** count the 0 and the 1 as well.
 - **Field Deck:** 64 cards, every rank from 0 to Ace with the Cavalier, in all four suits: the field F₁₆.
 - **Ordinal Deck:** starts with an ω of Spades, and a Cut.
 
