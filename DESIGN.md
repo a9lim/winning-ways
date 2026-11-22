@@ -148,9 +148,14 @@ A card **acts as any rank its value equals or is confused with**. For example:
 A plain card keeps its own front. A card with a modifier, and every ω, draws its own. a9 and Claude settled this on
 2026-11-22; before it, a modifier was coloured text beside the corner index.
 
-- **The corner reads as the value**, in the rank's own letterforms and ink: 3+1/2, 7±2, ω+14. Fractions are written
-  out, and a number that isn't whole is one fraction (±13/2), because in one ink 6 1/2 would read as 61/2. A line
-  too long for the card drops numbers off its end and keeps their sign: 8+1/2±13/2 becomes 8+1/2±.
+- **The corner reads as the value**, in the rank's own letterforms and ink: 3½, 7±2, ω+14.
+  - **A fraction is stacked**, numerator over denominator, in small digits as heavy as the rank's. So 3½ takes
+    two glyphs' width, and 8½±6½ fits with room to spare. a9 asked for this on 2026-11-22: written out in a line
+    (3+1/2), fractions crowded the corner and long values had to be cut short.
+  - After a rank written as a number, a fraction needs no sign: 3½, 10⅜. After a letter it keeps one (Q+½), and so
+    does anything else: 6−¼, A+13, 9+1½.
+  - A line too long for the card, which now takes a value many Cuts deep, drops numbers off its end and keeps
+    their sign.
 - **The field shows the value's stops in pips.** The Right stop's worth of pips are solid, and pips on up to the
   Left stop are outlined. A fraction cuts the last pip of each kind.
   - A number has no outlines: 3½ is three pips and half a pip, and 0 is an empty field.
@@ -170,7 +175,8 @@ A plain card keeps its own front. A card with a modifier, and every ω, draws it
 - **Courts and the Ace keep their own art** under the new corner: Q±1 still looks like a Queen. So their fields
   don't show their values, a limit a9 accepted. A card of a suit we have no pips for (another mod's) does the same.
 - **ω is the card inside out.** The body takes the suit's ink to its edges, multiplied, so an enhancement still
-  shows through; the index, the corner pip and one large ω are white.
+  shows through; the index, the corner pip and the Ace's large pip are white. It is an Ace inside out, with ω for
+  its index.
 - **{ω|x} is split along the diagonal** from bottom left to top right: the ω card above, with its corner, and the x
   card below, with its own. {ω|0} is half ω and half 0, and plays as every rank. The tooltip calls {ω|x} the wild
   rank when x is 2 or less, since those play as every rank a standard deck has.

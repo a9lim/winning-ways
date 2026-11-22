@@ -15,9 +15,9 @@ except for the ink, so the card body shows through.
       Cavalier rides in on the Jack of its sister suit (hearts <-> diamonds,
       clubs <-> spades), re-inked, with the hat and face replaced by a great
       helm and a plume.
-  ω   the first infinite number. The card is turned inside out: the body
-      takes the suit's ink to its edges, and the index, the corner pip and
-      one large ω in the middle are left white.
+  ω   the first infinite number. The card is an Ace turned inside out: the
+      body takes the suit's ink to its edges, and the index, the corner pip
+      and the Ace's large pip are left white.
 
 Everything is built in vanilla's normal colours. The high-contrast sheet is
 the same drawing passed through hc(): vanilla's high-contrast deck is not a
@@ -155,18 +155,19 @@ def inside_out(marks, ink_by_row):
     return cell
 
 
-def omega_marks(small):
-    """The ω card's white: index and corner pip in both corners, and the large ω."""
+def omega_marks(small, ace):
+    """The ω card's white: index and corner pip in both corners, and the Ace's large pip."""
     import parts
     m = small.copy()
     g = parts.glyphs()["ω"]
     m[parts.INDEX_Y:parts.INDEX_Y + g.shape[0], parts.INDEX_X:parts.INDEX_X + g.shape[1]] |= g
-    return m | m[::-1, ::-1] | parts.big_mask()
+    return m | m[::-1, ::-1] | ace
 
 
 def omega(suit, high_contrast=False):
+    import parts
     ink = ramp(suit) if high_contrast else [INK[suit]] * H
-    return inside_out(omega_marks(small_pip(suit)), ink)
+    return inside_out(omega_marks(small_pip(suit), parts.ace_mask(parts.SUITS[ROW[suit]])), ink)
 
 
 # --------------------------------------------------------- the Cavalier ----
@@ -393,9 +394,10 @@ def wild_cavalier():
 
 
 def wild_omega(high_contrast=False):
+    import parts
     small = np.zeros((H, W), bool)
     small[16:26, 4:16] = Q.cell(Q.TEN)[16:26, 4:16, 3] > 0
-    return inside_out(omega_marks(small), [WILD_HC if high_contrast else WILD] * H)
+    return inside_out(omega_marks(small, parts.ace_mask("quint_Wild")), [WILD_HC if high_contrast else WILD] * H)
 
 
 @lru_cache(maxsize=None)

@@ -3,12 +3,12 @@
 ## Unreleased
 
 - **Cards draw their values.** A card with a modifier has its own front. The corner reads as the value in the rank's
-  own letterforms and ink (3+1/2, 7±2, ω+14), and the pips show its stops: the Right stop's worth solid, on up to
+  own letterforms and ink (3½, 7±2, ω+14; fractions are stacked), and the pips show its stops: the Right stop's worth solid, on up to
   the Left stop in outline, a fraction cutting the last pip. A 0 is an empty field. Courts and the Ace keep their
   art under the new corner. Editions, debuffs and Negative now cover the whole face.
 - **A \* goes before the rank** (\*5) and turns the pips to a checkerboard. The halo is gone.
-- **ω is a rank**, past the Ace, drawn as the card inside out: the body in the suit's ink to its edges, so an
-  enhancement still shows through. Omega turns a card into an ω (n + ω = ω) instead of adding ω to it; ω + 14 comes
+- **ω is a rank**, past the Ace, drawn as an Ace inside out: the body in the suit's ink to its edges, so an
+  enhancement still shows through, and the large pip in white. Omega turns a card into an ω (n + ω = ω) instead of adding ω to it; ω + 14 comes
   from Sum. The Ordinal Deck starts with an ω of Spades.
 - **{ω | x} is split along the diagonal**, the ω card above and the x card below. {ω | 0} plays as every rank.
 - **A made value sits on its mean, rounded down**, so a fraction counts up from the rank below: 3¾ is a 3 with +¾,

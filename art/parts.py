@@ -7,12 +7,17 @@ file gives the Lua side everything it needs, as assets/parts.lua (no texture):
 
   glyphs    the index alphabet, as masks. Rank glyphs are vanilla's own
             (2..9, 10, J, Q, K, A, and the 0 of its 10); C and the flagged 1
-            are fronts.py's; ω + − ± * / ↑ ↓ are drawn here to match: seven
-            or so pixels wide, eight rows, two-pixel strokes.
-  suits     per suit: the pip (vanilla's, from the 3's centre) and the small
-            corner pip (from the 10), and where pips go for 1..11 of them,
-            in fill order. 2..10 are vanilla's own layouts, measured; 1 is
-            the 3's centre pip; 11 is the 10 with that centre pip added.
+            are fronts.py's; ω + − ± * ↑ ↓ are drawn here to match: seven
+            or so pixels wide, eight rows, two-pixel strokes. And a second,
+            small set of digits (s0..s9, 5x5, still two-pixel strokes where
+            there is room), which the Lua side stacks into fractions: a
+            numerator over a bar over a denominator, so 3½ takes the width
+            of two glyphs where 3+1/2 took five.
+  suits     per suit: the pip (vanilla's, from the 3's centre), the small
+            corner pip (from the 10) and the Ace's large pip, which an ω
+            card wears in white; and where pips go for 1..11 of them, in
+            fill order. 2..10 are vanilla's own layouts, measured; 1 is the
+            3's centre pip; 11 is the 10 with that centre pip added.
   inks      per palette and suit, the index and pip ink by row: flat in the
             normal deck, a top-to-bottom ramp in the high-contrast one
             (fronts.ramp), and the courts' corner ink, which in clubs runs a
@@ -116,16 +121,6 @@ DRAWN = {
 ..##..
 ......
 """,
-    "/": """
-...##
-...##
-..##.
-..##.
-.##..
-.##..
-##...
-##...
-""",
     "↑": """
 ..##..
 .####.
@@ -145,6 +140,81 @@ DRAWN = {
 ######
 .####.
 ..##..
+""",
+}
+
+
+# The small digits a stacked fraction is set in: 5x5 (the 1 is 4 wide), as heavy as five rows allow.
+SMALL = {
+    "0": """
+.###.
+##.##
+##.##
+##.##
+.###.
+""",
+    "1": """
+.##.
+###.
+.##.
+.##.
+####
+""",
+    "2": """
+####.
+...##
+.###.
+##...
+#####
+""",
+    "3": """
+####.
+...##
+.###.
+...##
+####.
+""",
+    "4": """
+##.##
+##.##
+#####
+...##
+...##
+""",
+    "5": """
+#####
+##...
+####.
+...##
+####.
+""",
+    "6": """
+.###.
+##...
+####.
+##.##
+.###.
+""",
+    "7": """
+#####
+...##
+..##.
+.##..
+.##..
+""",
+    "8": """
+.###.
+##.##
+.###.
+##.##
+.###.
+""",
+    "9": """
+.###.
+##.##
+.####
+...##
+.###.
 """,
 }
 
@@ -173,38 +243,32 @@ def glyphs():
     out["C"] = crop_x(fronts.index_mask("C")[INDEX_Y:INDEX_Y + 8])
     for name, s in DRAWN.items():
         out[name] = art(s)
+    for name, s in SMALL.items():
+        out["s" + name] = art(s)
     return out
-
-
-BIG = "ω"                      # the ω rank's centre: its glyph ×3, as the Ace's pip is ×3 a pip
-BIG_SCALE = 3
-
-
-def big_mask():
-    g = art(DRAWN[BIG])
-    g = g[np.nonzero(g.any(1))[0].min():]
-    g = np.kron(g, np.ones((BIG_SCALE, BIG_SCALE), bool))
-    m = np.zeros((H, W), bool)
-    h, w = g.shape
-    y, x = (H - h) // 2, (W - w) // 2
-    m[y:y + h, x:x + w] = g
-    return m
 
 
 # ---------------------------------------------------------------- suits ----
 def _cells(suit):
-    """(the 3, the 10, {n: cell} for 2..10) of a suit, as ink masks."""
+    """(the 3, the 10, the Ace, {n: cell} for 2..10) of a suit, as ink masks."""
     if suit == "quint_Wild":
         get = lambda col: Q.cell(col)[..., 3] > 0
     else:
         row = fronts.ROW[LETTER[suit]]
         get = lambda col: V.cell("8BitDeck", col, row)[..., 3] > 0
-    return get(1), get(8), {n: get(n - 2) for n in range(2, 11)}
+    return get(1), get(8), get(12), {n: get(n - 2) for n in range(2, 11)}
+
+
+def ace_mask(suit):
+    """The Ace's large pip, where it stands on the card."""
+    return _cells(suit)[2] & ~fronts._corner()
 
 
 def suit_parts(suit):
-    three, ten, cells = _cells(suit)
+    three, ten, _, cells = _cells(suit)
     corner = fronts._corner()
+    ace = ace_mask(suit)
+    ax, ay, _, _ = _bbox(ace)
     centre = np.zeros((H, W), bool)
     centre[34:61, 20:51] = three[34:61, 20:51]
     pip = crop(centre)
@@ -230,7 +294,7 @@ def suit_parts(suit):
         assert len(layouts[n]) == n, (suit, n, len(layouts[n]))
     layouts[11] = sorted(layouts[10] + one, key=lambda p: (p[1], p[0]))
     return dict(
-        pip=pip, small=crop(small), small_at=(int(xs.min()), int(ys.min())),
+        pip=pip, small=crop(small), small_at=(int(xs.min()), int(ys.min())), ace=crop(ace), ace_at=(ax, ay),
         layouts={n: [layouts[n][i] for i in ORDER[n]] for n in sorted(layouts)},
     )
 
@@ -290,6 +354,8 @@ def lua():
             f"      pip = {_rows(p['pip'])},\n"
             f"      small = {_rows(p['small'])},\n"
             f"      small_at = {{ {p['small_at'][0]}, {p['small_at'][1]} }},\n"
+            f"      ace = {_rows(p['ace'])},\n"
+            f"      ace_at = {{ {p['ace_at'][0]}, {p['ace_at'][1]} }},\n"
             f"      layouts = {{\n{lay}\n      }},\n"
             f"    }},")
     ink_lines = []
@@ -304,15 +370,14 @@ def lua():
     return (
         "-- Generated by art/build.py from art/parts.py; do not edit. All px at 1x, from the card's top-left.\n"
         "-- glyphs: the index alphabet, rows of # from y = index.y; a line of them starts at x = index.x and\n"
-        "--   advances by each glyph's width + 1.\n"
-        "-- suits[s]: pip and small (the corner pip, drawn at small_at) as rows of #; layouts[n] is where n pips\n"
-        "--   go, { x, y, turned }, in fill order (solid first, then outlined; a fraction cuts the last).\n"
+        "--   advances by each glyph's width + 1. s0..s9 are the small digits a fraction is stacked from.\n"
+        "-- suits[s]: pip, small (the corner pip, drawn at small_at) and ace (the Ace's pip, at ace_at) as rows of\n"
+        "--   #; layouts[n] is where n pips go, { x, y, turned }, in fill order (solid first, then outlined; a\n"
+        "--   fraction cuts the last).\n"
         "-- inks[palette][s]: the ink of number cards (num) and of the courts' corners (court): one hex, or 95 by row.\n"
-        "-- big: the ω rank's centre, a glyph scaled up and centred.\n"
         "return {\n"
         f"  size = {{ w = {W}, h = {H} }},\n"
         f"  index = {{ x = {INDEX_X}, y = {INDEX_Y} }},\n"
-        f"  big = {{ glyph = {q(BIG)}, scale = {BIG_SCALE} }},\n"
         "  glyphs = {\n" + glyph_lines + "\n  },\n"
         "  suits = {\n" + "\n".join(suit_lines) + "\n  },\n"
         "  inks = {\n" + "\n".join(ink_lines) + "\n  },\n"

@@ -1,13 +1,13 @@
 -- How a card's value shows. A card that is more than a plain rank draws its own front (DESIGN.md § 2.5):
 --
---   the corner   reads as the value, in the rank's own letterforms and ink: 3+1/2, 7±2, ω+14, and a * before the
---                rank for a card that carries one (*5)
+--   the corner   reads as the value, in the rank's own letterforms and ink: 3½ (the fraction stacked), 7±2,
+--                ω+14, and a * before the rank for a card that carries one (*5)
 --   the field    shows the value's stops in pips: the Right stop's worth solid, on up to the Left stop in outline,
 --                a fraction cutting the last pip. So 7±2 = {9|5} is a 9 with five pips solid, and for a switch
 --                like that the solid count to the whole count is the ranks it plays as. A * turns the pips to a
 --                checkerboard.
 --   courts       and the Ace keep their own art, under the new corner
---   ω            is the card inside out: the body in the suit's ink to its edges, the marks white
+--   ω            is an Ace inside out: the body in the suit's ink to its edges, the pip and the corners white
 --   {ω|x}        is split along the diagonal, the ω card above and the x card below; {ω|0} is the wild rank
 --
 -- src/fronts.lua decides all that and composes it as a grid of pixels, from Fable's parts (assets/parts.lua). Here

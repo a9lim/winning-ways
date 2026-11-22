@@ -15,15 +15,15 @@ What in them is Balatro's:
 
 - **ranks**: the suit pips, the stroke of the "0" index digit (from
   vanilla's "10"), the bodies of the four Cavaliers (the vanilla Jacks,
-  re-inked), the silhouette of the ω cards (vanilla's plain card body), and
-  the high-contrast shading. Ours: the "1" and "C" indices, the ω, the helms
-  and plumes, the composition.
-- **parts.lua**: each suit's pip and corner pip, vanilla's index glyphs
+  re-inked), the silhouette of the ω cards (vanilla's plain card body) and
+  their large pips (the Aces'), and the high-contrast shading. Ours: the "1"
+  and "C" indices, the ω, the helms and plumes, the composition.
+- **parts.lua**: each suit's pip, corner pip and Ace pip, vanilla's index glyphs
   (2 to 10, J, Q, K, A), where its pips stand on the 2 to the 10, and the
   high-contrast inks, all measured from its card fronts and written out as
   masks and numbers. The Wild suit's pips are Quintessence's. Ours: the
-  glyphs 1, C, ω, + − ± * / ↑ ↓, the order pips fill in, and the 11th
-  place.
+  glyphs 1, C, ω, + − ± * ↑ ↓, the small digits, the order pips fill in,
+  and the 11th place.
   **Row 4 (Wild)** is derived from Quintessence's Wild suit fronts
   (a9lim, MIT): the asterisk pips are Quintessence's own drawing; the "0"
   and "1" strokes and the body of the Wild Cavalier (Quintessence's Wild

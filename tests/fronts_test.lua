@@ -34,17 +34,20 @@ end
 return function(test)
   test("what a value shows", function(eq)
     for _, c in ipairs({
-      { "3", "Diamonds", n(1 / 2), "field Diamonds 3+1/2 3.5..3.5" },
-      { "6", "Clubs", n(-1 / 4), "field Clubs 6−1/4 5.75..5.75" },
+      -- A fraction is one token, drawn stacked; after a rank written as a number it makes a mixed number.
+      { "3", "Diamonds", n(1 / 2), "field Diamonds 3(1/2) 3.5..3.5" },
+      { "6", "Clubs", n(-1 / 4), "field Clubs 6−(1/4) 5.75..5.75" },
+      { "9", "Clubs", n(1.5), "field Clubs 9+1(1/2) 10.5..10.5" },
       { "7", "Hearts", cut(n(2), n(-2)), "field Hearts 7±2 5..9" },
-      { "8", "Spades", cut(n(6.5), n(-6.5)), "field Spades 8±13/2 1.5..14.5" },
+      { "8", "Spades", cut(n(6.5), n(-6.5)), "field Spades 8±6(1/2) 1.5..14.5" },
+      { "8", "Spades", G.add(n(1 / 2), cut(n(6.5), n(-6.5))), "field Spades 8(1/2)±6(1/2) 2..15" },
+      { "8", "Spades", G.add(n(1 / 2), cut(n(1 / 2), n(-1 / 2))), "field Spades 8(1/2)±(1/2) 8..9" },
+      { "5", "Hearts", n(127 / 128), "field Hearts 5(127/128) 5.9921875..5.9921875" },
+      { "ww_w", "Hearts", n(1023 / 1024), "omega Hearts ω+(1023/1024)" },
       -- A line too long for the card drops numbers off its end, leaving their sign.
-      { "8", "Spades", G.add(n(1 / 2), cut(n(6.5), n(-6.5))), "field Spades 8+1/2± 2..15" },
-      { "8", "Spades", G.add(n(1 / 2), cut(n(1 / 2), n(-1 / 2))), "field Spades 8+1/2±1/2 8..9" },
-      { "5", "Hearts", n(127 / 128), "field Hearts 5+ 5.9921875..5.9921875" },
-      { "5", "Hearts", n(63 / 64), "field Hearts 5+63/64 5.984375..5.984375" },
-      { "ww_w", "Hearts", n(1023 / 1024), "omega Hearts ω+" },
-      { "3", "Spades", cut(n(1), n(0)), "field Spades 3+1/2±1/2 3..4" },
+      { "10", "Hearts", G.add(n(1023 / 1024), cut(n(1023 / 1024), n(-1023 / 1024))),
+        "field Hearts 10(1023/1024)± 10..11.998046875" },
+      { "3", "Spades", cut(n(1), n(0)), "field Spades 3(1/2)±(1/2) 3..4" },
       { "4", "Diamonds", G.sub(cut(cut(n(9), n(5)), n(3)), n(4)), "field Diamonds 4± 3..5" },
       { "ww_1", "Spades", cut(n(2), n(-2)), "field Spades 1±2 -1..3" },
       { "5", "Hearts", STAR, "field Hearts *5 5..5 checker" },
@@ -55,26 +58,27 @@ return function(test)
       { "ww_C", "Hearts", STAR, "base Hearts *C court" },
       { "Ace", "Hearts", n(13), "base Hearts A+13" },
       { "10", "Spades", n(20), "base Spades 10+20" },
-      { "4", "Stars", n(1 / 2), "base - 4+1/2" },
+      { "4", "Stars", n(1 / 2), "base - 4(1/2)" },
+      { "Queen", "Diamonds", n(1 / 2), "base Diamonds Q+(1/2) court" },
+      { "Jack", "Clubs", cut(n(2.5), n(-2.5)), "base Clubs J±2(1/2) court" },
       { "ww_w", "Spades", nil, "omega Spades ω" },
       { "ww_w", "Clubs", n(14), "omega Clubs ω+14" },
       { "ww_w", "Diamonds", w, "omega Diamonds 2ω" },
-      { "ww_w", "Spades", n(0, -1 / 2), "omega Spades ω/2" },
-      { "ww_w", "Hearts", n(-3, 1 / 4), "omega Hearts 5ω/4−3" },
+      { "ww_w", "Spades", n(0, -1 / 2), "omega Spades (1/2)ω" },
+      { "ww_w", "Hearts", n(-3, 1 / 4), "omega Hearts 1(1/4)ω−3" },
       { "ww_w", "Hearts", STAR, "omega Hearts *ω" },
       { "ww_w", "Hearts", cut(n(1), n(-1)), "omega Hearts ω±1" },
       { "King", "Clubs", w, "omega Clubs ω+14 court" }, -- a King with +ω reads by its value all the same
       { "Ace", "Spades", G.sub(cut(w, n(2)), n(15)), "split Spades ω over 2" },
       { "Ace", "Spades", G.sub(cut(w, n(0)), n(15)), "split Spades ω over 0" },
       { "Ace", "Clubs", G.sub(cut(w, n(11)), n(15)), "split Clubs ω over J" },
-      { "Ace", "Clubs", G.sub(cut(N.add(w, w), n(3.5)), n(15)), "split Clubs 2ω over 3+1/2" },
-      { "Ace", "Clubs", G.sub(cut(w, n(-1.5)), n(15)), "split Clubs ω over −1−1/2" },
-      { "Ace", "Clubs", G.sub(cut(w, n(-0.5)), n(15)), "split Clubs ω over 0−1/2" },
+      { "Ace", "Clubs", G.sub(cut(N.add(w, w), n(3.5)), n(15)), "split Clubs 2ω over 3(1/2)" },
+      { "Ace", "Clubs", G.sub(cut(w, n(-1.5)), n(15)), "split Clubs ω over −1−(1/2)" },
+      { "Ace", "Clubs", G.sub(cut(w, n(-0.5)), n(15)), "split Clubs ω over 0−(1/2)" },
       { "Ace", "Clubs", G.sub(cut(w, n(20)), n(15)), "split Clubs ω over 20" },
+      { "Ace", "Clubs", G.sub(cut(w, n(3839 / 256)), n(15)), "split Clubs ω over K+(255/256)" },
       -- A corner too long for its side of the diagonal ends on a sign, never on a wrong number.
-      { "Ace", "Clubs", G.sub(cut(w, n(3839 / 256)), n(15)), "split Clubs ω over K+" },
-      { "Ace", "Clubs", G.sub(cut(w, n(959 / 64)), n(15)), "split Clubs ω over K+63/64" },
-      { "Ace", "Clubs", G.sub(cut(w, n(119 / 8)), n(15)), "split Clubs ω over K+7/8" },
+      { "Ace", "Clubs", G.sub(cut(w, n(15 - 2 ^ -20)), n(15)), "split Clubs ω over K+" },
     }) do
       eq(look(c[1], c[2], c[3]), c[4], c[1] .. " of " .. c[2])
     end
@@ -162,10 +166,27 @@ return function(test)
     local long = compose({ mode = "field", suit = "Hearts", index = { "7", "±", "2" }, right = 5, left = 9 })
     local line = count((F.line(parts, { "7", "±", "2" }))) - count((F.line(parts, { "7" })))
     eq(count(long.cells, F.INK) < count(bare.cells, F.INK) + 2 * line, true, "the label costs the pips under it")
-    -- ω: the whole body tinted, the marks white, nothing in the suit's ink.
+    -- ω: an Ace inside out. The whole body tinted, the marks white, nothing in the suit's ink.
     local om = compose({ mode = "omega", suit = "Clubs", index = { "ω" } })
     eq(count(om.cells, F.INK), 0, "an ω has no ink of its own")
-    eq(count(om.cells, F.WHITE) > 300, true, "its marks are white")
+    local club = parts.suits.Clubs
+    eq(count(om.cells, F.WHITE), area(club.ace) + 2 * (area(club.small) + area(parts.glyphs["ω"])),
+      "its white is the Ace's pip and the two corners")
+    eq(count(compose({ mode = "omega", index = { "ω" } }).cells, F.WHITE), 2 * area(parts.glyphs["ω"]),
+      "with no parts for the suit, only the index")
+    -- A stacked fraction: numerator, bar, denominator, thirteen rows from three above the line.
+    local half = F.line(parts, { "1/2" })
+    eq(count(half), area(parts.glyphs.s1) + area(parts.glyphs.s2) + 5, "1/2 is a small 1, a bar five wide and a small 2")
+    eq(select(2, F.line(parts, { "3", "1/2" })), 7 + 1 + 5, "3½ is thirteen pixels wide")
+    eq(select(2, F.line(parts, { "5", "5/16" })), 7 + 1 + 10, "a two-digit denominator sets the width")
+    local top, bottom
+    for y = 0, F.H - 1 do
+      for x = 0, F.W - 1 do
+        if half[y * F.W + x + 1] then top, bottom = top or y, y end
+      end
+    end
+    eq(top, parts.index.y - 3, "it starts three rows above the line")
+    eq(bottom, parts.index.y + 9, "and ends two below")
     local full = true
     for y = 1, F.H do full = full and om.tint[y] == F.W end
     eq(full, true, "every row of an ω is tinted to the edge")
@@ -196,7 +217,7 @@ return function(test)
     end
     sides(sp, "{ω|0}")
     for _, top in ipairs({ w, N.add(w, w), n(14, 1), n(0, 5 / 4), n(119 / 8, 3 / 4) }) do
-      for _, low in ipairs({ 0, 11, 3.5, 119 / 8, 959 / 64, 3839 / 256, -1.5, 20, 100000 }) do
+      for _, low in ipairs({ 0, 11, 3.5, 119 / 8, 959 / 64, 3839 / 256, 15 - 2 ^ -14, 15 - 2 ^ -20, -1.5, 20, 100000 }) do
         local value = cut(top, n(low))
         local spec = F.spec(parts, "Ace", "Hearts", value, G.sub(value, n(15)), false)
         eq(spec.mode, "split", "{" .. N.encode(top) .. "|" .. low .. "} is a split")
@@ -213,9 +234,11 @@ return function(test)
 
   test("every glyph a number can need exists", function(eq)
     for _, name in ipairs({ "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "C", "Q", "K", "A", "ω",
-      "+", "−", "±", "*", "/", "↑", "↓" }) do
+      "+", "−", "±", "*", "↑", "↓", "s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9" }) do
       eq(type(parts.glyphs[name]), "table", "glyph " .. name)
     end
-    eq(parts.glyphs[parts.big.glyph] ~= nil, true, "the ω rank's centre glyph")
+    for _, suit in ipairs({ "Hearts", "Clubs", "Diamonds", "Spades", "quint_Wild" }) do
+      eq(type(parts.suits[suit].ace), "table", suit .. ": the Ace's pip, for its ω")
+    end
   end)
 end

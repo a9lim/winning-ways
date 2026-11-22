@@ -27,10 +27,10 @@ Or by hand: install [Steamodded](https://github.com/Steamodded/smods), then put 
   fourth court card, between the Jack and the Queen, and optional in straights). Past the Ace there is one more,
   **ω**.
 - **Modifiers** live in their own slot, so a card can be Glass and +½, and rank changes keep them.
-- **A card with a modifier draws its own front.** The corner reads as the value (3+1/2, 7±2, \*5, ω+14) and the pips
+- **A card with a modifier draws its own front.** The corner reads as the value (3½, 7±2, \*5, ω+14) and the pips
   show it: a 3½ has three pips and half a pip, and 7±2 = {9 | 5} is a 9 with five pips solid and four outlined, so
-  you can count the ranks it plays as. A * turns the pips to a checkerboard, an ω is the card inside out, and the
-  wild {ω | 0} is half of each.
+  you can count the ranks it plays as. A * turns the pips to a checkerboard, an ω is an Ace inside out, and the wild
+  {ω | 0} is half ω and half 0.
 - **A card plays as any rank its value equals or is confused with**, and you choose: 7±2 plays as 5 to 9, and the
   wild {ω | 0} plays as every rank. Equal values pair even without a rank: two 3½s are a Pair.
 - **The hand is a game.** You move first, the Blind replies, and each card scores the number it ends on. A hand of

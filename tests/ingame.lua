@@ -179,7 +179,7 @@ local function faces()
   end
   WW.apply_lab(cards)
   local want = {
-    "field Diamonds 3+1/2 3.5..3.5", "field Clubs 6−1/4 5.75..5.75", "field Hearts 10+3/8 10.375..10.375",
+    "field Diamonds 3(1/2) 3.5..3.5", "field Clubs 6−(1/4) 5.75..5.75", "field Hearts 10(3/8) 10.375..10.375",
     "field Hearts 7±2 5..9", "field Clubs 5±1 4..6", "base Spades Q±1 court", "field Spades *9 9..9 checker",
     "field Hearts *4 4..4 checker", "split Spades ω over 2", "field Diamonds 4± 3..5", "omega Clubs ω+14",
   }
@@ -196,7 +196,7 @@ local function faces()
   local sixteenth = card("H_5")
   WW.add_mod(sixteenth, n(5 / 16))
   local got = WW.look_text(sixteenth)
-  check("a fraction is written out", got == "field Hearts 5+5/16 5.3125..5.3125", got)
+  check("a fraction is one stacked token", got == "field Hearts 5(5/16) 5.3125..5.3125", got)
   local up = card("H_6")
   WW.add_mod(up, Gm.of({ N.zero }, { Gm.of({ N.zero }, { N.zero }) }))
   check("↑ shows as an arrow", WW.look_text(up) == "field Hearts 6↑ 6..6", WW.look_text(up))

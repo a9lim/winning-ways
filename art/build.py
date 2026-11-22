@@ -91,7 +91,7 @@ def main():
         sheet = np.asarray(Image.open(ASSETS / "1x" / name).convert("RGBA"))
         cell = sheet[3 * 95:4 * 95, fronts.OMEGA_COL * 71:(fronts.OMEGA_COL + 1) * 71]
         body = fronts.body()
-        good = np.array_equal(cell[..., 3], body[..., 3]) and bool((cell[parts.big_mask()][:, :3] == 255).all())
+        good = np.array_equal(cell[..., 3], body[..., 3]) and bool((cell[parts.ace_mask("Spades")][:, :3] == 255).all())
         print(f"{'ok ' if good else 'BAD'} {name}: the ω of Spades fills the plain body's silhouette")
         ok &= good
     # the symbol font: the game font's em, line and pixel; only glyphs the game font lacks

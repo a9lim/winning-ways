@@ -41,7 +41,7 @@ vanilla's. Vanilla cells below are (column, row), 0-based, in
   from x 9..13 to x 7..11 so it stands centred on x = 9 over the small pip,
   like every vanilla index. **"1" is drawn here** (4x8, a flagged one): it
   was the 10's bare stroke until 1.1, but a bare stroke reads as a bar once
-  the index says 1±2 or 3+1/2. **"C" is drawn here** (7x8, two-pixel
+  the index says 1±2 or 1½. **"C" is drawn here** (7x8, two-pixel
   strokes, the Q's bowl without its tail).
 - **Small corner pips:** each suit's own, from its 10, cell (8, row).
 - **0** is {|}: an empty field. No pips, and the corners say whose nothing
@@ -52,15 +52,16 @@ vanilla's. Vanilla cells below are (column, row), 0-based, in
 - **1** is the 3's centre pip, cell (1, row), alone. The Ace's pip is three
   times the size, so the two don't confuse. (UnStable's 1 is the same
   solution.)
-- **ω** is the card inside out. `inside_out()` multiplies vanilla's plain
+- **ω** is an Ace inside out. `inside_out()` multiplies vanilla's plain
   body, `Enhancers.png` (1, 0), by the suit's ink, so the cell covers the
   card to its edges, and leaves the marks white: the ω index and the corner
-  pip in both corners, and one large ω in the middle, the index glyph x3,
-  as the Ace's pip is a pip x3. This cell is what a plain ω shows before
-  the Lua side takes over, and it is exactly what the Lua side composes on
-  a plain body (build.py checks the silhouette). The high-contrast cell is
-  built separately, the body multiplied row by row by `ramp()`: `hc()`
-  would re-ink the white marks too.
+  pip in both corners, and the suit's Ace pip in the middle, cell (12, row),
+  where the Ace has it. (Round 5 first had a large ω there, the index glyph
+  x3; a9: the suit's own symbol, like the Aces.) This cell is what a plain
+  ω shows before the Lua side takes over, and it is exactly what the Lua
+  side composes on a plain body (build.py checks the silhouette). The
+  high-contrast cell is built separately, the body multiplied row by row by
+  `ramp()`: `hc()` would re-ink the white marks too.
 - **C, the Cavalier.** Each suit's Cavalier is the Jack of its *sister*
   suit, re-inked, with a helm for a head:
 
@@ -111,7 +112,7 @@ derive from vanilla's; cells below are columns of that sheet.
   (x 4..15, y 16..25). Quintessence's drawing, not vanilla's.
 - **0**: empty, like the others. **1**: the centre asterisk of Wild's 3,
   cell 1. **ω**: the body in Wild purple (green in high contrast, flat),
-  with Wild's own corner asterisk.
+  with Wild's own corner asterisk and its Ace's large one, cell 12.
 - **Cavalier**: Wild has no sister suit, so it rides in on **Wild's own
   Jack**, cell 9. That Jack is itself a collage (head of vanilla's Jack of
   Hearts, robes and frame of the Jack of Diamonds in Wild purple), and the
@@ -145,7 +146,7 @@ There is no texture: the Lua side fills rows of pixels.
 
 One line, from x = 6, y = 7 (where every vanilla index starts), each glyph
 advancing by its width + 1, all in the suit's ink: **the corner reads as
-the value**, 3+1/2, 7±2, \*5, ω+14.
+the value**, 3½, 7±2, \*5, ω+14.
 
 - Rank glyphs are vanilla's own, cut from `8BitDeck.png` row 0: 2..9, the
   10 (one glyph, 8 wide), J, Q, K, A. The 0, 1 and C are `fronts.py`'s.
@@ -153,9 +154,19 @@ the value**, 3+1/2, 7±2, \*5, ω+14.
 - Drawn here, to stand beside them (two-pixel strokes, 8 rows): `+ −`
   (6x6 and 6x2, on the middle rows), `±` (6x9: the plus, a clear row, a
   two-row bar; it runs one row under the baseline), `ω` (8x6, on the
-  baseline: x-height), `*` (6x6), `/` (5x8), `↑ ↓` (6x8).
-- Fractions are written out, 1/2, in the same heavy digits. The old label
-  font's one-cell ½ can't be drawn in two-pixel strokes at this height.
+  baseline: x-height), `*` (6x6), `↑ ↓` (6x8).
+- **Small digits** `s0..s9`, 5x5 (the 1 is 4 wide), for fractions: two-pixel
+  verticals wherever five columns leave a counter (0 4 6 8 9), so they keep
+  the index's weight at half its height. The Lua side stacks them: the
+  numerator, a clear row, a one-row bar the width of the wider of the two,
+  a clear row, the denominator, each centred. Thirteen rows, from three
+  above the line to two below it (y 4..16), which clears the corner pip
+  (the rank glyph is always to its left) and the card's edge.
+- So 3½ is 13 px wide and stays left of the first pip column (x = 19);
+  written in a line, as round 5 first had it, 3+1/2 was 33 px and
+  8+1/2±13/2 did not fit the card (a9: stack them, in the heavy digits).
+  A fraction after a rank written as a number takes no sign (3½, 10⅜); after
+  a letter it does (Q+½).
 - A narrow first glyph is centred over the corner pip, as vanilla's are
   (the 0 and the 1 start at x = 7).
 
@@ -505,11 +516,11 @@ denominator. `glyphs.layout()` is the reference implementation. Widths:
 
 ## Open
 
-- An index line runs over the top pips of a 4..10 and over a court's crown
-  (the gap keeps it legible). Fractions make it long: 3+1/2 is 33 px, and
-  past 59 px the Lua side drops numbers off the end.
-- A long line on a hot card can cover most of an outlined pip in the top
-  row (3+1/2±1/2 on a 4).
+- An index line longer than a rank and a fraction runs over the top pips
+  of a 4..10 and over a court's crown (the gap keeps it legible). Past
+  59 px the Lua side drops numbers off the end; with stacked fractions
+  that takes a value many Cuts deep.
+- A stacked fraction is five rows taller than the rank beside it.
 - Gold under a red or orange suit nearly vanishes when an ω multiplies it.
 - In the high-contrast deck an ω's body is the suit's ramp, so it shades
   from top to bottom. Wild's is flat.
