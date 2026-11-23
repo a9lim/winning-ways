@@ -229,11 +229,17 @@ local function pretty(v, signed)
       return sign .. ("%.0f"):format(whole) .. " " .. N.dyadic_str(frac)
     end
     local s
-    if v.k == 0 then
+    if N.is_finite(v) then
       s = dy(v.x)
     else
-      local omega = symbols and "ω" or "w"
-      s = (v.k == 1 and "" or (v.k == -1 and (symbols and "−" or "-") or dy(v.k))) .. omega
+      s = ""
+      for _, t in ipairs({ { v.k2, symbols and "ω²" or "w^2" }, { v.k, symbols and "ω" or "w" } }) do
+        local c = t[1]
+        if c ~= 0 then
+          if c > 0 and s ~= "" then s = s .. "+" end
+          s = s .. (c == 1 and "" or (c == -1 and (symbols and "−" or "-") or dy(c))) .. t[2]
+        end
+      end
       if v.x > 0 then s = s .. "+" .. dy(v.x) elseif v.x < 0 then s = s .. dy(v.x) end
     end
     if signed and not (s:sub(1, 1) == "-" or s:sub(1, 3) == "−") then s = "+" .. s end
@@ -280,7 +286,9 @@ function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges_, 
     local value = WW.value_of(card)
     if value then
       local ranks = WW.ranks_of(card)
-      if WW.has_mod(card) or green then
+      -- An ω card worth a plain number (2ω + 5, ω²) says what it's worth, not that it is ω plus ω + 5.
+      local whole = card.base.value == WW.OMEGA and N.is(value)
+      if (WW.has_mod(card) or green) and not whole then
         -- The wild rank: a card that plays as every rank a standard deck has.
         local from_two = 0
         for _, r in ipairs(ranks) do if r >= 2 then from_two = from_two + 1 end end
@@ -289,9 +297,12 @@ function generate_card_ui(_c, full_UI_table, specific_vars, card_type, badges_, 
         local key = green and "ww_modifier_green" or "ww_modifier"
         generate({ set = "Other", key = key, vars = { mod, pretty(value), ranks_text(ranks) } }, ui)
       else
-        generate({ set = "Other", key = "ww_value", vars = { pretty(value), ranks_text(ranks) } }, ui) -- a plain ω
+        generate({ set = "Other", key = "ww_value", vars = { pretty(value), ranks_text(ranks) } }, ui) -- an ω, 2ω + 5, ω²
       end
-      if WW.is_eater(card) then generate({ set = "Other", key = "ww_omega" }, ui) end
+      if WW.is_eater(card) then
+        generate({ set = "Other", key = "ww_omega" }, ui)
+        generate({ set = "Other", key = "ww_powers" }, ui)
+      end
     end
   end
   return ui

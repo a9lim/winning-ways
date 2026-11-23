@@ -8,7 +8,7 @@ table the mod composes card fronts from (assets/parts.lua) and the symbol font
 (assets/fonts/ww_symbols.ttf); then checks the sizes and metrics the Lua
 side depends on.
 
-The rank fronts, the front parts, Omega, the packs, the jokers and the blind chip are derived from Balatro's own
+The rank fronts, the front parts, Omega, the packs, the jokers, the blind chips, the vouchers and the tag are derived from Balatro's own
 textures, read from the installed game archive (override its path with BALATRO_LOVE). Without the
 game the build stops with a message saying so. The Wild row of the rank
 fronts and the Wild suit's parts are derived from Quintessence's Wild sheets, read from its checkout
@@ -37,6 +37,8 @@ import jokers  # noqa: E402
 import moves   # noqa: E402
 import packs   # noqa: E402
 import parts   # noqa: E402
+import tags    # noqa: E402
+import vouchers  # noqa: E402
 from pixel import upscale  # noqa: E402
 
 ASSETS = HERE.parent / "assets"
@@ -49,6 +51,8 @@ EXPECT = {
     "jokers.png": (1136, 95),                                 # 16 cells of 71x95 (souls: 9, 13, 15)
     "blinds.png": (714, 68),                                  # The Heap, The Misère: 21 frames of 34x34 each
     "backs.png": (142, 95),                                   # the Field Deck, the Ordinal Deck
+    "vouchers.png": (142, 95),                                # Lessons in Play, On Numbers and Games
+    "tags.png": (34, 34),                                     # the Game Tag
 }
 
 
@@ -72,7 +76,7 @@ def main():
         print(f"build.py: {e}", file=sys.stderr)
         return 2
     made = set()
-    for mod in (fronts, moves, packs, jokers, blinds, backs, icon):
+    for mod in (fronts, moves, packs, jokers, blinds, backs, icon, vouchers, tags):
         for name, art in mod.outputs().items():
             write(name, art)
             made.add(name)
@@ -103,7 +107,7 @@ def main():
               for pt in f["glyf"][n].getCoordinates(f["glyf"])[0] for v in pt]
     good = ((f["head"].unitsPerEm, f["hhea"].ascent, f["hhea"].descent) == (m["upm"], m["ascent"], m["descent"])
             and all(v % font.PX == 0 for v in coords) and min(coords[1::2]) >= -2 * font.PX
-            and all(ord(ch) in cm for ch in "ω∞½¼¾⅛⅜⅝⅞↑↓⊕⊗") and sorted(m["missing"]) == sorted(font.GLYPHS))
+            and all(ord(ch) in cm for ch in "ω∞½¼¾⅛⅜⅝⅞↑↓⊕⊗²") and sorted(m["missing"]) == sorted(font.GLYPHS))
     print(f"{'ok ' if good else 'BAD'} ww_symbols.ttf: {len(cm)} glyphs, em {m['upm']}, "
           f"ascent {m['ascent']}, descent {m['descent']}, on the {font.PX}-unit grid")
     ok &= good

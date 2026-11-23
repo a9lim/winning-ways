@@ -35,8 +35,11 @@ Or by hand: install [Steamodded](https://github.com/Steamodded/smods), then put 
   wild {ω | 0} plays as every rank. Equal values pair even without a rank: two 3½s are a Pair.
 - **The hand is a game.** You move first, the Blind replies, and each card scores the number it ends on. A hand of
   plain numbers scores exactly as in vanilla.
-- **ω eats.** An ω (or ω + 14, or ω·2) eats the finite cards played to its left, n + ω = ω, and gains twice their
-  chips for good. It always scores.
+- **ω eats, and the row adds up.** Played cards are read left to right as one ordinal sum: a card below a power of
+  ω vanishes into it (n + ω = ω, ω + ω² = ω²), and two of one degree merge (ω + ω = 2ω). The eater gains twice the
+  eaten cards' chips for good, and always scores.
+- **Infinity scores in the higher tiers:** a card worth a·ω² + k·ω + x scores x chips, +k Mult and ×(1 + a) Mult.
+  An ω gives +1 Mult, and ω² ×2.
 
 ## Moves
 
@@ -52,7 +55,7 @@ A new kind of consumable, sold in Game Packs and in the shop:
 | Repaint | swaps ♠ with ♥ and ♣ with ♦ |
 | Nimbus | adds a *: 5* plays as a 5 but nim-sums as a 4 |
 | Mex | turns a card into the smallest rank the others miss |
-| Omega (Spectral) | turns a card into an ω |
+| Omega (Spectral) | turns a card into an ω, or an ω into ω² |
 
 ## Jokers
 
@@ -80,6 +83,12 @@ A new kind of consumable, sold in Game Packs and in the shop:
 - **Field Deck:** 64 cards, every rank from 0 to Ace with the Cavalier, in all four suits: the field F₁₆.
 - **Ordinal Deck:** starts with an ω of Spades, and a Cut.
 
+## In the shop
+
+- **Standard Packs** sometimes deal cards with a modifier (+½, * or ±1), and so does the shop under Illusion.
+- **Lessons in Play** and **On Numbers and Games** (vouchers): Moves appear 2X, then 4X, as often.
+- **Game Tag:** a free Mega Game Pack.
+
 ## Other mods
 
 With [Quintessence](https://github.com/a9lim/quintessence), a Wild card is a green Hackenbush edge, which is worth *:
@@ -91,7 +100,9 @@ Spectrum hands, and Repaint leaves Wild cards alone (a green edge is its own neg
 Made by a9lim and Claude, code and art.
 
 - **Mathematics:** Elwyn Berlekamp, John Horton Conway and Richard Guy (*Winning Ways*, *On Numbers and Games*).
-  Further ideas come from Charles Bouton (Nim), Patrick Grundy, Georg Cantor and David Hilbert.
+  Further ideas come from Charles Bouton (Nim), Patrick Grundy, Georg Cantor and David Hilbert. The vouchers are
+  named for *Lessons in Play* (Michael Albert, Richard Nowakowski and David Wolfe) and Conway's *On Numbers and
+  Games*.
 - **Real-valued ranks:** [UnStable](https://github.com/kirbio/UnStable) by
   kirbio first did these in Balatro, fractions drawn as part of a pip included. Winning Ways reimplements the idea;
   it uses none of UnStable's code or art.

@@ -1,6 +1,7 @@
 -- The jokers (DESIGN.md § 4). "Rank" here means the rank a card plays as in the hand being scored (WW.rank_now):
--- a wild in a Pair of Kings is a King. Cards with no rank (Stone, 3½, ω) are invisible to nim-sums and to the mex,
--- the way a 0 is. In nim-sums a card is a heap: its rank, plus 1 for a * (5* is the heap 4).
+-- a wild in a Pair of Kings is a King. Cards with no rank (Stone, 3½) are invisible to nim-sums and to the mex,
+-- the way a 0 is. In nim-sums a card is a heap: its rank, plus 1 for a * (5* is the heap 4); a card worth an
+-- infinite ordinal (ω + 14, 2ω²) is the heap of its own value.
 
 local WW = WinningWays
 local E = WW.engine
@@ -26,13 +27,41 @@ function WW.heap(card, r)
   return WW.halo(card) and nim.add(r, 1) or r
 end
 
---- The nim-sum of the cards' heaps.
+local STAR = Gm.of({ N.zero }, { N.zero })
+
+--- The heap of a card with no rank that is worth an infinite ordinal, as its three digits a, k, x (a·ω² + k·ω + x;
+--- a * adds 1 to x). Conway's nim-addition of ordinals works digit by digit, each digit's binary places XORed:
+--- (ω + 3) ⊕ (ω + 5) = 6. nil for any other card.
+function WW.ordinal_heap(card)
+  if WW.rank_now(card) then return nil end
+  local v = WW.value_of(card)
+  if v == nil then return nil end
+  local star = WW.halo(card)
+  if star then v = Gm.add(v, STAR) end
+  if not (N.is(v) and not N.is_finite(v) and N.is_ordinal(v)) then return nil end
+  return v.k2, v.k, star and nim.add(v.x, 1) or v.x
+end
+
+-- The infinite digits a set of cards nim-sums to, and its finite part's share from them.
+local function infinite_part(cards)
+  local a, k, x = 0, 0, 0
+  for _, c in ipairs(cards) do
+    local ca, ck, cx = WW.ordinal_heap(c)
+    if ca then a, k, x = nim.add(a, ca), nim.add(k, ck), nim.add(x, cx) end
+  end
+  return a, k, x
+end
+
+--- The nim-sum of the cards' heaps: a whole number when no infinite digits are left, and otherwise the ordinal it
+--- comes to, as a number (never 0). After the row has added up, two infinities of one degree meet in a hand only
+--- when a wall (the wild) keeps them apart, so otherwise a hand with an ω never nim-sums to 0.
 function WW.nim_sum(cards)
-  local x = 0
+  local a, k, x = infinite_part(cards)
   for _, c in ipairs(cards) do
     local h = WW.heap(c)
     if h then x = nim.add(x, h) end
   end
+  if a ~= 0 or k ~= 0 then return N.new(x, k, a) end
   return x
 end
 
@@ -46,7 +75,8 @@ end
 
 --- Can the played cards nim-sum to 0 with at least three distinct ranks among them? Scoring cards count as the
 --- rank they play as. A flexible kicker (one that doesn't score) can play as any of its ranks, Conway's included:
---- you move first in a confused position, so you choose. Cards with no rank, and cards infinity ate, don't count.
+--- you move first in a confused position, so you choose. Cards with no rank, and cards infinity ate, don't count; an
+--- infinite heap left uncancelled rules Bouton out.
 --- Ranks are what count as distinct; heaps (a * adds 1) are what nim-sum.
 function WW.bouton(full_hand, scoring_hand)
   local scores = {}
@@ -56,7 +86,10 @@ function WW.bouton(full_hand, scoring_hand)
     if not WW.is_eaten(c) then kept[#kept + 1] = c end
   end
   local extra = WW.extra_ranks(kept) or {}
-  local fixed, seen, distinct, free = 0, {}, 0, {}
+  -- An infinite heap can't be cancelled by finite ones; its finite digit joins the rest.
+  local ia, ik, fixed = infinite_part(kept)
+  if ia ~= 0 or ik ~= 0 then return false end
+  local seen, distinct, free = {}, 0, {}
   for _, c in ipairs(kept) do
     local own = WW.ranks_of(c)
     local options = own and WW.widen(own, extra[c])
@@ -384,7 +417,7 @@ SMODS.Joker {
 --- integer n is born on day |n|. nil for a value born on an infinite day (ω + 14, the wild).
 function WW.days_after(v)
   local b = Gm.birthday(v)
-  if b.m ~= 0 then return nil end
+  if b.l ~= 0 or b.m ~= 0 then return nil end
   local mean = Gm.mean(v)
   if not N.is_finite(mean) then return nil end
   local x = N.finite(mean)

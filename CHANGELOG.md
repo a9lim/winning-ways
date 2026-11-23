@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.2.0 (2026-11-23)
+
+- **The row adds up.** The played row is read as one ordinal sum, and infinities now eat each other: a card below a
+  power of ω vanishes into it (ω + ω² = ω²), and two of one degree merge (ω + ω = 2ω, and (ω + 3) + (ω + 5) = 2ω + 5).
+  The merged card keeps the sum and takes twice the eaten one's chips. Two ωs no longer pair by galaxy.
+- **Eaten cards feed what they would score alone:** a 3½ feeds 3.5 (doubled, 7), ω + 14 a King's 10. They fed their
+  rank's chips before.
+- **ω scores in the higher tiers.** A card ending on a·ω² + k·ω + x scores x in chips, +k Mult and ×(1 + a) Mult: an ω
+  gives +1 Mult, 2ω + 5 gives 5 chips and +2 Mult, ω² gives ×2.
+- **ω².** Omega on an ω-card makes ω² (the next power of ω swallows the card); it can't go further. The corner reads
+  ω², and the engine's numbers now run to a·ω² + k·ω + x.
+- **ω in nim-sums.** An ω-card worth an ordinal is the heap of its own value. Two of one degree merge before they
+  can cancel, so a hand with one gets past The Heap and never makes Bouton (unless a wild keeps two ωs apart).
+- **Values in the wild.** A card a Standard Pack deals, or one the shop sells under Illusion, has a 1 in 5 chance of
+  a modifier: +½, * or ±1.
+- **Two vouchers,** Lessons in Play and On Numbers and Games: Moves appear 2X, then 4X, as often in the shop.
+- **The Game Tag:** a free Mega Game Pack.
+- An ω card's tooltip says what it's worth and what it pays; Fable's symbol font has a ².
+
 ## 1.1.0 (2026-11-22)
 
 - **Cards draw their values.** A card with a modifier has its own front. The corner reads as the value in the rank's

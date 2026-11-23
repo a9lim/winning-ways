@@ -11,7 +11,8 @@
 --           "split": {ω|x}, the ω card above the diagonal and the x card below it
 --   suit    a key of parts.suits, or nil for a suit we have no parts for
 --   index   what the corner says, as tokens: the rank, then its modifiers, all one ink ("*", "7", "±", "2"). A
---           token is a glyph's name, or a fraction "p/q", which is drawn stacked in small digits
+--           token is a glyph's name, a fraction "p/q", which is drawn stacked in small digits, or a power "^2",
+--           drawn raised in small digits
 --   low     in a split, the bottom-right corner's glyph names
 --   right, left   in a field, the stops as Lua numbers: `right` pips are solid, on up to `left` in outline, and
 --           a fraction cuts the last pip of each kind
@@ -103,6 +104,10 @@ end
 -- than the line (thirteen rows to the line's eight), centred on it: three rows above the rank and two below.
 local FRACTION = { up = 3, gap = 1, bar = 1 }
 
+-- A power is raised: its small digits stand one row above the line's top, so ω² reads ω then a small 2 at its
+-- shoulder.
+local POWER_UP = 1
+
 -- A row of small digits: its sprites, and its width.
 local function small(parts, text)
   local row, w = {}, -1
@@ -127,7 +132,12 @@ function F.line(parts, names)
   local x = parts.index.x
   for k, name in ipairs(names) do
     local p, q = name:match("^(%d+)/(%d+)$")
-    if p then
+    local power = name:match("^%^(%d+)$")
+    if power then
+      local row, w = small(parts, power)
+      stamp_row(m, row, x, parts.index.y - POWER_UP)
+      x = x + w + 1
+    elseif p then
       local top, tw = small(parts, p)
       local bottom, bw = small(parts, q)
       local w = max(tw, bw)
@@ -302,13 +312,21 @@ local function dyadic(x, signed, out)
   return out
 end
 
--- k·ω + x: 2ω, ½ω, 1¼ω, then the finite part.
+-- a·ω² + k·ω + x: ω², 2ω², 2ω, ½ω, 1¼ω, then the finite part.
 local function number(v, signed, out)
   out = out or {}
-  if v.k == 0 then return dyadic(v.x, signed, out) end
-  if v.k < 0 then out[#out + 1] = "−" elseif signed then out[#out + 1] = "+" end
-  if math.abs(v.k) ~= 1 then dyadic(math.abs(v.k), false, out) end
-  out[#out + 1] = "ω"
+  if N.is_finite(v) then return dyadic(v.x, signed, out) end
+  local first = true
+  for _, t in ipairs({ { v.k2, true }, { v.k, false } }) do
+    local c = t[1]
+    if c ~= 0 then
+      if c < 0 then out[#out + 1] = "−" elseif signed or not first then out[#out + 1] = "+" end
+      if math.abs(c) ~= 1 then dyadic(math.abs(c), false, out) end
+      out[#out + 1] = "ω"
+      if t[2] then out[#out + 1] = "^2" end
+      first = false
+    end
+  end
   if v.x ~= 0 then dyadic(v.x, true, out) end
   return out
 end
@@ -316,7 +334,7 @@ end
 -- A number added to a rank. After a rank written as a number, a fraction needs no sign: 3½, not 3+½. After a
 -- letter it keeps it (Q+½), and so does anything else (6−¼, A+13, 9+1½).
 local function offset(v, out, mixed)
-  if mixed and v.k == 0 and v.x > 0 and v.x < 1 then return dyadic(v.x, false, out) end
+  if mixed and N.is_finite(v) and v.x > 0 and v.x < 1 then return dyadic(v.x, false, out) end
   return number(v, true, out)
 end
 
@@ -369,7 +387,8 @@ end
 
 -- A stop as a Lua number, ±∞ for an infinite one.
 local function plain_number(n)
-  if n.k ~= 0 then return n.k > 0 and math.huge or -math.huge end
+  local inf = N.infinite_sign(n)
+  if inf ~= 0 then return inf > 0 and math.huge or -math.huge end
   return n.x
 end
 
@@ -400,7 +419,7 @@ function F.spec(parts, rank, suit, value, mod, halo)
   local whole = halo and Gm.add(value, STAR) or value -- the value without its *
   local left, right = Gm.left_stop(value), Gm.right_stop(value)
   local spec = { suit = have and suit or nil, index = index, ink = COURT[rank] and "court" or "num" }
-  if right.k > 0 then
+  if N.infinite_sign(right) > 0 then
     -- Infinite whichever way it's played. A number reads whole (2ω, ω+14); a game as its rank and modifier.
     spec.mode = "omega"
     if N.is(whole) then
@@ -412,7 +431,7 @@ function F.spec(parts, rank, suit, value, mod, halo)
     fit(parts, index)
     return spec
   end
-  if left.k > 0 then
+  if N.infinite_sign(left) > 0 then
     spec.mode = "split"
     number(left, false, index)
     fit(parts, index, SPLIT_MAX)

@@ -4,7 +4,7 @@ Renders big nearest-neighbour blow-ups into art/preview/ (gitignored). Card
 fronts and overlays are shown on a mock white card body, with vanilla cells
 (read from the installed game, only ever looked at) beside ours.
 
-    python -I art/look.py fronts|fronts_hc|wild|courts|courts_hc|glyphs|moves|packs|font|jokers|blinds|backs|icon [k]
+    python -I art/look.py fronts|fronts_hc|wild|courts|courts_hc|glyphs|moves|packs|vouchers|tags|font|jokers|blinds|backs|icon [k]
 
 fable, 2026-11-14 (claude-fable-5-2)
 """
@@ -109,6 +109,17 @@ def main():
         import packs
         save(Image.fromarray(row([packs.sheet_rgba(), V.cell("boosters", 0, 1), V.cell("boosters", 2, 3)])),
              "packs.png", k)
+    elif what == "vouchers":
+        import vouchers
+        r = row([vouchers.sheet_rgba(), V.cell("Vouchers", 1, 0), V.cell("Vouchers", 1, 1)])
+        save(Image.fromarray(r), "vouchers.png", k)
+        save(Image.fromarray(r), "vouchers_1x.png", 1)
+    elif what == "tags":
+        import tags
+        ref = [V.cell("tags", c, 2, 34, 34) for c in (2, 3, 4)]      # Charm, Meteor, Buffoon
+        r = row([tags.tag(), tags.tag(tags.tent)] + ref)             # ours; the other mark; vanilla's pack tags
+        save(Image.fromarray(r), "tags.png", k if len(sys.argv) > 2 else 8)
+        save(Image.fromarray(r), "tags_1x.png", 1)
     elif what == "font":
         import font
         print(font.check_strip(HERE.parent / "assets" / "fonts" / "ww_symbols.ttf", OUT / "font_check.png"))

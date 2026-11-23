@@ -59,6 +59,7 @@ return function(test)
   end)
 
   test("sign expansions round-trip, and simplest numbers are simplest", function(eq)
+    local as = { 0, 0, 0, 1, -1, 2, 1 / 2 }
     local ks = { 0, 0, 1, -1, 2, 1 / 2, -1 / 2, 3 / 4, 3 / 2 }
     local xs = {}
     for p = -24, 24 do xs[#xs + 1] = p / 4 end
@@ -67,30 +68,35 @@ return function(test)
       rng = (rng * 1103515245 + 12345) % 2147483648
       return t[rng % #t + 1]
     end
+    local function copy(acc)
+      local p = {}
+      for _, a in ipairs(acc) do p[#p + 1] = { s = a.s, l = a.l, m = a.m, n = a.n } end
+      return p
+    end
     local function prefixes(runs)
-      -- Every finite cut, and cuts at ω·j + t (t < 6) inside infinite runs.
+      -- Every finite cut, and cuts at ω²·i + ω·j + t (j, t < 4) inside infinite runs.
       local out, acc = {}, {}
       for _, r in ipairs(runs) do
-        for j = 0, r.m - 1 do
-          for t = 0, 5 do
-            local p = {}
-            for _, a in ipairs(acc) do p[#p + 1] = { s = a.s, m = a.m, n = a.n } end
-            if j > 0 or t > 0 then p[#p + 1] = { s = r.s, m = j, n = t } end
-            out[#out + 1] = p
-          end
+        local cuts = {}
+        for i = 0, r.l - 1 do
+          for j = 0, 3 do for t = 0, 3 do cuts[#cuts + 1] = { i, j, t } end end
         end
-        for t = 0, r.n - 1 do
-          local p = {}
-          for _, a in ipairs(acc) do p[#p + 1] = { s = a.s, m = a.m, n = a.n } end
-          if r.m > 0 or t > 0 then p[#p + 1] = { s = r.s, m = r.m, n = t } end
+        for j = 0, r.m - 1 do
+          for t = 0, 5 do cuts[#cuts + 1] = { r.l, j, t } end
+        end
+        for t = 0, r.n - 1 do cuts[#cuts + 1] = { r.l, r.m, t } end
+        for _, c in ipairs(cuts) do
+          local p = copy(acc)
+          if c[1] > 0 or c[2] > 0 or c[3] > 0 then p[#p + 1] = { s = r.s, l = c[1], m = c[2], n = c[3] } end
           out[#out + 1] = p
         end
-        acc[#acc + 1] = { s = r.s, m = r.m, n = r.n }
+        acc[#acc + 1] = { s = r.s, l = r.l, m = r.m, n = r.n }
       end
       return out
     end
-    for _ = 1, 400 do
-      local a, b = n(pick(xs), pick(ks)), n(pick(xs), pick(ks))
+    local checked = 0
+    for _ = 1, 600 do
+      local a, b = n(pick(xs), pick(ks), pick(as)), n(pick(xs), pick(ks), pick(as))
       eq(s(N.from_signs(N.signs(a))), s(a), "round trip " .. s(a))
       if N.lt(b, a) then a, b = b, a end
       if N.lt(a, b) then
@@ -100,11 +106,46 @@ return function(test)
         for _, p in ipairs(prefixes(N.signs(m))) do
           local ok, v = pcall(N.from_signs, p)
           if ok and not N.eq(v, m) then
+            checked = checked + 1
             eq(N.lt(a, v) and N.lt(v, b), false, label .. ": simpler " .. s(v) .. " also lies between")
           end
         end
       end
     end
+    eq(checked > 2000, true, "the prefixes were read (" .. checked .. ")")
+  end)
+
+  test("ω²: order, sums, cuts and birthdays", function(eq)
+    local w2 = N.omega2
+    local function day(v)
+      local b = N.birthday(v)
+      return ("%d,%d,%d"):format(b.l, b.m, b.n)
+    end
+    eq(N.lt(n(0, 1000), w2), true, "ω² is above every ω-multiple")
+    eq(N.lt(n(0, 0, 1 / 2), w2) and N.lt(n(0, 1000), n(0, 0, 1 / 2)), true, "ω²/2 lies between")
+    eq(s(N.add(w2, w2)), "2w^2", "ω² + ω² = 2ω²")
+    eq(s(N.add(n(14, 1), w2)), "w^2+w+14", "the sum commutes")
+    eq(day(w2), "1,0,0", "ω² is born on day ω²")
+    eq(day(n(3, 2, 1)), "1,2,3", "ω² + 2ω + 3 on day ω² + ω·2 + 3")
+    eq(day(n(0, -1, 1)), "1,1,0", "ω² − ω on day ω² + ω")
+    -- In a positive interval that holds an ordinal, the least ordinal there is the simplest number.
+    for _, c in ipairs({
+      { cut(w, w2), "w+1" }, { cut(n(0, 2), w2), "2w+1" }, { cut(n(0), w2), "1" }, { cut(w2, nil), "w^2+1" },
+      { cut(nil, w2), "0" }, { cut(w2, n(0, 0, 2)), "w^2+1" }, { cut(w2, n(4, 0, 1)), "w^2+1" },
+      { cut(n(3, 0, 1), n(4, 0, 1)), "w^2+7/2" }, { cut(n(0, 5, 1), n(0, 0, 2)), "w^2+5w+1" },
+      { cut(w2, n(0, 1, 1)), "w^2+1" }, { cut(n(0, -1, 1), w2), "w^2-1" }, { cut(n(0, 1 / 2), w2), "w" },
+      { cut(w2, n(0)), "{w^2|0}" },
+    }) do
+      eq(s(c[1]), c[2], c[2])
+    end
+    local l, r = N.options(w2)
+    eq(tostring(l) .. " " .. tostring(r), "inf nil", "ω²'s Left options are every ω·m + n")
+    l, r = N.options(N.add(w2, N.one))
+    eq(s(l) .. " " .. tostring(r), "w^2 nil", "ω² + 1 = {ω²|}")
+    for _, t in ipairs({ "w^2", "-w^2", "2w^2+w-3", "w^2/2", "-3w^2/4+5w/8-1/2", "w^2+14", "w^2-w" }) do
+      eq(s(N.parse(t)), t, "notation " .. t)
+    end
+    eq(pcall(N.parse, "w^2/3"), false, "w^2/3 is not dyadic")
   end)
 
   test("number options", function(eq)

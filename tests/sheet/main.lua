@@ -53,6 +53,11 @@ local ROWS = {
     { "Ace", "Spades", Gm.sub(cut(w, n(0)), n(15)) }, { "Ace", "Diamonds", Gm.sub(cut(w, n(2)), n(15)) },
     { "Ace", "Clubs", Gm.sub(cut(w, n(11)), n(15)) },
   },
+  {
+    { "ww_w", "Spades", n(0, -1, 1) }, { "ww_w", "Hearts", n(0, 0, 1) }, { "ww_w", "Clubs", n(14, -1, 1) },
+    { "ww_w", "Diamonds", n(5, 1) }, { "ww_w", "Spades", n(0, -1, 2) }, { "ww_w", "quint_Wild", Gm.add(n(0, -1, 1), STAR) },
+    { "ww_w", "Hearts", n(3, 1, 1) },
+  },
 }
 
 -- has_star, as src/cards.lua has it (it needs the game only for its cache).

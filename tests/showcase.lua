@@ -18,6 +18,7 @@ local rows = set == "moves" and {
   { "c_ww_cut", "c_ww_sum", "c_ww_heat", "c_ww_cool", "c_ww_frobenius", "c_fool", "c_strength" },
   { "c_ww_tweedledum", "c_ww_repaint", "c_ww_nimbus", "c_ww_mex", "c_ww_omega", "c_trance", "c_familiar" },
   { "p_ww_game_normal_1", "p_ww_game_normal_2", "p_ww_game_jumbo_1", "p_ww_game_mega_1", "p_celestial_normal_1", "p_arcana_normal_1" },
+  { "v_ww_lessons", "v_ww_onag", "v_tarot_merchant", "v_tarot_tycoon", "v_illusion" },
 } or set == "jokers" and {
   { "j_ww_bouton", "j_ww_generator", "j_ww_grundy", "j_ww_hotstrat", "j_ww_thermograph", "j_joker", "j_dna" },
   { "j_ww_sprouts", "j_ww_cantor", "j_ww_paradise", "j_ww_conway", "j_triboulet", "j_fibonacci", "j_splash" },
@@ -25,6 +26,7 @@ local rows = set == "moves" and {
   { "S_ww_w", "H_ww_w", "C_ww_w", "D_ww_w", "S_ww_w", "H_ww_w", "C_ww_w", "D_ww_w" },
   { "S_A", "D_A", "S_A", "D_A", "S_ww_w", "H_ww_w", "C_ww_w", "D_ww_w" },
   { "H_7", "H_7", "H_7", "H_7", "S_Q", "S_Q", "S_Q", "S_Q" },
+  { "S_ww_w", "H_ww_w", "C_ww_w", "D_ww_w", "S_ww_w", "H_ww_w", "C_ww_w", "D_ww_w" },
 } or {
   { "H_ww_0", "C_ww_1", "D_ww_C", "S_ww_C", "S_ww_w", "H_J", "H_Q", "H_K", "H_A", "S_T" },
   { "D_3", "C_6", "H_T", "H_7", "C_5", "S_Q", "S_8", "D_5", "C_3" },
@@ -35,6 +37,11 @@ local DRESS = {
   { "c_base", "m_gold", "m_bonus", "m_mult", "m_glass", "m_steel", "m_lucky", "m_wild" },
   { "c_base", "c_base", "m_gold", "m_steel", "e_foil", "e_holo", "e_polychrome", "e_negative" },
   { "c_base", "m_gold", "e_polychrome", "e_negative", "c_base", "m_gold", "e_polychrome", "e_negative" },
+  { "c_base", "c_base", "c_base", "c_base", "m_glass", "m_steel", "e_holo", "e_negative" },
+}
+-- For =omega, the last row: the powers of ω, ω² and the merged sums.
+local POWERS = {
+  N.omega2, N.new(0, 1, 1), N.new(5, 2), N.new(0, 0, 2), N.omega2, N.new(14, 0, 1), N.omega2, N.new(3, 2, 1),
 }
 
 local function clear_menu()
@@ -85,6 +92,7 @@ local function build()
         if key:find("_A$") then WW.set_value(c, wild) end
         if key == "H_7" then WW.add_mod(c, Gm.of({ N.new(2) }, { N.new(-2) })) end
         if key == "S_Q" then WW.add_mod(c, Gm.of({ N.new(1) }, { N.new(-1) })) end
+        if r == #rows then WW.set_value(c, POWERS[i]) end
         local how = DRESS[r][i]
         if how:sub(1, 2) == "e_" then c:set_edition({ [how:sub(3)] = true }, true, true)
         elseif how ~= "c_base" then c:set_ability(G.P_CENTERS[how]) end
@@ -113,6 +121,7 @@ local TIPS = {
   "j_ww_cantor", "j_ww_paradise", "j_ww_birthday", "j_ww_hilbert", "j_ww_conway", "j_ww_berlekamp", "j_ww_guy",
   "c_ww_cut", "c_ww_sum", "c_ww_heat", "c_ww_cool", "c_ww_frobenius", "c_ww_tweedledum", "c_ww_repaint",
   "c_ww_nimbus", "c_ww_mex", "c_ww_omega", "p_ww_game_normal_1", "H_7", "S_ww_w", "c_lovers", "quint_W_5",
+  "v_ww_lessons", "v_ww_onag", "omega2",
 }
 local tip, tip_card = 0, nil
 local function next_tip()
@@ -120,12 +129,15 @@ local function next_tip()
   tip = tip + 1
   local key = TIPS[tip]
   if not key then return false end
+  local value
+  if key == "omega2" then key, value = "S_ww_w", N.omega2 end -- an ω²: the powers box
   if not (G.P_CENTERS[key] or G.P_CARDS[key]) then return next_tip() end
   local x, y = G.ROOM.T.w * 0.3, (G.ROOM.T.h - G.CARD_H) / 2
   local params = { bypass_discovery_center = true, bypass_discovery_ui = true }
   if G.P_CARDS[key] then
     tip_card = Card(x, y, G.CARD_W, G.CARD_H, G.P_CARDS[key], G.P_CENTERS.c_base, params)
     if key == "H_7" then WW.set_value(tip_card, Gm.of({ N.new(9) }, { N.new(5) })) end -- 7±2: the Modifier box
+    if value then WW.set_value(tip_card, value) end
   else
     tip_card = Card(x, y, G.CARD_W, G.CARD_H, G.P_CARDS.empty, G.P_CENTERS[key], params)
   end

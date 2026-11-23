@@ -229,7 +229,27 @@ return {
     Spectral = {
       c_ww_omega = {
         name = "Omega",
-        text = { "Converts {C:attention}1{} selected", "card to an {C:attention}ω" },
+        text = {
+          "Converts {C:attention}1{} selected",
+          "card to an {C:attention}ω",
+          "{C:inactive}(an {C:attention}ω{C:inactive} becomes {C:attention}ω²{C:inactive})",
+        },
+      },
+    },
+    Voucher = {
+      v_ww_lessons = {
+        name = "Lessons in Play",
+        text = { "{C:ww_move}Move{} cards appear", "{C:attention}#1#X{} more frequently", "in the shop" },
+      },
+      v_ww_onag = {
+        name = "On Numbers and Games",
+        text = { "{C:ww_move}Move{} cards appear", "{C:attention}#1#X{} more frequently", "in the shop" },
+      },
+    },
+    Tag = {
+      tag_ww_game = {
+        name = "Game Tag",
+        text = { "Gives a free", "{C:ww_move}Mega Game Pack" },
       },
     },
     Other = {
@@ -276,7 +296,8 @@ return {
         text = {
           "Add ranks in binary",
           "without carrying",
-          "A {C:attention}*{} adds {C:attention}1",
+          "A {C:attention}*{} adds {C:attention}1{}, and an",
+          "{C:attention}ω{} is a heap of its own",
           "{C:inactive}(ex: {C:attention}3 5 6{C:inactive} -> {C:attention}0{C:inactive}, {C:attention}5* 4{C:inactive} -> {C:attention}0{C:inactive})",
         },
       },
@@ -284,9 +305,18 @@ return {
         name = "ω",
         text = {
           "Eats the cards played",
-          "to its left and gains",
+          "to its left, back to a",
+          "{C:attention}bigger{} one, and gains",
           "{C:attention}double{} their {C:chips}Chips",
-          "{C:inactive}(Eaten cards are destroyed)",
+          "{C:inactive}(ω eats ω: ω + ω = 2ω)",
+        },
+      },
+      ww_powers = {
+        name = "Powers of ω",
+        text = {
+          "{C:attention}ω{} scores {C:mult}+1{} Mult",
+          "and {C:attention}ω²{} {X:mult,C:white} X2 {} Mult",
+          "{C:inactive}(2ω: {C:mult}+2{C:inactive}, 2ω²: {X:mult,C:white} X3 {C:inactive})",
         },
       },
       ww_modifier = {

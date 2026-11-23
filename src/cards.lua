@@ -12,8 +12,9 @@
 -- flexible card's get_id, get_nominal and is_face report the rank it plays as.
 --
 -- Scoring: when the played cards score, src/engine/play.lua plays out their values as one game, and each card
--- scores the number it ends on, in chips: a finite part from 0 to 15 scores that rank's chips (so J, C, Q and K
--- still score 10, and taking ω + 14 scores a King's 10); any other finite part scores itself (3½ scores 3.5).
+-- scores the number it ends on, a·ω² + k·ω + x, in Balatro's three tiers: x in chips, k as +mult and a as ×(1 + a)
+-- mult. A finite part from 0 to 15 scores that rank's chips (so J, C, Q and K still score 10, and taking ω + 14
+-- scores a King's 10 and +1 mult); any other finite part scores itself (3½ scores 3.5).
 
 local WW = WinningWays
 local E = WW.engine
@@ -161,9 +162,10 @@ function WW.rank_for(v)
   local mean = Gm.mean(v)
   local ranks = ranks_of_value(v)
   if not N.is_finite(mean) then
-    if Gm.right_stop(v).k > 0 then return OMEGA end
-    if #ranks > 0 then return KEYS[mean.k > 0 and ranks[#ranks] or ranks[1]] end
-    return KEYS[mean.k > 0 and 15 or 0]
+    if N.infinite_sign(Gm.right_stop(v)) > 0 then return OMEGA end
+    local up = N.infinite_sign(mean) > 0
+    if #ranks > 0 then return KEYS[up and ranks[#ranks] or ranks[1]] end
+    return KEYS[up and 15 or 0]
   end
   local target = N.finite(mean)
   local down = math.floor(target)
@@ -197,7 +199,7 @@ function WW.set_mod(card, m)
   return card
 end
 
---- Add a game to a card's modifier (Nimbus adds *, Omega adds ω). The rank stays.
+--- Add a game to a card's modifier (Nimbus adds *). The rank stays.
 function WW.add_mod(card, m)
   store_mod(card, Gm.add(WW.mod_of(card) or N.zero, m))
   return card
@@ -301,16 +303,14 @@ function get_X_same(num, hand, or_more)
   return out
 end
 
---- Which rankless values pair. Finite ones pair when equal, so a 3 with +½ pairs with a 4 with −½. Infinite numbers
---- pair when they lie in the same galaxy, a finite distance apart (nonstandard analysis's word): ω + 13 pairs with
---- ω + 2, but not with 2ω. Seen from the finite ranks, everything in a galaxy is equally far away.
---- A * changes none of that: n* plays as n, so 3½* pairs with 3½, and ω* with ω.
+--- Which rankless values pair: equal ones, so a 3 with +½ pairs with a 4 with −½. A * changes nothing: n* plays
+--- as n, so 3½* pairs with 3½. (Two infinite numbers of one degree never meet in a hand: the left one merges into
+--- the right, src/omega.lua.)
 function WW.tie_key(v)
   if not N.is(v) then
     local plain = Gm.add(v, STAR)
     if N.is(plain) then v = plain end
   end
-  if N.is(v) and not N.is_finite(v) then return "galaxy " .. N.encode(N.new(0, v.k)) end
   return Gm.encode(v)
 end
 
@@ -434,6 +434,41 @@ function SMODS.calculate_main_scoring(context, scoring_hand)
     for _, c in ipairs(r.cards) do finals[c] = nil end
   end
   return a, b
+end
+
+--- The +mult and ×mult a card earns for ending on x: its ω coefficient as +mult, and ×(1 + a) for a·ω². Each of
+--- Balatro's tiers outweighs the one below it, as each power of ω does. The ×mult tier counts up from ×1, the way
+--- Hologram's does, so ω² gives ×2 (a balance call, DESIGN.md § 5½).
+function WW.mult_of(x) return N.coef(x, 1) end
+function WW.x_mult_of(x)
+  local a = N.coef(x, 2)
+  return a > 0 and 1 + a or 1
+end
+
+local get_chip_mult, get_chip_x_mult = Card.get_chip_mult, Card.get_chip_x_mult
+function Card:get_chip_mult()
+  local r = get_chip_mult(self)
+  local f = finals[self]
+  if f then r = r + WW.mult_of(f) end
+  return r
+end
+function Card:get_chip_x_mult(context)
+  local r = get_chip_x_mult(self, context)
+  local f = finals[self]
+  local x = f and WW.x_mult_of(f) or 1
+  if x ~= 1 then r = (r == 0 and 1 or r) * x end
+  return r
+end
+
+--- The chips a card would score played alone, which is what infinity takes when it eats it: you move first, so a
+--- lone card ends on its Left stop (3½ scores 3.5, ω + 14 a King's 10, 7±2 its 9). A plain card scores as vanilla's.
+function WW.lone_chips(card)
+  local v = WW.is_value(card) and WW.value_of(card)
+  if not v then return card:get_chip_bonus() end
+  finals[card] = N.is(v) and v or Gm.left_stop(v)
+  local chips = card:get_chip_bonus()
+  finals[card] = nil
+  return chips
 end
 
 local get_chip_bonus = Card.get_chip_bonus

@@ -71,6 +71,11 @@ return function(test)
       { "ww_w", "Hearts", n(-3, 1 / 4), "omega Hearts 1(1/4)ω−3" },
       { "ww_w", "Hearts", STAR, "omega Hearts *ω" },
       { "ww_w", "Hearts", cut(n(1), n(-1)), "omega Hearts ω±1" },
+      { "ww_w", "Spades", n(0, -1, 1), "omega Spades ω^2" },
+      { "ww_w", "Clubs", n(14, -1, 1), "omega Clubs ω^2+14" },
+      { "ww_w", "Hearts", n(0, 0, 1), "omega Hearts ω^2+ω" },
+      { "ww_w", "Diamonds", n(5, 1), "omega Diamonds 2ω+5" },
+      { "ww_w", "Spades", n(0, -1, 2), "omega Spades 2ω^2" },
       { "King", "Clubs", w, "omega Clubs ω+14 court" }, -- a King with +ω reads by its value all the same
       { "Ace", "Spades", G.sub(cut(w, n(2)), n(15)), "split Spades ω over 2" },
       { "Ace", "Spades", G.sub(cut(w, n(0)), n(15)), "split Spades ω over 0" },
@@ -210,6 +215,14 @@ return function(test)
       "its white is the Ace's pip and the two corners")
     eq(count(compose({ mode = "omega", index = { "ω" } }).cells, F.WHITE), 2 * area(parts.glyphs["ω"]),
       "with no parts for the suit, only the index")
+    -- A power: ω then a small 2 raised beside it.
+    local sq = F.line(parts, { "ω", "^2" })
+    eq(count(sq), area(parts.glyphs["ω"]) + area(parts.glyphs.s2), "ω² is an ω and a small 2")
+    local top
+    for y = 0, F.H - 1 do
+      for x = 0, F.W - 1 do if sq[y * F.W + x + 1] and not top then top = y end end
+    end
+    eq(top, parts.index.y - 1, "the 2 stands a row above the line")
     -- A stacked fraction: numerator, bar, denominator, thirteen rows from three above the line.
     local half = F.line(parts, { "1/2" })
     eq(count(half), area(parts.glyphs.s1) + area(parts.glyphs.s2) + 5, "1/2 is a small 1, a bar five wide and a small 2")

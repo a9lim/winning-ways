@@ -1,6 +1,7 @@
 -- Run test. `WINNINGWAYS_RUNTEST=<file> balala` starts a real run on the Field Deck (saving switched off), picks the
 -- Small Blind and plays scripted hands through the game's own code: a hot card's bite, infinity eating, a Move used
--- for real, each joker in turn, and The Heap. The blind's target is raised out of reach so the round never ends.
+-- for real, each joker in turn, The Heap, ω merging and ω², the vouchers, and the Game Tag. The blind's target is
+-- raised out of reach so the round never ends.
 -- It writes PASS/FAIL lines to <file> and quits. scripts/runtest also backs up and restores the save files.
 local out_path = os.getenv("WINNINGWAYS_RUNTEST")
 local WW = WinningWays
@@ -84,7 +85,7 @@ steps[4] = { wait = function() return G.STATE == G.STATES.SELECTING_HAND end, ru
   check("the hot hand was Three of a Kind", G.GAME.last_hand_played == "Three of a Kind", G.GAME.last_hand_played)
   check("it scored (30 + 7 + 7 + 9) × 3 = 159", score() - before == 159, score() - before)
   -- 7 7 ω+14 9 9: the ω eats both 7s and grows by twice their 14; a Pair of 9s, and the ω always scores (its +14
-  -- scores a King's 10).
+  -- scores a King's 10, and its ω +1 Mult).
   before = score()
   local a, b = make(1, "Hearts", "7"), make(2, "Clubs", "7")
   eater = make(3, "Spades", "ww_w", n(14))
@@ -93,7 +94,7 @@ steps[4] = { wait = function() return G.STATE == G.STATES.SELECTING_HAND end, ru
 end }
 steps[5] = { wait = function() return G.STATE == G.STATES.SELECTING_HAND end, run = function()
   check("with the 7s eaten, the hand was a Pair", G.GAME.last_hand_played == "Pair", G.GAME.last_hand_played)
-  check("it scored (10 + 9 + 9 + 10 + 28) × 2 = 132", score() - before == 132, score() - before)
+  check("it scored (10 + 9 + 9 + 10 + 28) × (2 + 1) = 198", score() - before == 198, score() - before)
   check("the eaten 7s are gone", not alive(ate[1]) and not alive(ate[2]))
   check("the ω kept 28 bonus chips", eater.ability.perma_bonus == 28, eater.ability.perma_bonus)
   -- A Move, used through the game's own button: Cut on a 3 and a 7 makes a 4.
@@ -192,7 +193,7 @@ after_hand(function()
 end)
 after_hand(function()
   check("Cantor's Paradise gained ×0.1 per eaten card: ×1.2", subject.ability.extra.xmult == 1.2, subject.ability.extra.xmult)
-  check("the Pair scored ⌊(10 + 9 + 9 + 10 + 28) × 2 × 1.2⌋ = 158", gained() == 158, gained())
+  check("the Pair scored ⌊(10 + 9 + 9 + 10 + 28) × (2 + 1) × 1.2⌋ = 237", gained() == 237, gained())
   -- Conway: K 5 K, where the 5 can play as {K|K} = K*, is Three of a Kind; the 5 still scores 5.
   hold({ "conway" })
   before = score()
@@ -300,6 +301,81 @@ if shot then
   steps[#steps + 1] = { frames = 30, run = function() end }
 end
 
+-- The powers of ω, played. (ω + 3)(ω + 5) 9 9: the first ω merges into the second, which becomes 2ω + 5 (the left
+-- card's 3 is swallowed, ordinal addition, and fed to it as chips, doubled); a Pair, scoring 10 + 9 + 9 + 5 + 6 chips
+-- and 2 + 2 Mult.
+local merged, gone, lifted, omega_card
+after_hand(function()
+  hold({})
+  before = score()
+  gone, merged = make(1, "Spades", "ww_w", n(3)), make(2, "Hearts", "ww_w", n(5))
+  play({ gone, merged, make(3, "Diamonds", "9"), make(4, "Spades", "9") })
+end)
+after_hand(function()
+  check("(ω + 3)(ω + 5) 9 9 was a Pair", G.GAME.last_hand_played == "Pair", G.GAME.last_hand_played)
+  check("it scored (10 + 9 + 9 + 5 + 2·3) × (2 + 2) = 156", gained() == 156, gained())
+  check("the eaten ω + 3 fed its 3 chips, doubled", merged.ability.perma_bonus == 6, merged.ability.perma_bonus)
+  check("the left ω merged into the right and is gone", not alive(gone))
+  check("the right is now 2ω + 5", Gm.encode(WW.value_of(merged)) == "2w+5", Gm.encode(WW.value_of(merged)))
+  -- The Omega Spectral through the game's own button, on an ω: it becomes ω².
+  lifted = make(1, "Clubs", "ww_w")
+  omega_card = SMODS.add_card({ key = "c_ww_omega", area = G.consumeables })
+  G.hand:unhighlight_all()
+  G.hand:add_to_highlighted(lifted, true)
+  check("Omega can be used on an ω", omega_card.config.center:can_use(omega_card))
+  G.FUNCS.use_card({ config = { ref_table = omega_card, button = "use_card" } })
+end)
+steps[#steps + 1] = { frames = 240, run = function()
+  check("Omega made the ω an ω²", Gm.encode(WW.value_of(lifted)) == "w^2", Gm.encode(WW.value_of(lifted)))
+  local again = SMODS.add_card({ key = "c_ww_omega", area = G.consumeables })
+  G.hand:unhighlight_all()
+  G.hand:add_to_highlighted(lifted, true)
+  check("and can't lift it further", not again.config.center:can_use(again))
+  again:remove()
+  G.hand:unhighlight_all()
+  -- ω² 9 9 9: Three of a Kind, (30 + 27) × 3, and the ω² doubles the Mult.
+  before = score()
+  play({ lifted, make(2, "Hearts", "9"), make(3, "Diamonds", "9"), make(4, "Spades", "9") })
+end }
+after_hand(function()
+  check("ω² 9 9 9 was Three of a Kind", G.GAME.last_hand_played == "Three of a Kind", G.GAME.last_hand_played)
+  check("it scored (30 + 27) × 3 × 2 = 342", gained() == 342, gained())
+  -- The vouchers, applied as a deck's starting vouchers are.
+  check("Moves start at rate 2", G.GAME.move_rate == 2, G.GAME.move_rate)
+  Card.apply_to_run(nil, G.P_CENTERS.v_ww_lessons)
+end)
+steps[#steps + 1] = { frames = 60, run = function()
+  check("Lessons in Play: Moves 2.4 times as often (4.8)", math.abs(G.GAME.move_rate - 4.8) < 1e-9, G.GAME.move_rate)
+  Card.apply_to_run(nil, G.P_CENTERS.v_ww_onag)
+end }
+steps[#steps + 1] = { frames = 60, run = function()
+  check("On Numbers and Games: 8 times (16)", G.GAME.move_rate == 16, G.GAME.move_rate)
+  G.GAME.move_rate = 2
+  -- Cards vanilla deals: into a pack always roll, onto the shop's shelf only with Illusion. The rate is forced to
+  -- 1 here so every roll lands.
+  local rate = WW.MOD_RATE
+  WW.MOD_RATE = 2
+  local area = CardArea(0, 0, G.CARD_W * 4, G.CARD_H, { card_limit = 5, type = "shop" })
+  local shelf = CardArea(0, 0, G.CARD_W * 4, G.CARD_H, { card_limit = 5, type = "shop" })
+  local packs, shop = G.pack_cards, G.shop_jokers
+  G.pack_cards, G.shop_jokers = area, shelf
+  local dealt = create_card("Base", G.pack_cards, nil, nil, true, nil, nil, "ww_test")
+  local plain = create_card("Base", G.shop_jokers, nil, nil, true, nil, nil, "ww_test")
+  G.pack_cards = packs
+  G.GAME.used_vouchers.v_illusion = true
+  local illusion = create_card("Enhanced", G.shop_jokers, nil, nil, true, nil, nil, "ww_test")
+  G.GAME.used_vouchers.v_illusion = nil
+  G.shop_jokers = shop
+  WW.MOD_RATE = rate
+  check("a card a pack deals can come with a modifier", dealt.ability.ww_mod ~= nil, dealt.ability.ww_mod)
+  check("a shop card can't without Illusion", plain.ability.ww_mod == nil, plain.ability.ww_mod)
+  check("but can with it", illusion.ability.ww_mod ~= nil or illusion.config.center.key == "m_stone",
+    tostring(illusion.ability.ww_mod) .. " " .. illusion.config.center.key)
+  for _, c in ipairs({ dealt, plain, illusion }) do c:remove() end
+  area:remove()
+  shelf:remove()
+end }
+
 -- The Misère: your last hand scores nothing. The preview says so while one hand is left; a played hand is the last
 -- when none are left. Playing it ends the run.
 after_hand(function()
@@ -340,6 +416,19 @@ steps[#steps + 1] = { wait = function() return G.STATE == G.STATES.BLIND_SELECT 
   check("one of them the ω of Spades", omegas == 1, omegas)
   local cut_held = G.consumeables.cards[1] and G.consumeables.cards[1].config.center.key
   check("and starts with a Cut", cut_held == "c_ww_cut", cut_held)
+  -- The Game Tag, triggered as the Blind is to be chosen, as Charm Tag is.
+  add_tag(Tag("tag_ww_game"))
+  for i = 1, #G.GAME.tags do
+    if G.GAME.tags[i]:apply_to_run({ type = "new_blind_choice" }) then break end
+  end
+end }
+steps[#steps + 1] = { wait = function() return G.STATE == G.STATES.SMODS_BOOSTER_OPENED and G.pack_cards and #G.pack_cards.cards > 0 end,
+  run = function()
+  local key = SMODS.OPENED_BOOSTER and SMODS.OPENED_BOOSTER.config.center.key
+  check("the Game Tag opened a free Mega Game Pack", key == "p_ww_game_mega_1", key)
+  local moves = 0
+  for _, c in ipairs(G.pack_cards.cards) do if c.ability.set == "Move" then moves = moves + 1 end end
+  check("of five Moves", moves == 5 and #G.pack_cards.cards == 5, moves .. "/" .. #G.pack_cards.cards)
 end }
 
 local update = Game.update

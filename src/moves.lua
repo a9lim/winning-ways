@@ -33,6 +33,19 @@ end
 
 -- Is this card one of ours (a value we can read)?
 local function valued(card) return WW.value_of(card) ~= nil end
+
+--- The power of ω the Omega Spectral makes of this card: one degree above the card's own (a game's degree is its
+--- highest stop's). 1 for a finite card, 2 for an ω-card, nil for one that is already ω²-sized.
+function WW.omega_lift(card)
+  local v = WW.value_of(card)
+  local d = 0
+  if v then
+    local stops = N.is(v) and { v } or { Gm.left_stop(v), Gm.right_stop(v) }
+    for _, x in ipairs(stops) do d = math.max(d, N.degree(x)) end
+  end
+  if d >= 2 then return nil end
+  return d + 1
+end
 local function is_game(card)
   local v = WW.value_of(card)
   return v ~= nil and Gm.is_game(v)
@@ -135,15 +148,14 @@ WW.MOVES = {
       return {}
     end,
   },
-  -- n + ω = ω: added on the right, as the played row adds, ω absorbs everything finite before it. So the card
-  -- becomes an ω, whatever it was; one that is already an infinite number keeps that and gains another ω
-  -- (ω + 14 becomes ω·2).
+  -- Omega adds on the right the next power of ω above the card, which swallows it: α + ω^(d+1) = ω^(d+1) for
+  -- any α below that power. A finite card becomes ω (n + ω = ω, the rule an ω eats by), and an ω-card, ω + 14 or
+  -- 2ω, becomes ω². Balatro scores in three tiers, so the powers stop at ω²: Omega can't lift a card past it.
   omega = {
     min = 1, max = 1,
+    need = function(c) return valued(c) and WW.omega_lift(c) ~= nil end,
     apply = function(cards)
-      local v = WW.value_of(cards[1])
-      local k = (N.is(v) and v.k > 0) and v.k or 0
-      WW.set_value(cards[1], N.new(0, k + 1))
+      WW.set_value(cards[1], N.power(WW.omega_lift(cards[1])))
       return {}
     end,
   },
@@ -282,6 +294,7 @@ SMODS.Consumable {
   config = { max_highlighted = 1 },
   loc_vars = function(self, info_queue, card)
     info_queue[#info_queue + 1] = { set = "Other", key = "ww_omega" }
+    info_queue[#info_queue + 1] = { set = "Other", key = "ww_powers" }
   end,
   can_use = function(self, card) return can_use(WW.MOVES.omega) end,
   use = function(self, card, area, copier) use(WW.MOVES.omega, card) end,

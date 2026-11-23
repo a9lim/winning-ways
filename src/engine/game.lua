@@ -127,7 +127,7 @@ M.left_stop, M.right_stop = left_stop, right_stop
 
 -- canonical form ----------------------------------------------------------------------------------------
 
-local function ord_lt(a, b) return a.m < b.m or (a.m == b.m and a.n < b.n) end
+local ord_lt = N.ord_lt
 
 -- If some number fits between the options (every G^L ⧏ x ⧏ every G^R), G equals the simplest one
 -- (Conway's simplicity theorem); otherwise G is not a number. For a game option A, the numbers x with
@@ -473,19 +473,19 @@ M.heat = heat
 -- other invariants --------------------------------------------------------------------------------------
 
 local birthday
---- The birthday as an ordinal {m, n} (ω·m + n).
+--- The birthday as an ordinal {l, m, n} (ω²·l + ω·m + n).
 birthday = function(G)
   if is_num(G) then return N.birthday(G) end
   local hit = memo.bday[G.id]
   if hit then return hit end
-  local best = { m = 0, n = 0 }
+  local best = { l = 0, m = 0, n = 0 }
   for _, side in ipairs({ G.L, G.R }) do
     for _, o in ipairs(side) do
       local b = birthday(o)
       if ord_lt(best, b) then best = b end
     end
   end
-  return remember(memo.bday, G.id, { m = best.m, n = best.n + 1 })
+  return remember(memo.bday, G.id, N.ord_succ(best))
 end
 M.birthday = birthday
 

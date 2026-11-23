@@ -1,7 +1,7 @@
 """font.py — ww_symbols.ttf, a fallback font for the signs m6x11plus lacks.
 
 Balatro's text font (m6x11plus, Daniel Linssen) has ± and × but no ω, ∞,
-vulgar fractions, arrows or circled operators, and LÖVE silently drops what
+vulgar fractions, arrows, circled operators or a superscript two, and LÖVE silently drops what
 a font lacks. This builds a second font to hang behind it with
 Font:setFallbacks: the same em (1024), the same pixel (64 units, 16 to the
 em), the same ascent and descent (768 / -256), glyphs standing on the same
@@ -74,6 +74,7 @@ GLYPHS = {
     "⅜": ("threeeighths", fraction("3", "8")),
     "⅝": ("fiveeighths", fraction("5", "8")),
     "⅞": ("seveneighths", fraction("7", "8")),
+    "²": ("twosuperior", rows(*G.SMALL["2"])),            # the numerators' 2, where they stand: ω²
 }
 
 
@@ -165,7 +166,7 @@ def build(path):
     return m
 
 
-def check_strip(path, out, text="Worth ω+14, ±½, ↑ ↓ ∞ ⊕ ⊗ −¼ ¾ ⅛ ⅜ ⅝ ⅞ x2", sizes=(16, 32)):
+def check_strip(path, out, text="Worth ω+14, ±½, ↑ ↓ ∞ ⊕ ⊗ −¼ ¾ ⅛ ⅜ ⅝ ⅞ ω² x2", sizes=(16, 32)):
     """Render a line mixing the game's font and ours, falling back glyph by
     glyph the way LÖVE will; one strip per size, stacked."""
     from PIL import Image, ImageDraw, ImageFont

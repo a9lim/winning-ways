@@ -115,15 +115,14 @@ local function values()
   check("ω + 14 is an ω with +14", w13.base.value == "ww_w" and w13.ability.ww_mod == "14",
     w13.base.value .. " " .. tostring(w13.ability.ww_mod))
   check("rank + modifier gives ω + 14 back", Gm.encode(WW.value_of(w13)) == "w+14", Gm.encode(WW.value_of(w13)))
-  expect("ω + 14 and ω + 2 are in one galaxy, so a Pair",
-    row({ w13, card("S_2", n(2, 1)), card("D_7"), card("C_9") }), "Pair")
-  expect("ω + 14 and 2ω + 2 are not",
-    row({ card("H_K", n(14, 1)), card("D_2", n(2, 2)), card("D_7"), card("C_9") }), "High Card")
-  expect("two ωs are a Pair", row({ card("S_w"), card("H_w"), card("D_7"), card("C_9") }), "Pair")
+  -- Two infinities of one degree never meet in a hand: the left one merges into the right (src/omega.lua).
+  expect("ω + 14 then ω + 2: the left merges into the right, so no Pair",
+    row({ w13, card("S_2", n(2, 1)), card("D_7"), card("C_9") }), "High Card")
+  expect("two ωs merge too", row({ card("S_w"), card("H_w"), card("D_7"), card("C_9") }), "High Card")
   -- A * changes nothing for hands: n* plays as n, with or without a rank.
   local star = cut(n(0), n(0))
-  expect("ω and ω* are still a Pair",
-    row({ card("S_w"), card("H_w", Gm.add(N.omega, star)), card("D_7"), card("C_9") }), "Pair")
+  expect("and so do ω and ω*",
+    row({ card("S_w"), card("H_w", Gm.add(N.omega, star)), card("D_7"), card("C_9") }), "High Card")
   expect("3½ and 3½* are still a Pair",
     { card("H_3", n(3.5)), card("S_3", Gm.add(n(3.5), star)), card("D_7"), card("C_9") }, "Pair")
   -- An ω is past every rank, but it is no High Card: the King is, and the ω scores beside it.
@@ -166,6 +165,19 @@ local function scoring()
     and WW.chips_of(n(13)) == 10 and WW.chips_of(n(14)) == 10)
   check("3½ scores 3.5", WW.chips_of(n(3.5)) == 3.5)
   check("ω scores nothing, ω + 14 a King's 10", WW.chips_of(N.omega) == 0 and WW.chips_of(n(14, 1)) == 10)
+  -- The tiers: a·ω² + k·ω + x scores x in chips, +k Mult and ×(1 + a) Mult.
+  check("ω: +1 Mult, no ×Mult", WW.mult_of(N.omega) == 1 and WW.x_mult_of(N.omega) == 1)
+  check("2ω + 5: +2 Mult", WW.mult_of(n(5, 2)) == 2 and WW.chips_of(n(5, 2)) == 5)
+  check("ω²: ×2 Mult, and 2ω²: ×3", WW.x_mult_of(N.omega2) == 2 and WW.x_mult_of(n(0, 0, 2)) == 3
+    and WW.mult_of(N.omega2) == 0)
+  local w2, glass = card("S_w", N.omega2), card("H_w", n(0, 1, 1))
+  glass:set_ability(G.P_CENTERS.m_glass, nil, true)
+  for _, c in ipairs({ w2, glass }) do WW._finals[c] = WW.value_of(c) end
+  local got = { w2:get_chip_mult(), w2:get_chip_x_mult({}), glass:get_chip_mult(), glass:get_chip_x_mult({}) }
+  for _, c in ipairs({ w2, glass }) do WW._finals[c] = nil end
+  check("an ω² card scores ×2; a Glass ω² + ω scores +1 and ×2·2", got[1] == 0 and got[2] == 2 and got[3] == 1
+    and got[4] == 4, table.concat(got, " "))
+  check("off the scoring path it gives nothing", w2:get_chip_x_mult({}) == 0 and w2:get_chip_mult() == 0)
 end
 
 local function faces()
@@ -304,7 +316,11 @@ local function moves()
   M.omega.apply({ k })
   check("Omega: a King becomes an ω (n + ω = ω)", v(k) == "w" and k.base.value == "ww_w" and not WW.has_mod(k), v(k))
   M.omega.apply({ k })
-  check("Omega on an ω makes ω·2", v(k) == Gm.encode(n(0, 2)) and k.base.value == "ww_w", v(k))
+  check("Omega on an ω makes ω² (ω + ω² = ω²)", v(k) == "w^2" and k.base.value == "ww_w", v(k))
+  check("and no further: Balatro has three tiers", WW.omega_lift(k) == nil and not M.omega.need(k))
+  local k14 = card("C_K", n(14, 1))
+  check("Omega on ω + 14 makes ω² too", WW.omega_lift(k14) == 2)
+  check("Omega on the wild {ω|2} makes ω²", WW.omega_lift(card("S_A", cut(N.omega, n(2)))) == 2)
   k = card("D_7", cut(n(9), n(5)))
   M.omega.apply({ k })
   check("Omega on a hot card makes an ω too", v(k) == "w", v(k))
@@ -319,17 +335,40 @@ local function moves()
 end
 
 local function eating()
-  local function omega(code) return card(code, N.omega) end
+  local function omega(code, v) return card(code, v or N.omega) end
   local j1, w1, j2, w2, j3 = card("H_3"), omega("S_K"), card("D_5"), omega("C_2"), card("H_9")
-  local eaten = WW.eating({ j1, w1, j2, w2, j3 })
+  local eaten, grown = WW.eating({ j1, w1, j2, w2, j3 })
   check("ω eats the finite card to its left", eaten[j1] == w1)
-  check("the next ω eats only back to the first", eaten[j2] == w2 and eaten[w1] == nil)
+  check("the next ω eats back past the first, which merges into it", eaten[j2] == w2 and eaten[w1] == w2)
+  check("and becomes 2ω", grown[w2] and Gm.encode(grown[w2]) == "2w", grown[w2] and Gm.encode(grown[w2]))
   check("nothing eats to the right", eaten[j3] == nil)
   local junk, wild, w3 = card("H_4"), card("S_A", Gm.of({ N.omega }, { n(2) })), omega("D_K")
   eaten = WW.eating({ junk, wild, w3 })
-  check("an infinite card (the wild) blocks: nothing is eaten", next(eaten) == nil)
+  check("the wild is a wall: nothing is eaten", next(eaten) == nil)
+  -- The row adds up as ordinals: (ω + 3) + (ω + 5) = 2ω + 5, the left card's 3 swallowed.
+  local a3, a5 = omega("H_3", n(3, 1)), omega("S_5", n(5, 1))
+  eaten, grown = WW.eating({ a3, a5 })
+  check("(ω + 3) + (ω + 5) = 2ω + 5", eaten[a3] == a5 and Gm.encode(grown[a5]) == "2w+5", grown[a5] and Gm.encode(grown[a5]))
+  -- ω + ω² = ω², and ω² + ω keeps both.
+  local x, sq, y = omega("H_K"), omega("S_K", N.omega2), omega("D_K")
+  eaten, grown = WW.eating({ x, sq, y })
+  check("ω then ω² then ω: the first vanishes into ω², the last stays", eaten[x] == sq and eaten[sq] == nil
+    and eaten[y] == nil and not grown[sq])
+  -- ω² ω ω²: the ω vanishes, and then the two ω² are side by side and merge into 2ω².
+  local p, m, q = omega("H_Q", N.omega2), omega("S_Q"), omega("D_Q", N.omega2)
+  eaten, grown = WW.eating({ p, m, q })
+  check("ω² ω ω² comes to 2ω²", eaten[p] == q and eaten[m] == q and Gm.encode(grown[q]) == "2w^2",
+    grown[q] and Gm.encode(grown[q]))
+  local dead, live = omega("H_J"), omega("S_J")
+  dead.debuff = true
+  eaten = WW.eating({ live, dead })
+  check("a debuffed ω eats nothing", next(eaten) == nil)
+  eaten = WW.eating({ dead, live })
+  check("but can be eaten", eaten[dead] == live)
+  dead.debuff = false
+
   local a, b, w4, c, d = card("H_7"), card("S_7"), omega("D_K"), card("C_9"), card("H_9")
-  local function place(cards) for i, x in ipairs(cards) do x.T.x = i end end
+  local function place(cards) for i, z in ipairs(cards) do z.T.x = i end end
   local hand = { a, b, w4, c, d }
   place(hand)
   expect("7 7 ω 9 9: the 7s are eaten, so a Pair of 9s", hand, "Pair")
@@ -337,6 +376,21 @@ local function eating()
   check("feeding: the two 7s go", #food == 2)
   check("the eater grows by twice their chips", growth[w4] == 28 and w4.ability.perma_bonus == 28, growth[w4])
   check("an ω card always scores", SMODS.always_scores(w4) == true)
+  -- 7 ω 7 ω: the second ω takes in the first, and with it what the first ate, all doubled again.
+  local f1, o1, f2, o2 = card("H_7"), omega("S_K"), card("D_7"), omega("C_K")
+  local row2 = { f1, o1, f2, o2 }
+  place(row2)
+  local grown2
+  food, growth, grown2 = WW.feed(row2)
+  check("7 ω 7 ω: three cards eaten", #food == 3, #food)
+  check("the last ω grows by 2·7 + 2·(2·7)", growth[o2] == 42 and o2.ability.perma_bonus == 42, growth[o2])
+  check("its value waits for the scoring", Gm.encode(WW.value_of(o2)) == "w")
+  WW.grow(grown2)
+  check("then it is worth 2ω", Gm.encode(WW.value_of(o2)) == "2w" and o2.base.value == "ww_w", Gm.encode(WW.value_of(o2)))
+  -- An eaten card feeds what it would score alone, not its rank's chips.
+  check("a 3½ feeds 3.5, ω + 14 a King's 10, 7±2 its 9", WW.lone_chips(card("H_3", n(3.5))) == 3.5
+    and WW.lone_chips(card("S_K", n(14, 1))) == 10 and WW.lone_chips(card("D_7", cut(n(9), n(5)))) == 9)
+  check("2ω draws itself", WW.look_text(o2) == "omega Clubs 2ω", WW.look_text(o2))
 end
 
 local function jokers()
@@ -356,8 +410,8 @@ local function jokers()
     local got = WW.days_after(d[1])
     check(("Birthday: %s is %d days after its whole number"):format(Gm.encode(d[1]), d[2]), got == d[2], got)
   end
-  check("Birthday: ω + 14 and the wild were born on infinite days",
-    WW.days_after(n(14, 1)) == nil and WW.days_after(cut(N.omega, n(2))) == nil)
+  check("Birthday: ω + 14, ω² and the wild were born on infinite days",
+    WW.days_after(n(14, 1)) == nil and WW.days_after(N.omega2) == nil and WW.days_after(cut(N.omega, n(2))) == nil)
 
   -- Bouton and The Heap read nim-sums of the ranks cards play as.
   local one, two, three = card("H_1"), card("S_2"), card("D_3")
@@ -371,6 +425,15 @@ local function jokers()
   check("Bouton: a wild kicker plays as K ⊕ Q = 3", WW.bouton({ k1, q, w }, { k1 }))
   check("Bouton: a 4 kicker can't", not WW.bouton({ k1, q, four }, { k1 }))
   check("Bouton: a scoring wild plays as its assigned rank, not any", not WW.bouton({ k1, q, w }, { k1, w }))
+  -- An infinite ordinal is a heap of its own value; nim-addition goes digit by digit.
+  local o3, o5 = card("H_3", n(3, 1)), card("S_5", n(5, 1))
+  check("(ω + 3) ⊕ (ω + 5) = 6: the ωs cancel", WW.nim_sum({ o3, o5 }) == 6, tostring(WW.nim_sum({ o3, o5 })))
+  local om, kk = card("D_w"), card("C_K")
+  local sum = WW.nim_sum({ om, kk, card("H_K") })
+  check("ω K K nim-sums to ω, not 0, so it gets past The Heap", N.is(sum) and N.encode(sum) == "w", tostring(sum))
+  check("ω² ⊕ ω ⊕ 1 = ω² + ω + 1", N.encode(WW.nim_sum({ card("H_w", N.omega2), card("S_w"), card("D_1") })) == "w^2+w+1")
+  check("Bouton: 1 2 3 with an ω never cancels", not WW.bouton({ one, two, three, om }, { three, om }))
+  check("ω/2 is no ordinal, so no heap", WW.ordinal_heap(card("C_w", n(0, 1 / 2))) == nil)
 
   -- A * adds 1 to a heap (DESIGN.md § 3, Nimbus): 5* plays as a 5 but nim-sums as a 4.
   local star = cut(n(0), n(0))
@@ -548,7 +611,8 @@ local function tooltips()
   local want_info = {
     j_ww_bouton = 1, j_ww_generator = 1, j_ww_grundy = 1, j_ww_hotstrat = 1, j_ww_thermograph = 1,
     j_ww_sprouts = 2, j_ww_paradise = 1, j_ww_conway = 2, j_ww_berlekamp = 1, j_ww_cantor = 0, j_ww_birthday = 0,
-    j_ww_hilbert = 1, j_ww_guy = 0, c_ww_cut = 1, c_ww_heat = 1, c_ww_cool = 1, c_ww_mex = 1, c_ww_omega = 1,
+    j_ww_hilbert = 1, j_ww_guy = 0, c_ww_cut = 1, c_ww_heat = 1, c_ww_cool = 1, c_ww_mex = 1, c_ww_omega = 2,
+    v_ww_lessons = 0, v_ww_onag = 0,
     c_ww_sum = 0, c_ww_frobenius = 0, c_ww_repaint = 0, c_ww_nimbus = 1, c_ww_tweedledum = 0,
     p_ww_game_normal_1 = 0, p_ww_game_jumbo_1 = 0, p_ww_game_mega_1 = 0,
   }
@@ -590,16 +654,59 @@ local function tooltips()
     end
   end
   check("{C:ww_move} names the Moves' bright green", loc_colour("ww_move") == G.C.SET.Move)
+  local tag = G.localization.descriptions.Tag.tag_ww_game
+  check("the Game Tag has its text", G.P_TAGS.tag_ww_game ~= nil and tag and tag.text_parsed and #tag.text_parsed > 0)
+  local ok, tag_ui = pcall(function()
+    local t = Tag("tag_ww_game")
+    local _, sprite = t:generate_UI()
+    local ui = t:get_uibox_table(sprite).ability_UIBox_table
+    sprite:remove() -- Tag:remove wants the run's HUD; this tag was never in a run
+    return ui
+  end)
+  local tag_text = ok and table.concat(strings_of(tag_ui), " / ") or tostring(tag_ui)
+  check("the Game Tag's tooltip names the Mega Game Pack", ok and tag_text:find("Mega Game Pack", 1, true) ~= nil, tag_text)
   local w = card("S_w")
   local wtext = table.concat(strings_of(w:generate_UIBox_ability_table()), " / ")
-  check("an ω's tooltip: what it's worth, and that it eats",
-    wtext:find("Worth", 1, true) and wtext:find("no rank", 1, true) and wtext:find("Eats", 1, true), wtext)
+  check("an ω's tooltip: what it's worth, that it eats, and what it pays",
+    wtext:find("Worth", 1, true) and wtext:find("no rank", 1, true) and wtext:find("Eats", 1, true)
+      and wtext:find("X2", 1, true), wtext)
+  local sq = card("S_w", N.omega2)
+  local sqtext = table.concat(strings_of(sq:generate_UIBox_ability_table()), " / ")
+  check("ω²'s tooltip writes ω², and only what it's worth", sqtext:find("ω²", 1, true) ~= nil
+    and not sqtext:find("Modifier", 1, true) and not sqtext:find("−ω", 1, true), sqtext)
   -- With Quintessence, a Wild card's tooltip says what its * is.
   if G.P_CARDS.quint_W_5 then
     local g = card("quint_W_5")
     local text = table.concat(strings_of(g:generate_UIBox_ability_table()), " / ")
     check("a Wild 5's tooltip: worth 5*, and why", text:find("5*", 1, true) and text:find("Wild cards carry", 1, true), text)
   end
+end
+
+local function shop()
+  check("the vouchers exist, Lessons in Play first",
+    G.P_CENTERS.v_ww_lessons ~= nil and G.P_CENTERS.v_ww_onag and G.P_CENTERS.v_ww_onag.requires[1] == "v_ww_lessons")
+  check("Moves start at half the Tarots' shop rate", G.GAME.move_rate == 2, G.GAME.move_rate)
+  local rate = WW.MOD_RATE
+  WW.MOD_RATE = 2 -- every roll lands
+  local seen = {}
+  for i = 1, 30 do
+    local c = card(({ "H_2", "S_7", "D_9", "C_K" })[i % 4 + 1])
+    WW.roll_mod(c, "test")
+    seen[c.ability.ww_mod or "none"] = true
+  end
+  local stone = card("H_5")
+  stone:set_ability(G.P_CENTERS.m_stone, nil, true)
+  WW.roll_mod(stone, "test")
+  local half = card("H_3", n(3.5))
+  WW.roll_mod(half, "test")
+  WW.MOD_RATE = 0
+  local none = card("H_4")
+  WW.roll_mod(none, "test")
+  WW.MOD_RATE = rate
+  check("a rolled modifier is ½, * or ±1", seen["1/2"] and seen["{0|0}"] and seen["{1|-1}"] and not seen.none)
+  check("a Stone card gets none", stone.ability.ww_mod == nil)
+  check("nor a card that has one", half.ability.ww_mod == "1/2", half.ability.ww_mod)
+  check("and a missed roll leaves the card plain", none.ability.ww_mod == nil)
 end
 
 local function speed()
@@ -622,6 +729,7 @@ local function run()
   jokers()
   quintessence()
   tooltips()
+  shop()
   speed()
 end
 

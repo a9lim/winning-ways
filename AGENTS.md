@@ -20,7 +20,7 @@ card fronts, Moves, ω eating, the jokers, the Blinds and the decks are built. `
 | path | role |
 | --- | --- |
 | `main.lua` | entry point; the `WinningWays` global; loads the engine as `WinningWays.engine` |
-| `src/engine/num.lua` | numbers k·ω + x: order, arithmetic, sign expansions, simplest numbers, notation |
+| `src/engine/num.lua` | numbers a·ω² + k·ω + x: order, arithmetic, sign expansions, simplest numbers, notation |
 | `src/engine/game.lua` | short games over those numbers: canonical form, order, sums, stops, thermographs, heat, cool |
 | `src/engine/nim.lua` | nim arithmetic on the ranks 0–15 (F₁₆) |
 | `src/engine/play.lua` | how a hand of values scores, and the ranks a value plays as |
@@ -29,11 +29,12 @@ card fronts, Moves, ω eating, the jokers, the Blinds and the decks are built. `
 | `src/ranks.lua` | the born ranks 0, 1 and the Cavalier (C, between J and Q), and ω, past the Ace |
 | `src/cards.lua` | values on cards (rank + modifier), hand reading (evaluate, get_id, get_X_same), chips |
 | `src/faces.lua` | puts composed fronts on cards (one canvas per look, in place of the front sprite), and the tooltip |
-| `src/omega.lua` | infinity eating: who eats whom in the played row, growth, destruction, always-scores |
+| `src/omega.lua` | the played row adding up: who eats and merges with whom, growth, destruction, always-scores |
 | `src/moves.lua` | the Move consumables, the Omega Spectral and the Game Packs; each effect is `WW.MOVES[key].apply` |
 | `src/jokers.lua` | the jokers; their rules are plain functions (`WW.bouton`, `WW.mex_of`, `WW.missing_pairs`, `WW.extra_ranks`) |
 | `src/blinds.lua` | the Boss Blinds: The Heap and The Misère |
 | `src/decks.lua` | the Field Deck and the Ordinal Deck |
+| `src/shop.lua` | where the run meets the mod: modifiers on cards vanilla deals, the two vouchers, the Game Tag |
 | `src/font.lua` | attaches Fable's symbol font (ω ½ ↑ …) as a fallback to Balatro's pixel font |
 | `src/lab.lua` | the modifier sample the tests use, and the Laboratory Deck (only with `WINNINGWAYS_LAB=1`) |
 | `localization/en-us.lua` | all text, in vanilla's voice (see Text) |
@@ -47,8 +48,8 @@ Engine modules (`src/engine/`) are pure Lua with no game state; `src/cards.lua` 
 Inside it, `Gm` is the engine's game module: never name it `G`, which is Balatro's global.
 Each one takes the shared engine table as its chunk argument
 (`loadfile(path)(E)` in tests, `SMODS.load_file(path)(E)` in the game), and they load in the order num, game, nim,
-play, hands. Values print and parse in one ASCII notation (`3`, `-7/2`, `w/2-1`, `{9|5}`), which doubles as the save
-format.
+play, hands. Values print and parse in one ASCII notation (`3`, `-7/2`, `w/2-1`, `w^2+w`, `{9|5}`), which doubles as the
+save format.
 
 ## Verify
 
@@ -56,7 +57,8 @@ format.
   runtime from the local Balatro install. Nothing gets installed on the Mac, which is deliberately Homebrew-free.
 - `tests/main.lua` lists the suites; each suite file returns a function that takes `test(name, body)`.
 - `scripts/runtest` plays a real run on the Field Deck through the game's own code: it picks the Small Blind, plays
-  scripted hands, uses a Move, tries each joker and The Heap, and checks every score to the chip. `G.F_NO_SAVING` is set, and the script also backs up and
+  scripted hands, uses a Move, tries each joker and The Heap, merges ωs and lifts one to ω², redeems the vouchers
+  and opens the Game Tag's pack, and checks every score to the chip. `G.F_NO_SAVING` is set, and the script also backs up and
   restores the save files. It is the only test of the scoring path as the game runs it, so run it after any change
   to scoring, eating or the Moves. If the game crashes, close it (`pkill -f Balatro.app/Contents/MacOS`) before the
   next run.
@@ -64,8 +66,8 @@ format.
   show only what we add). It's the quick look after a change to `src/fronts.lua` or `art/parts.py`.
 - `WINNINGWAYS_SHOWCASE=<png> balala` lays out the born ranks and every kind of value-drawn front beside vanilla
   cards, screenshots them and quits; add `WINNINGWAYS_SHOWCASE_PALETTE=lc|hc` to force the palette (the settings are
-  put back). `WINNINGWAYS_SHOWCASE_SET=moves` or `=jokers` shows those instead, and `=omega` shows ω cards and wilds
-  on every enhancement and edition. Use it after any art or drawing change. `=tooltips` hovers each card in turn and
+  put back). `WINNINGWAYS_SHOWCASE_SET=moves` (with the vouchers) or `=jokers` shows those instead, and `=omega` shows
+  ω cards, ω² cards and wilds on every enhancement and edition. Use it after any art or drawing change. `=tooltips` hovers each card in turn and
   saves one shot per tooltip as `<png>-<key>.png`; use it after a text change.
 - `WINNINGWAYS_RUNTEST_SHOT=<prefix> scripts/runtest` also saves two screenshots of the run (The Heap's chip, the
   Field Deck's back, the jokers in their slots) as `<prefix>-1.png` and `<prefix>-2.png`.

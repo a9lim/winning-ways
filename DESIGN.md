@@ -35,9 +35,10 @@ Each family breaks one assumption the deck makes about ranks:
   - **C, the Cavalier** = {J|Q} = 12, tarot's fourth court card, which the French deck dropped. It is a face card and
     scores 10, like the other court cards.
   - **ω**, the first infinite number, is a rank too: the seventeenth, past the Ace. Only the Omega Spectral makes
-    one (§ 2.4). It is worth ω, not 16, which is an Ace with +1.
+    one (§ 2.4). It is worth ω, not 16, which is an Ace with +1. Every infinite value a card holds sits on it: 2ω + 5
+    and ω² are ω-cards.
 - With the born ranks, the deck's ranks 0–15 form the field F₁₆ under nim arithmetic. ω is outside it: it plays as no
-  rank and takes no part in nim arithmetic.
+  rank. In nim-sums an ω-card is the heap of its own value (§ 2.4).
 - **Straights:** the Cavalier is optional. 10-J-Q-K-A and 10-J-C-Q-K are both straights, so no deck changes and
   vanilla's straights are untouched. The born ranks extend straights downward (0-1-2-3-4). The Ace still tops a
   straight or plays low at its start (A-2-3-4-5), and still can't wrap (K-A-2 isn't a straight). These are ordinary
@@ -62,9 +63,8 @@ A card **acts as any rank its value equals or is confused with**. For example:
   options form one range of ranks.
 - **Equal values pair**, even when they have no rank: two 3½s are a Pair. A * changes nothing here: 3½* pairs with
   3½, as n* plays as n.
-- **Infinite cards pair by galaxy**, the set of values a finite distance apart (nonstandard analysis's word):
-  ω + 13 pairs with ω + 2, but not with 2ω. Seen from the finite ranks, everything in one galaxy is equally far
-  away.
+- **Two infinities of one degree never meet in a hand:** the played row merges them (§ 2.4). Until 1.2 they paired
+  by galaxy (values a finite distance apart, so ω + 13 with ω + 2); merging made that rule unreachable, and it went.
 - **Rank-specific jokers** see the rank a card played as. Wee sees a 2 in a Five of a Kind of 2s.
 
 ### 2.3 Scoring: the hand is a game
@@ -79,7 +79,10 @@ A card **acts as any rank its value equals or is confused with**. For example:
   - **A finite part from 0 to 15** scores that rank's own chips. J, C, Q and K still score 10 and the Ace 11, so
     taking 15 from a wild scores an Ace's 11.
   - **Any other finite part** scores itself: 3½ scores 3.5.
-  - **Infinite parts never become chips:** ω scores 0, and ω + 14 scores a King's 10.
+  - **Infinite parts score in the next tiers up.** A card that ends on a·ω² + k·ω + x scores x in chips, +k Mult, and
+    ×(1 + a) Mult. Balatro has three tiers, chips, +Mult and ×Mult, each outweighing the one below, as each power of
+    ω outweighs the one below it. So ω scores no chips and +1 Mult, ω + 14 a King's 10 and +1 Mult, 2ω + 5 five
+    chips and +2 Mult, and ω² ×2 Mult. The mapping is Balatro-layer, not maths (§ 5½).
 
 ### 2.3½ Values on cards: rank + modifier
 
@@ -118,30 +121,58 @@ A card **acts as any rank its value equals or is confused with**. For example:
 - **ω is a rank**, the seventeenth, past the Ace (§ 2.1). a9 decided that on 2026-11-22; before, ω was a modifier,
   and the card under it kept its rank.
 - **ω only enters from outside**, through the Omega Spectral, which turns a card into an ω. No chain of Moves on
-  finite cards can reach it, because every value they build is born on a finite day.
-- **An ω card:**
-  - is above every rank, plays as none, and pairs with any card in its galaxy (§ 2.2). In a sorted hand it stands
-    past the Ace, but it is never the High Card;
+  finite cards can reach it, because every value they build is born on a finite day. ω² enters the same way, from
+  Omega on an ω-card: no finite sum of ω's reaches it.
+- **Three degrees.** Values go up to a·ω² + k·ω + x, and stop there: Balatro scores in three tiers (§ 2.3), so the
+  mod has three degrees. Omega can't lift a card past ω².
+- **An ω-card** (any positive infinite number: ω, ω + 14, 2ω, ω², ω/2):
+  - is above every rank, plays as none, and pairs only with an equal value. In a sorted hand it stands past the Ace,
+    but it is never the High Card;
   - always scores, like a Stone card;
-  - **eats** the finite cards between it and the nearest infinite card to its left (n + ω = ω). Eaten cards don't
-    count toward the hand, and are destroyed;
-  - **grows like Ceremonial Dagger**: twice the eaten cards' chips become its permanent bonus chips (Dagger takes
-    double too; `WW.EAT`, a balance number, § 5½). Its value doesn't change; the bonus is stored the way Hiker's is.
-  - scores no chips of its own. Only a finite part scores: Sum(K, ω) is ω + 14, an ω with +14, and scores a King's
-    10.
-- **Infinities don't eat each other.** [junk, ω, junk, ω] adds up to ω + ω = ω·2, so each ω eats its own junk and
-  both survive.
+  - **eats**: the played row adds up (below), and the cards it swallows are destroyed;
+  - **grows like Ceremonial Dagger**: twice the chips each eaten card would score alone become its permanent bonus
+    chips (Dagger takes double too; `WW.EAT`, a balance number, § 5½). A 3½ feeds 3.5, ω + 3 feeds 3 and 7±2 its 9.
+    The bonus is stored the way Hiker's is;
+  - scores in the tiers: its finite part in chips, its ω's as +Mult, its ω²'s as ×Mult (§ 2.3).
+- **The played row adds up**, read left to right as ordinal addition (a9, 2026-11-23). Two rules, both theorems
+  about ordinals:
+  - **Absorption.** A card below a power of ω vanishes into it from the left: α + ω^β = ω^β whenever α < ω^β. So
+    n + ω = ω, and ω + ω² = ω² too.
+  - **Like terms.** A card of the same degree adds its leading term to the one on its right: ω + ω = ω·2, and
+    (ω + 3) + (ω + 5) = ω·2 + 5, the left card's 3 swallowed by the right card's ω.
+
+  So each eater takes in the cards to its left back to the nearest card of a higher degree: the finite ones and
+  the lower degrees vanish, and those of its own degree merge into it. Its value becomes their sum. The row's sum
+  never changes, only how many cards carry it. Order matters, as it does for ordinals: [ω, ω²] leaves ω², but
+  [ω², ω] keeps both. [ω², ω, ω²] comes to 2ω²: the ω vanishes, and then the two ω² are side by side.
+
+  Ordinal addition is defined only for ordinals. For every other number the mod reads the row by degree in the same
+  way, as it always has for 3½ + ω = ω: a lower degree vanishes, and the same degree adds its leading term. So
+  ω − 1 merges into ω as a term of degree 1, and the pair comes to 2ω.
+- **Merging is a trade.** Two ωs give +1 Mult each, and 2ω gives +2, so Mult is unchanged; the merged card takes
+  twice the eaten one's chips, and the deck is a card thinner. Two ω² give ×2 · ×2 = ×4 apart and ×3 merged, so
+  merging those costs Mult.
+- **In nim-sums** an ω-card worth an ordinal (ω + 14, 2ω²) is the heap of its own value. Conway's nim-addition of
+  ordinals works digit by digit: (ω + 3) ⊕ (ω + 5) = 6. After the row adds up, the infinite cards left in a hand
+  have strictly falling degrees, so their infinite digits never cancel: a hand with one doesn't nim-sum to 0, so it
+  gets past The Heap and never makes Bouton. Two exceptions: a wall (below) can keep two of one degree apart, as in
+  ω {ω|2} ω, where the two ωs cancel; and an ω-card worth a number that isn't an ordinal (ω + ½, which Cut(ω, ω + 1)
+  makes) has no heap at all, like 3½.
 - **Two additions.** The played row uses ordinal addition, which depends on order. Sum uses Conway's sum, which
-  commutes. So ω·k only comes from Sum (ω + ω = ω·2), and Sum(K, ω) = ω + 14.
+  commutes, so Sum(K, ω) = ω + 14 and Sum(ω, K) = ω + 14 too.
 - **As built** (`src/omega.lua`):
-  - **Who eats:** a card eats when its value is a positive infinite number (ω + 14, 2ω, ω/2) and it isn't
-    debuffed.
-  - **Who blocks:** any infinite value stops a run of eaten cards, the wild included.
-  - **When:** the eater grows as the hand is played, so it scores its new chips that same hand. The eaten cards are
-    left out of the hand being read, so a preview already shows the hand without them; Splash can't make them
-    score; and they're destroyed once the hand has scored.
+  - **Who eats:** a card worth a positive infinite number, its * aside, that isn't debuffed. A debuffed one can
+    still be eaten.
+  - **Walls:** any other infinite value (the wild {ω|2}, a negative infinity) stops the row: nothing to its left is
+    eaten past it, and it is never eaten.
+  - **When:** the eater grows as the hand is played, so it scores its new chips and its new value that same hand.
+    The eaten cards are left out of the hand being read, so a preview already shows the hand without them; Splash
+    can't make them score; and they're destroyed once the hand has scored. An eaten eater's growth comes along,
+    doubled again.
+  - **Reading, then growing:** the hand is read, and the Blind judges it, with the eaters at their old values; a
+    merged eater takes its new value as the cards start to score. So the preview and the play always agree.
 - **The wild rank {ω|2}** (made with Cut) has infinite temperature, so it is always the hottest card in a hand. You
-  take ω (0 chips), and the Blind gets first pick of your other hot cards.
+  take ω (no chips, +1 Mult), and the Blind gets first pick of your other hot cards.
 
 ### 2.5 Faces: the value, drawn
 
@@ -180,6 +211,8 @@ A plain card keeps its own front. A card with a modifier, and every ω, draws it
 - **ω is the card inside out.** The body takes the suit's ink to its edges, multiplied, so an enhancement still
   shows through; the index, the corner pip and the Ace's large pip are white. It is an Ace inside out, with ω for
   its index.
+- **A power is raised:** ω² reads ω with a small 2 at its shoulder, in the fractions' small digits, and is
+  otherwise an ω card: 2ω², ω² + ω + 14.
 - **{ω|x} is split along the diagonal** from bottom left to top right: the ω card above, with its corner, and the x
   card below, with its own. {ω|0} is half ω and half 0, and plays as every rank. The tooltip calls {ω|x} the wild
   rank when x is 2 or less, since those play as every rank a standard deck has.
@@ -264,17 +297,19 @@ becomes a 1; beside a 0 and a 1 it becomes a 2. It's the easy way to make born r
 
 ### Omega (Spectral)
 
-Turns a selected card into an ω: n + ω = ω. Added on the right, as the played row adds (§ 2.4), ω absorbs
-everything finite before it, which is the rule an ω eats by. So the card's rank, chips and modifier go, and it starts
-eating. A card that is already an infinite number keeps that and gains another ω: ω + 14 becomes ω·2.
-- **Any card will do.** The first version turned a 2 into ω, but a Spectral pack's hand often holds no 2: 8 cards
-  contain one only about 52% of the time. The second added ω to the card's modifier and kept its rank, so a King
-  became K + ω = ω + 14. a9 replaced that with the ω rank on 2026-11-22.
-- **ω + 14 still exists:** Sum(K, ω) makes it, because Conway's sum commutes and absorbs nothing.
+Adds on the right the next power of ω above the selected card, which swallows it: α + ω^(d+1) = ω^(d+1) for any α
+below that power (a9, 2026-11-23). It is the rule an ω eats by, one degree up.
+- **A finite card becomes ω:** n + ω = ω, so its rank, chips and modifier go, and it starts eating. Any card will do.
+  The first version turned a 2 into ω, but a Spectral pack's hand often holds no 2: 8 cards contain one only about
+  52% of the time.
+- **An ω-card becomes ω²:** (ω·k + x) + ω² = ω², so ω + 14 and 2ω both become ω². A game's degree is its highest
+  stop's, so the wild {ω|2} becomes ω² too.
+- **Past ω² it can't be used.** Balatro has three tiers (§ 2.3).
+- **History.** The second version added ω to the card's modifier and kept its rank, so a King became K + ω = ω + 14.
+  a9 replaced that with the ω rank on 2026-11-22, when Omega on an ω gave ω·2. Now ω·2 comes from the row (two ωs
+  merging) or from Sum.
 - **The ω³ = 2 nod lives here, not on the card** (the pixel font has no ³): ω is the smallest cube root of 2 in nim
   arithmetic, and no finite rank is one (the nim-cubes of 1–15 are only 1, 8, 10, Q and K).
-- **No bonus for using a 2.** Making ω's siblings ω·2 and ω·3, the other two cube roots, as well would give three
-  eaters from one card, since infinities don't eat each other. That's too strong.
 
 ## 4. Jokers — Decided
 
@@ -327,7 +362,8 @@ eating. A card that is already an infinite number keeps that and gains another �
 Claude's calls where the sketch left room, waiting on a9's say-so:
 
 - **"Rank" means the rank a card plays as** in the hand being scored: a wild in a Pair of Kings is a King. Cards with
-  no rank (Stone, 3½, ω) are invisible to nim-sums and the mex, as a 0 is. Cards infinity ate don't count.
+  no rank (Stone, 3½) are invisible to nim-sums and the mex, as a 0 is; an ω-card is its own heap in nim-sums
+  (§ 2.4) and invisible to the mex. Cards infinity ate don't count.
 - **Bouton:** a flexible kicker (one that doesn't score) may play as any of its ranks, Conway's included, because
   you choose in a confused position. So a wild kicker completes a Bouton whenever the other cards nim-sum to a rank it can play as
   (K, Q and a wild: K ⊕ Q = 3). Scoring cards keep the rank the hand gave them.
@@ -366,7 +402,8 @@ Claude's calls where the sketch left room, waiting on a9's say-so:
 - **The Heap** (Boss): a hand whose scoring cards nim-sum to 0 scores nothing. Because a ⊕ a = 0, Pairs, Two Pairs
   and Four of a Kinds never score under it.
   - **As built** (`src/blinds.lua`): it reads Steamodded's final scoring cards (Splash, Stone and ω cards
-    included) as the ranks they play as. It appears from Ante 2, pays $5 and has the usual ×2 target.
+    included) as the ranks they play as. An ω is a heap of its own that nothing finite cancels (§ 2.4), so a
+    hand with one gets past. It appears from Ante 2, pays $5 and has the usual ×2 target.
 - **The Misère** (Boss): the last mover loses, so your final hand of the round scores nothing.
   - **As built:** the hand that leaves you no hands is debuffed. The preview warns while one hand is left, so you
     know before you play it. From Ante 2.
@@ -385,6 +422,13 @@ against vanilla siblings rather than play:
 - **Thermograph +3 mult per degree** (was +1): one hot card alone is worse off under Thermograph, because you'd have
   taken its top value and now get its mean (7±2: 9 chips becomes 7). At +1 per degree a rare paid +2 mult for that.
   At +3, 7±2 gives +6, and Heat adds 3 a step.
+- **The tiers of ω** (§ 2.3): the ω coefficient is +Mult as it stands, and the ω² coefficient counts up from ×1, the
+  way Hologram's and Cantor's Paradise's ×Mult do, so ω² is ×2 and 2ω² ×3. Read literally, ω² would be ×1, which
+  does nothing. ×2^a would make merging ω² cards break even, but "2ω² gives ×4" reads strangely. +1 Mult for an ω
+  is less than a Mult card's +4, but the ω also eats and always scores; ω² costs two Spectrals for an unbreakable
+  ×2 that eats ω-cards too, strong beside Glass but fair.
+- **Modifiers from vanilla's sources** (§ 5⅞): 1 in 5, the Standard Pack's seal rate.
+- **The vouchers** take Tarot Merchant's and Tarot Tycoon's multipliers as they are (2.4 and 8 on the base rate).
 - **Kept, with reasons:**
   - **Bouton ×3** is nearly always available (75% of 8-card hands make one with a Pair), but it costs the hand
     shape: kickers have to zero the nim-sum, and no straight ever does. Against The Duo (×2 on any Pair) it's fair
@@ -416,6 +460,23 @@ player may cut, and a lone green edge is the nimber * (green Hackenbush is Nim).
 - The born ranks have Wild fronts, values play in Spectrum hands, and Repaint leaves Wild cards alone, because a green
   edge is its own negative.
 
+## 5⅞. In the shop and packs — Decided
+
+a9 agreed these on 2026-11-23, so that a run meets the mod without first buying a Move (`src/shop.lua`).
+
+- **Modifiers from vanilla's own sources.** A random playing card a pack deals (the Standard Packs), or one the shop
+  sells once Illusion is redeemed, has a 1 in 5 chance of a modifier: +½, *, or ±1, equally likely. It is rolled
+  after vanilla's enhancement, edition and seal, in the modifier's own slot. A Stone card, another mod's rank or a
+  card that already has a modifier is left alone. Without Illusion the shop's playing cards stay plain, as they
+  carry no enhancement, edition or seal either.
+- **Two vouchers,** Tarot Merchant and Tarot Tycoon for Moves: **Lessons in Play** makes Moves appear 2X as often in
+  the shop (the rate goes from 2 to 4.8), and **On Numbers and Games**, which needs it, 4X (16). They're named for
+  two books: Albert, Nowakowski and Wolfe's textbook, which starts you on combinatorial games, and Conway's own,
+  where the surreal numbers start.
+- **The Game Tag:** Charm Tag's twin, a free Mega Game Pack when the next Blind is to be chosen.
+- **No unlocks.** Everything stays unlocked from the start: locking content annoys players who installed the mod to
+  play it (a9, 2026-11-23).
+
 ## 6. Left out
 
 - **Clifford algebras:** off-theme. They are about suits, not ranks, and {L|R} doesn't build them.
@@ -431,6 +492,8 @@ player may cut, and a lone green edge is the nimber * (green Hackenbush is Nim).
 - **Dedekind** (mass Cut of the whole hand): too close to Immolate. Its positional reading of {L|R} moved to Conway
   (§ 7).
 - **Conway** as "gains ×0.5 mult per Move used": not legendary, and too close to Constellation.
+- **Unlock conditions** (§ 5⅞).
+- **ω³ and beyond:** Balatro has no fourth tier (§ 2.4).
 
 ## 7. Candidates — Jokers
 
@@ -486,10 +549,8 @@ it only reflects which card you put first.
 - **The Axe** (Boss): the Blind's side of Hackenbush (§ 7). After each hand it cuts your leftmost red card and every
   card to its right. Sorting reds to the right limits the damage, but that fights the other uses of card order (ω
   eats leftward, Conway reads neighbours). a9 likes it and parked it on 2026-11-15.
-- **ω in nim-sums** (Claude's, 2026-11-22): count an ω as a heap of its own, so that ω ⊕ ω = 0 and no finite ranks
-  cancel one. A lone ω would always get past The Heap, and would break Bouton unless paired. Now that ω is a rank
-  this is a few lines; today an ω is invisible to nim-sums.
-- **Later:** vouchers, tags, challenges, and the Moves' Game Pack art.
+- **Later:** challenges, one per family (Nim on the Field Deck under The Heap; a deck of switches; building the
+  numbers from the born ranks), and a Hackenbush challenge that could hold The Axe.
 
 ## 9. Open questions
 
@@ -523,6 +584,17 @@ Checked with ogdoad's Python bindings unless marked standard.
   - ω³ = 2 in nim arithmetic, and the three cube roots of 2 are ω, ω·2 and ω·3. They nim-sum to 0 and nim-multiply
     to 2 (Vieta).
   - Ordinal addition: ω + 1 ≠ 1 + ω = ω, and ω ⊕ ω = 0.
+- **ω²** (the engine checks itself; ogdoad has no transfinite numbers):
+  - **Standard:** α + ω^β = ω^β exactly when α < ω^β (the powers of ω are the additively indecomposable ordinals),
+    so (ω·k + x) + ω² = ω²; and like terms add, ω + ω = ω·2.
+  - **Standard:** Conway's nim-addition of ordinals is XOR of their binary expansions, ω^k = 2^(ω·k), so it goes
+    digit by digit in Cantor normal form: (ω + 3) ⊕ (ω + 5) = 6.
+  - **Standard (Gonshor):** the sign expansion of a·ω² + k·ω + x is a's signs each repeated ω² times, then k's each
+    ω times, then x's. `tests/known_test.lua` checks the simplest-number code built on it: 600 random cuts with
+    ω² terms, each result between its bounds and none of its prefixes there.
+  - **Standard:** in a positive interval that holds an ordinal, the least ordinal there is the simplest number. So
+    {ω | ω²} = ω + 1, {ω² + 5ω | 2ω²} = ω² + 5ω + 1, and {0 | ω²} = 1. Where the
+    interval holds no ordinal the expansion decides: {ω² − ω | ω²} = ω² − 1.
 - **Standard results:**
   - A switch {a|b} with a > b is confused with every number in [b, a].
   - ±x is its own negative.
@@ -533,24 +605,25 @@ Checked with ogdoad's Python bindings unless marked standard.
 
 - **Doesn't K + ω reduce to ω?** Not for surreal numbers, whose (Conway's) sum commutes, so K + ω = ω + 14, a
   different number from ω. Only ordinal addition, which depends on order, absorbs: 14 + ω = ω, but ω + 14 ≠ ω even
-  there. That ordinal rule is what the played row uses for eating (§ 2.4); values use Conway's sum. Since 2026-11-22
-  the Omega Spectral uses the ordinal rule too: it adds ω on the right of the card, so the card becomes ω. Sum(K, ω)
-  is still ω + 14.
+  there. That ordinal rule is what the played row uses for eating (§ 2.4); values use Conway's sum. The Omega
+  Spectral uses the ordinal rule too: it adds the next power of ω on the right of the card, so the card becomes ω
+  (or ω²). Sum(K, ω) is still ω + 14.
 
 ## 11. Engine
 
 Built and tested (`src/engine/`, `tests/`).
 
-- **Numbers** (`num.lua`) have the form k·ω + x, with k and x dyadic, stored as doubles on a grid: multiples of
-  2^-32 below 2^20 in magnitude. That takes 52 of a double's 53 bits, so sums are exact. A value off the grid, such
+- **Numbers** (`num.lua`) have the form a·ω² + k·ω + x, with a, k and x dyadic, stored as doubles on a grid:
+  multiples of 2^-32 below 2^20 in magnitude. That takes 52 of a double's 53 bits, so sums are exact. A value off the grid, such
   as a 33rd nested Cut between neighbours, is refused when it's made rather than rounded. Notation that isn't
   dyadic, like "1/3", is refused too.
   - Order is lexicographic.
-  - A number's sign expansion is k's signs, each repeated ω times, followed by x's signs (Gonshor). The simplest
-    number between two numbers is computed on these expansions, so {15|ω} = 16 and {ω/2|ω} = ω − 1 come out of the
-    same code as {3|4} = 3½.
+  - A number's sign expansion is a's signs, each repeated ω² times, then k's, each repeated ω times, then x's
+    (Gonshor). Runs are ordinals ω²·l + ω·m + n. The simplest number between two numbers is computed on these
+    expansions, so {15|ω} = 16, {ω/2|ω} = ω − 1 and {ω|ω²} = ω + 1 come out of the same code as {3|4} = 3½.
   - Canonical options come from the expansions too. ω's Left options (0, 1, 2, …) are an infinite family with no
-    best member.
+    best member, and so are ω²'s (ω·m + n).
+  - Notation: `w^2`, `2w^2+w-3`, `w^2/2`.
 - **Games** (`game.lua`) are short games with number leaves, kept canonical and interned.
   - **Number test:** a game equals a number exactly when some number fits between its options (the simplicity
     theorem), and the fitting interval is read off the options' stops. This test runs before any other reduction,
@@ -599,18 +672,24 @@ Built and tested (`src/engine/`, `tests/`).
     `get_X_same` handles tie groups. Straights are Steamodded's own: the optional Cavalier is just another entry in
     the Jack's next list.
   - **Values:** a card's value is computed as rank + modifier and cached by both. `WW.set_value` puts a made value
-    on its rank, and `WW.add_mod` adds to a modifier (for Nimbus and Omega).
-  - **Scoring:** `SMODS.calculate_main_scoring` resolves the scoring cards' values, and `get_chip_bonus` pays each
-    card the chips for the number it ends on.
+    on its rank, and `WW.add_mod` adds to a modifier (for Nimbus).
+  - **Scoring:** `SMODS.calculate_main_scoring` resolves the scoring cards' values, and `get_chip_bonus`,
+    `get_chip_mult` and `get_chip_x_mult` pay each card the tiers of the number it ends on.
   - **Speed:** reading a hand with two wilds and a hot card takes about 3 ms in the game.
 - **Exercised end to end:** `scripts/runtest` starts a real run on the Field Deck with saving switched off and plays
   scripted hands through the game's own code:
   - the deck: 64 cards, 12 of them born ranks;
   - a hot card's bite: 7 7 7±2 scores exactly 159;
-  - infinity eating: 7 7 ω+14 9 9 is a Pair worth 132, the 7s are destroyed, and the ω keeps +28;
+  - infinity eating: 7 7 ω+14 9 9 is a Pair worth 198 (the ω's +1 Mult included), the 7s are destroyed, and the ω
+    keeps +28;
   - Cut used through the game's own button;
   - each joker in turn: Bouton on 1 2 3 (24), Generator on an Ace (18, and it becomes a 9), Grundy on 0 1 2 3 4
     (+5 mult), Hotstrat and Thermograph on a lone 7±2 (23 and 36), Sprouts on 3 7 (a new 4), Cantor at a Blind
-    (a missing pair), Cantor's Paradise on 7 7 ω+14 9 9 (×1.2), Conway on K 5 K (Three of a Kind, 165);
+    (a missing pair), Cantor's Paradise on 7 7 ω+14 9 9 (×1.2: 237), Conway on K 5 K (Three of a Kind, 165);
   - The Heap: a Pair scores 0, three 9s score 171;
+  - the powers of ω: (ω + 3)(ω + 5) 9 9 merges into 2ω + 5, which takes the eaten 3 as 6 bonus chips, and scores
+    156; Omega through the game's button lifts an
+    ω to ω², which can't go further; ω² 9 9 9 scores 342 (×2);
+  - the vouchers set the Move rate to 4.8, then 16; pack cards roll modifiers, and shop cards only under Illusion;
+  - the Game Tag opens a free Mega Game Pack of five Moves;
   - the Ordinal Deck: 53 cards, one of them the ω of Spades, and a Cut.

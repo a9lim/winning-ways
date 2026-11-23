@@ -10,6 +10,8 @@ are derived from Balatro's own sprites and contain pixels that are
 - `1x/packs.png`, `2x/packs.png`
 - `1x/jokers.png`, `2x/jokers.png`
 - `1x/blinds.png`, `2x/blinds.png`
+- `1x/vouchers.png`, `2x/vouchers.png`
+- `1x/tags.png`, `2x/tags.png`
 
 What in them is Balatro's:
 
@@ -46,6 +48,11 @@ What in them is Balatro's:
 - **blinds**: both chips' disc, rim and shine animation (vanilla's The
   Wall, re-inked). Ours: the heap of counters, the counters and skull, and
   the colours.
+- **vouchers**: the tickets of vanilla's Tarot Merchant and Tarot Tycoon
+  (silhouette, stub, VOUCHER lettering, perforation, rings, streak, glow and
+  sparks), recoloured. Ours: the books in the windows.
+- **tags**: the tag and disc of vanilla's Charm Tag, the disc recoloured.
+  Ours: the mark.
 
 Everything else contains no pixels from the game and is MIT like the code:
 

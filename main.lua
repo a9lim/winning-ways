@@ -24,6 +24,7 @@ if NFS.getInfo(WinningWays.path .. "assets/1x/moves.png") then load("src/moves.l
 load("src/jokers.lua")
 load("src/blinds.lua")
 load("src/decks.lua")
+load("src/shop.lua")
 
 if os.getenv("WINNINGWAYS_SELFTEST") then load("tests/ingame.lua") end
 if os.getenv("WINNINGWAYS_SHOWCASE") then load("tests/showcase.lua") end

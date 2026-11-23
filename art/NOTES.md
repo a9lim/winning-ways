@@ -4,7 +4,7 @@ Pixel art as code. Engine: `art/pixel.py`. One program per sheet;
 `~/.venv/bin/python -I art/build.py` regenerates everything into `assets/1x`
 and `assets/2x` (2x = exact nearest-neighbour x2 of the 1x; build.py checks
 it and every sheet size) and writes `assets/parts.lua`.
-`art/look.py fronts|fronts_hc|wild|courts|courts_hc|glyphs|moves|packs|font|jokers|blinds|backs|icon [k]` renders
+`art/look.py fronts|fronts_hc|wild|courts|courts_hc|glyphs|moves|packs|vouchers|tags|font|jokers|blinds|backs|icon [k]` renders
 previews beside vanilla cells into `art/preview/` (gitignored). Composed
 fronts are the Lua side's: `scripts/sheet <png> [lc|hc]` draws a sheet of
 them without the game.
@@ -28,7 +28,9 @@ same way, from its checkout at `../quintessence/assets/1x` (override with
 | `jokers.png` | 1136x95 (16 cells of 71x95) | `jokers.py` | yes (JOKER lettering; the three legendary backgrounds) |
 | `blinds.png` | 714x68 (2 rows of 21 frames of 34x34) | `blinds.py` | yes (disc, rim, shine) |
 | `backs.png` | 142x95 (2 cells of 71x95) | `backs.py` | no (frame geometry only) |
-| `fonts/ww_symbols.ttf` | 14 glyphs | `font.py` | no |
+| `vouchers.png` | 142x95 (2 cells of 71x95) | `vouchers.py` | yes (the ticket) |
+| `tags.png` | 34x34 | `tags.py` | yes (the tag and disc) |
+| `fonts/ww_symbols.ttf` | 15 glyphs | `font.py` | no |
 
 ## Rank fronts (`fronts.py`)
 
@@ -309,6 +311,39 @@ The name band is the normal pack's (rows 56..77), with CELESTIAL filled
 over in the band's own colour and re-lettered GAME in the band's letterforms
 (E, A as vanilla letters them; G, M drawn to match); PACK is vanilla's.
 
+## Vouchers (`vouchers.py`)
+
+Cells: Lessons in Play, On Numbers and Games (tier 1, tier 2). Each is
+vanilla's Tarot voucher of the same tier, `Vouchers.png` (1, 0) Tarot
+Merchant and (1, 1) Tarot Tycoon. Vanilla's, kept: the ticket's silhouette,
+stub, VOUCHER lettering, perforation and rings, the two-tone body, and on
+tier 2 the dark stub, the streak behind the lettering, the glow ring and the
+sparks. Re-inked: the body's golds `f3b92f`/`b78b20` to the set's primary
+`4d9f7c` and the Moves' rim `3c7f66`; the Tycoon's purples
+`ae65ff`/`924be0` to chalk gold `f0cc6a`/`c9a24a`, and its lilac sparks to
+chalk white. Drawn here: everything inside the white ring (found by flooding
+from the window's middle), where vanilla has a Tarot card: a book bound in
+slate (the Moves' board `2f5a50`, spine `274c44`, a mint edge), page edges
+at the foot.
+
+The pair counts as the Merchant and Tycoon count arrows (one, then three).
+Lessons in Play: one cut, a gold node with a blue Left branch and a red
+Right branch, over a title in two chalk rules. On Numbers and Games: the
+tree three days deep (0; -1, 1; -2, -1/2, 1/2, 2), dots, and a gold ω
+below; gilt corners, spine bands and a gold leaf among the pages. No words
+on either cover. Alternatives considered: a bare slate with arrows (says
+"more Moves" but not the books' names); an open book for tier 2 (the tree
+would not fit a page).
+
+## The Game Tag (`tags.py`)
+
+One 34x34 cell. Vanilla's Charm Tag, `tags.png` (2, 2), the tag that gives a
+Mega Arcana Pack: the tag's face and rim are kept; the disc is re-inked from
+`8a71e1`/`6d5baa` to `4d9f7c`/`3c7f66` and filled where the eye was. The
+mark is the Game Packs' sign in white, `card | card`: two 3x5 cards either
+side of a 2x9 bar. `tags.tent` is the alternative considered (a thermograph:
+tent, mast, base line), kept so `look.py tags` can show both.
+
 ## Jokers (`jokers.py`)
 
 Cells, left to right: `bouton generator grundy hotstrat thermograph sprouts
@@ -499,8 +534,11 @@ build.py):
 The fractions are `glyphs.py`'s small digits (3x5, one-pixel strokes)
 either side of a slash: two-pixel strokes do not fit a numerator and a
 denominator into eleven rows, so they are lighter than the text round them.
+`²` (twosuperior, since 1.2) is the small digit 2 on rows 0..4, where the
+fractions' numerators stand, three pixels wide: ω² in tooltips.
+
 `look.py font` renders `preview/font_check.png`: "Worth ω+14, ±½, ↑ ↓ ∞ ⊕ ⊗
-−¼ ¾ ⅛ ⅜ ⅝ ⅞ x2" at 16 and 32 px, the game's font in white and ours in gold,
+−¼ ¾ ⅛ ⅜ ⅝ ⅞ ω² x2" at 16 and 32 px, the game's font in white and ours in gold,
 falling back glyph by glyph.
 
 ## Glyphs (`glyphs.py`)
